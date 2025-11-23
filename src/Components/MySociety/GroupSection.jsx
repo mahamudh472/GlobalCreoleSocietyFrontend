@@ -1,31 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaUserCircle } from 'react-icons/fa';
 import MySocietyCoverpicUpload from './MySocietyCoverpicUpload';
+import { useParams } from 'react-router-dom';
+import { apiMethods } from '../../utils/api';
+import { ENDPOINTS } from '../../config/apiConfig';
 
-const GroupSection = () => {
-  const membersCount = 2564;
+const GroupSection = ({ society }) => {
+  const { id: societyId } = useParams();
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  const defaultProfiles = [
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 1' },
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 2' },
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 3' },
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 4' },
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 5' },
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 6' },
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 7' },
-    { src: 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg', alt: 'Profile 8' },
-  ];
+  const membersCount = society?.members_count || society?.member_count || 0;
+
+  useEffect(() => {
+    if (societyId) {
+      fetchMembers();
+    }
+  }, [societyId]);
+
+  const fetchMembers = async () => {
+    try {
+      setLoading(true);
+      const response = await apiMethods.get(ENDPOINTS.SOCIETIES.MEMBERS(societyId));
+      const membersData = response.data.results || response.data;
+      setMembers(Array.isArray(membersData) ? membersData.slice(0, 8) : []); // Show first 8 members
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden mx-auto ">
       {/* Cover Image Section */}
       <div className="relative">
       
-        <button className="absolute top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-full font-medium hover:bg-gray-700 transition duration-200">
+        <button className="absolute top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-full font-medium hover:bg-gray-700 transition duration-200 z-10">
           Edit Cover
         </button>
 
-        <MySocietyCoverpicUpload></MySocietyCoverpicUpload>
+        <MySocietyCoverpicUpload coverImage={society?.cover_picture || society?.cover_image} />
         
       </div>
 
@@ -35,16 +50,27 @@ const GroupSection = () => {
           <span className="text-gray-600 font-medium">Members · {membersCount.toLocaleString()}</span>
           <a href="#" className="text-blue-600 text-sm hover:text-blue-800 hover:underline">SEE ALL</a>
         </div>
-        <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
-          {defaultProfiles.map((profile, index) => (
-            <img
-              key={index}
-              src={profile.src}
-              alt={profile.alt}
-              className="w-10 h-10 rounded-full object-cover transition-transform duration-200 hover:scale-110"
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex space-x-2">
+            {[...Array(8)].map((_, index) => (
+              <div key={index} className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+            ))}
+          </div>
+        ) : members.length > 0 ? (
+          <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
+            {members.map((member, index) => (
+              <img
+                key={index}
+                src={member.user?.profile_image || 'https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg'}
+                alt={member.user?.profile_name || 'Member'}
+                className="w-10 h-10 rounded-full object-cover transition-transform duration-200 hover:scale-110"
+                title={member.user?.profile_name || member.user?.email}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-sm">No members to display</p>
+        )}
       </div>
     </div>
   );

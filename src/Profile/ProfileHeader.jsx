@@ -1,10 +1,7 @@
 import React from 'react'
 import UploadProfilePage from './UploadProfilePage'
 
-const ProfileHeader = ({ data, posts = [], isOwnProfile = true, onProfileUpdate }) => {
-    // Count friends (accepted friendships)
-    const friendsCount = 0 // TODO: Implement when friends API is integrated
-
+const ProfileHeader = ({ data, posts = [], friendsCount = 0, isOwnProfile = true, onProfileUpdate }) => {
     const DEFAULT_PROFILE_IMAGE = "https://ui-avatars.com/api/?name=" + 
         encodeURIComponent(data?.profile_name || data?.email || "User") + 
         "&size=150&background=3b82f6&color=fff";

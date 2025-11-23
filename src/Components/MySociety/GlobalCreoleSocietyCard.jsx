@@ -3,9 +3,24 @@ import { FaPencilAlt } from 'react-icons/fa';
 import SocietyImgUpload from './SocietyImgUpload';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const GlobalCreoleSocietyCard = ({ posts = 10300, members = 2564, media = 234 }) => {
+const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const navigate = useNavigate();
-const {id}=useParams()
+  const {id}=useParams()
+
+  if (!society) {
+    return (
+      <div className="bg-white rounded-xl p-4">
+        <div className="animate-pulse">
+          <div className="h-32 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const members = society.members_count || society.member_count || 0;
+  const media = 0; // TODO: Add media count when available
 
   return (
     <div className=" rounded-xl mx-auto flex flex-col items-center text-center">
@@ -14,10 +29,10 @@ const {id}=useParams()
 
 
       <div className=' relative bg-white w-full p rounded-xl p-4 mt-20 lg:mt-36 pt-15'>
-        <h2 className="text-lg font-semibold text-gray-800 mt-4">Global Creole Society</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mt-4">{society.name}</h2>
         <div className="flex justify-around w-full mt-4 text-gray-600">
           <div>
-            <p className="text-xl font-bold">{posts.toLocaleString()}</p>
+            <p className="text-xl font-bold">{postsCount.toLocaleString()}</p>
             <p className="text-sm">Post</p>
           </div>
           <div>
@@ -34,7 +49,7 @@ const {id}=useParams()
         </button>
 
         <section className="absolute -top-15 lg:-top-36 left-1/2 -translate-x-1/2 ">
-          <SocietyImgUpload />
+          <SocietyImgUpload societyImage={society.cover_picture || society.cover_image} />
         </section>
 
       </div>
@@ -43,11 +58,22 @@ const {id}=useParams()
 
       <div className="rounded-lg  mt-5  mx-auto">
         <div className="flex items-center mb-4 bg-white rounded-lg p-2 px-4">
-          <img src="https://www.shutterstock.com/image-photo/happy-handsome-young-business-leader-260nw-2375039955.jpg" alt="Creator" className="w-10 h-10 rounded-full mr-2" />
+          <img 
+            src={society.creator?.profile_image || "https://www.shutterstock.com/image-photo/happy-handsome-young-business-leader-260nw-2375039955.jpg"} 
+            alt="Creator" 
+            className="w-10 h-10 rounded-full mr-2 object-cover" 
+          />
           <div>
             <p className="text-gray-600 text-sm">Society Created by</p>
-            <p className="font-semibold">Ahmad Nur Fawaid</p>
-            <p className="text-gray-500 text-xs">12 April 08:28 PM</p>
+            <p className="font-semibold">{society.creator?.profile_name || society.creator?.email || 'Unknown'}</p>
+            <p className="text-gray-500 text-xs">
+              {society.created_at ? new Date(society.created_at).toLocaleDateString('en-US', { 
+                day: 'numeric', 
+                month: 'long', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              }) : ''}
+            </p>
           </div>
         </div>
         <div

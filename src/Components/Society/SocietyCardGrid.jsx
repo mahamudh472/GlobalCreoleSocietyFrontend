@@ -52,8 +52,14 @@ const SocietyCardGrid = () => {
     try {
       await apiMethods.post(ENDPOINTS.SOCIETIES.LEAVE(societyId));
       toast.success(`Left ${societyName}`);
-      // Remove from user societies list
-      setYourSocieties(yourSocieties.filter(soc => soc.id !== societyId));
+      // Move from user societies to join societies
+      const leftSociety = yourSocieties.find(soc => soc.id === societyId);
+      if (leftSociety) {
+        // Update the is_member flag
+        leftSociety.is_member = false;
+        setJoinSocieties([...joinSocieties, leftSociety]);
+        setYourSocieties(yourSocieties.filter(soc => soc.id !== societyId));
+      }
     } catch (error) {
       console.error('Error leaving society:', error);
       toast.error('Failed to leave society');
@@ -68,6 +74,8 @@ const SocietyCardGrid = () => {
       // Move society from join list to user societies
       const joinedSociety = joinSocieties.find(soc => soc.id === societyId);
       if (joinedSociety) {
+        // Update the is_member flag
+        joinedSociety.is_member = true;
         setYourSocieties([...yourSocieties, joinedSociety]);
         setJoinSocieties(joinSocieties.filter(soc => soc.id !== societyId));
       }

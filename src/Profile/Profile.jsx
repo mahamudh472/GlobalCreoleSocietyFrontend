@@ -18,6 +18,7 @@ const Profile = () => {
     const { user: currentUser, updateUser } = useAuth()
     const [profile, setProfile] = useState(null)
     const [posts, setPosts] = useState([])
+    const [friendsCount, setFriendsCount] = useState(0)
     const [loading, setLoading] = useState(true)
     const [loadingMore, setLoadingMore] = useState(false)
     const [hasMore, setHasMore] = useState(true)
@@ -55,6 +56,7 @@ const Profile = () => {
     useEffect(() => {
         fetchProfile()
         fetchProfilePosts(1)
+        fetchFriendsCount()
     }, [userId])
 
     // Infinite scroll observer
@@ -121,16 +123,17 @@ const Profile = () => {
                 setLoadingMore(true);
             }
 
-            // Fetch user's posts with pagination
-            const response = await apiMethods.get(`${ENDPOINTS.POSTS.LIST}?page=${page}`)
+            // Determine which user's posts to fetch
+            const targetUserId = userId || currentUser?.id
+            
+            // Fetch user's posts with pagination, user filter, and exclude society posts
+            const response = await apiMethods.get(
+                `${ENDPOINTS.POSTS.LIST}?page=${page}&user_id=${targetUserId}&exclude_society=true`
+            )
             
             // Handle paginated response
-            const allPosts = response.data.results || response.data;
+            const userPosts = response.data.results || response.data;
             const next = response.data.next;
-            
-            // Filter posts by current user or profile user
-            const targetUserId = userId || currentUser?.id
-            const userPosts = allPosts.filter(post => post.user?.id === targetUserId)
             
             if (page === 1) {
                 setPosts(userPosts);
@@ -158,6 +161,18 @@ const Profile = () => {
         } catch (err) {
             console.error("Failed to update profile:", err)
             return { success: false, error: err.response?.data || "Update failed" }
+        }
+    }
+
+    const fetchFriendsCount = async () => {
+        try {
+            const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST)
+            const friendsData = response.data.results || response.data
+            const friendsList = Array.isArray(friendsData) ? friendsData : []
+            setFriendsCount(friendsList.length)
+        } catch (err) {
+            console.error("Failed to fetch friends count:", err)
+            setFriendsCount(0)
         }
     }
     
@@ -273,7 +288,8 @@ const Profile = () => {
                 <section className="pb-5 rounded-lg transform transition-transform duration-700 ease-out hover:scale-101">
                     <ProfileHeader 
                         data={profile} 
-                        posts={posts} 
+                        posts={posts}
+                        friendsCount={friendsCount}
                         isOwnProfile={isOwnProfile}
                         onProfileUpdate={(updatedProfile) => {
                             setProfile(updatedProfile);

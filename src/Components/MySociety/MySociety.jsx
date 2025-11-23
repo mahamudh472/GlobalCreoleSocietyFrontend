@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import Navbar from '../Navbar'
 import GlobalCreoleSocietyCard from './GlobalCreoleSocietyCard'
 import GroupSection from './GroupSection'
@@ -6,65 +7,48 @@ import GroupInfo from './GroupInfo'
 import PostCard from '../Feed/PostCard'
 import ShareModal from '../Feed/ShareModal'
 import CommentsModal from '../Feed/CommentsModal'
-const mockPosts = [
-    {
-        id: 1,
-        user: {
-            username: "Jubayer Ahmad",
-            avatar: "https://st3.depositphotos.com/15648834/17930/v/450/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg",
-            timestamp: "2h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: null,
-        likes: 12,
-        comments: 7,
-        isLiked: false,
-    },
-    {
-        id: 2,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?cs=srgb&dl=pexels-sulimansallehi-1704488.jpg&fm=jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-    {
-        id: 3,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://i.pinimg.com/564x/39/33/f6/3933f64de1724bb67264818810e3f2cb.jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-    {
-        id: 4,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://i.pinimg.com/236x/61/c7/7a/61c77ac5085d548b40e7ac2020143453.jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-]
+import CreatePostSection from '../Feed/CreatePostSection'
+import { apiMethods } from '../../utils/api'
+import { ENDPOINTS } from '../../config/apiConfig'
+import { toast } from 'react-toastify'
+import { useAuth } from '../../context/AuthContext'
 
 const MySociety = () => {
-    const [posts, setPosts] = useState(mockPosts)
-
+    const { id: societyId } = useParams()
+    const { user: currentUser } = useAuth()
+    const [posts, setPosts] = useState([])
+    const [society, setSociety] = useState(null)
+    const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
+
+    useEffect(() => {
+        fetchSocietyData()
+        fetchSocietyPosts()
+    }, [societyId])
+
+    const fetchSocietyData = async () => {
+        try {
+            const response = await apiMethods.get(ENDPOINTS.SOCIETIES.DETAIL(societyId))
+            setSociety(response.data)
+        } catch (error) {
+            console.error('Error fetching society data:', error)
+            toast.error('Failed to load society details')
+        }
+    }
+
+    const fetchSocietyPosts = async () => {
+        try {
+            setLoading(true)
+            const response = await apiMethods.get(ENDPOINTS.SOCIETIES.POSTS(societyId))
+            const postsData = response.data.results || response.data
+            setPosts(Array.isArray(postsData) ? postsData : [])
+        } catch (error) {
+            console.error('Error fetching society posts:', error)
+            toast.error('Failed to load society posts')
+        } finally {
+            setLoading(false)
+        }
+    }
 
 
 
@@ -88,6 +72,12 @@ const MySociety = () => {
             )
         );
     };
+
+    const handleCreatePost = (newPost) => {
+        // Add the new post to the beginning of the posts array
+        setPosts((prev) => [newPost, ...prev])
+        toast.success('Post created successfully!')
+    }
 // ..................................................................................
 
 
@@ -103,27 +93,45 @@ const MySociety = () => {
             <section className='sm:grid grid-cols-12 gap-5 lg:gap-10 mt-6 container mx-auto'>
                 <section className='col-span-4'>
                     <div>
-                        <GlobalCreoleSocietyCard></GlobalCreoleSocietyCard>
+                        <GlobalCreoleSocietyCard society={society} postsCount={posts.length} />
                     </div>
                 </section>
 
 
                 <section className='col-span-8'>
-                    <GroupSection></GroupSection>
+                    <GroupSection society={society} />
 
                     <div className='mt-5'>
-                        {/* <PostCard></PostCard> */}
+                        {/* Create Post Section */}
+                        {currentUser && (
+                            <CreatePostSection 
+                                currentUser={currentUser} 
+                                onCreatePost={handleCreatePost}
+                                societyId={societyId}
+                            />
+                        )}
+
                         {/* Posts Section */}
-                        <div className="space-y-4">
-                            {posts.map((post) => (
-                                <PostCard
-                                    key={post.id}
-                                    post={post}
-                                    onComment={() => handleOpenCommentModal(post.id)}
-                                    onShare={() => handleOpenShareModal(post.id)}
-                                />
-                            ))}
-                        </div>
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                            </div>
+                        ) : posts.length === 0 ? (
+                            <div className="text-center py-8 bg-white rounded-lg shadow">
+                                <p className="text-gray-500">No posts in this society yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {posts.map((post) => (
+                                    <PostCard
+                                        key={post.id}
+                                        post={post}
+                                        onComment={() => handleOpenCommentModal(post.id)}
+                                        onShare={() => handleOpenShareModal(post.id)}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </section>
             </section>

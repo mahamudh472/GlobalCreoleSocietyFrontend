@@ -6,7 +6,7 @@ import { ENDPOINTS } from "../../config/apiConfig"
 import { toast } from "react-toastify"
 import { useAuth } from "../../context/AuthContext"
 
-const CreatePostSection = ({ currentUser, onCreatePost }) => {
+const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
   const [postText, setPostText] = useState("")
   const [selectedFiles, setSelectedFiles] = useState([])
   const [privacy, setPrivacy] = useState("public")
@@ -41,6 +41,11 @@ const CreatePostSection = ({ currentUser, onCreatePost }) => {
       const formData = new FormData()
       formData.append('content', postText)
       formData.append('privacy', privacy)
+
+      // Add society ID if posting to a society
+      if (societyId) {
+        formData.append('society', societyId)
+      }
 
       // Add media files properly
       if (selectedFiles.length > 0) {
