@@ -1,53 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Navbar from '../Navbar';
 import { useNavigate } from 'react-router-dom';
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
+import { useUserSocieties } from '../../hooks/queries/useSocieties';
+import { useLeaveSocietyMutation } from '../../hooks/mutations/useSocieties';
 
 const MySocietyList = () => {
   const navigate = useNavigate();
-  const [yourSocieties, setYourSocieties] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: yourSocieties = [], isLoading: loading } = useUserSocieties();
+  const leaveSocietyMutation = useLeaveSocietyMutation();
 
-  useEffect(() => {
-    fetchMySocieties();
-  }, []);
-
-  const fetchMySocieties = async () => {
-    try {
-      setLoading(true);
-      // Fetch only user's societies
-      const response = await apiMethods.get(`${ENDPOINTS.SOCIETIES.LIST}?my_societies=true`);
-      
-      // Handle paginated response or plain array
-      const societiesData = response.data.results || response.data;
-      const societies = Array.isArray(societiesData) ? societiesData : [];
-      
-      setYourSocieties(societies);
-    } catch (error) {
-      console.error('Error fetching your societies:', error);
-      toast.error('Failed to load your societies');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLeave = async (e, societyId, societyName) => {
+  const handleLeave = (e, societyId, societyName) => {
     e.stopPropagation();
     if (!window.confirm(`Are you sure you want to leave ${societyName}?`)) {
       return;
     }
     
-    try {
-      await apiMethods.post(ENDPOINTS.SOCIETIES.LEAVE(societyId));
-      toast.success(`Left ${societyName}`);
-      // Remove from list
-      setYourSocieties(yourSocieties.filter(soc => soc.id !== societyId));
-    } catch (error) {
-      console.error('Error leaving society:', error);
-      toast.error('Failed to leave society');
-    }
+    leaveSocietyMutation.mutate(societyId, {
+      onSuccess: () => {
+        toast.success(`Left ${societyName}`);
+      }
+    });
   };
 
   const handleView = (societyId) => {

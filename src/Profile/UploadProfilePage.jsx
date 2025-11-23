@@ -5,10 +5,13 @@ import { MdModeEdit } from 'react-icons/md';
 import { apiMethods } from '../utils/api';
 import { ENDPOINTS } from '../config/apiConfig';
 import { toast } from 'react-toastify';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentUser } from '../hooks/queries/useUser';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../utils/queryKeys';
 
 const UploadProfilePage = ({ currentImage, onImageUpdate }) => {
-    const { updateUser, user } = useAuth();
+    const { data: user, refetch: refetchUser } = useCurrentUser();
+    const queryClient = useQueryClient();
     const DEFAULT_IMAGE = "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
     const [imagePreview, setImagePreview] = useState(currentImage || DEFAULT_IMAGE);
     const [imageFile, setImageFile] = useState(null); // Store the image file
@@ -62,13 +65,15 @@ const UploadProfilePage = ({ currentImage, onImageUpdate }) => {
 
                 toast.success('Profile picture updated successfully!');
                 
-                // Update AuthContext - this will update Navbar and everywhere else
-                if (user) {
-                    updateUser({
-                        ...user,
-                        profile_image: response.data.profile_image
-                    });
-                }
+                // Update the cache with new profile data
+                const updatedUser = response.data;
+                queryClient.setQueryData(queryKeys.auth.currentUser(), updatedUser);
+                
+                // Update localStorage for persistence
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                
+                // Refetch user data to ensure consistency
+                refetchUser();
                 
                 // Update parent component
                 if (onImageUpdate) {

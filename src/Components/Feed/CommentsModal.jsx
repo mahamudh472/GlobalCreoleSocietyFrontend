@@ -3,19 +3,28 @@
 import { useState, useEffect, useRef } from "react"
 import { X, Heart } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { apiMethods } from "../../utils/api"
-import { ENDPOINTS } from "../../config/apiConfig"
 import { toast } from "react-toastify"
-import { useAuth } from "../../context/AuthContext"
+import { useCurrentUser } from "../../hooks/queries/useUser"
+import { usePostComments } from "../../hooks/queries/usePosts"
+import { useCreateCommentMutation, useLikeCommentMutation } from "../../hooks/mutations/usePosts"
 
 const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
-  const { user } = useAuth();
+  const { data: user } = useCurrentUser();
   const navigate = useNavigate();
   const [shareMessage, setShareMessage] = useState("")
-  const [comments, setComments] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [posting, setPosting] = useState(false)
   const popupRef = useRef(null)
+
+  // Fetch comments using TanStack Query
+  const { 
+    data: commentsData, 
+    isLoading: loading,
+    refetch 
+  } = usePostComments(postId, { enabled: isOpen && !!postId })
+  
+  const comments = commentsData || []
+  
+  const createCommentMutation = useCreateCommentMutation()
+  const likeCommentMutation = useLikeCommentMutation()
 
   const DEFAULT_PROFILE_IMAGE = user 
     ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
@@ -38,77 +47,31 @@ const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
     }
   };
 
-  // Fetch comments when modal opens
-  useEffect(() => {
-    if (isOpen && postId) {
-      fetchComments();
-    }
-  }, [isOpen, postId]);
-
-  const fetchComments = async () => {
-    try {
-      setLoading(true);
-      const response = await apiMethods.get(ENDPOINTS.POSTS.COMMENTS(postId));
-      
-      // Handle paginated response or plain array
-      const commentsData = response.data.results || response.data;
-      setComments(Array.isArray(commentsData) ? commentsData : []);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      toast.error('Failed to load comments');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePostComment = async () => {
+  const handlePostComment = () => {
     if (!shareMessage.trim()) return;
 
-    setPosting(true);
-    try {
-      const response = await apiMethods.post(ENDPOINTS.POSTS.COMMENTS(postId), {
-        content: shareMessage
-      });
-      
-      // Add the new comment to the beginning of the list
-      setComments([response.data, ...comments]);
-      setShareMessage("");
-      toast.success("Comment posted!");
-      
-      // Notify parent component to update comment count
-      if (onCommentAdded) {
-        onCommentAdded(postId);
+    createCommentMutation.mutate(
+      { postId, content: shareMessage },
+      {
+        onSuccess: () => {
+          setShareMessage("");
+          toast.success("Comment posted!");
+          
+          // Notify parent component to update comment count
+          if (onCommentAdded) {
+            onCommentAdded(postId);
+          }
+        },
+        onError: (error) => {
+          console.error('Error posting comment:', error);
+          toast.error('Failed to post comment');
+        }
       }
-    } catch (error) {
-      console.error('Error posting comment:', error);
-      toast.error('Failed to post comment');
-    } finally {
-      setPosting(false);
-    }
+    );
   };
 
-  const handleLikeComment = async (commentId) => {
-    try {
-      const response = await apiMethods.post(ENDPOINTS.COMMENTS.LIKE(commentId));
-      
-      // Update the comment in the list
-      setComments(prevComments => 
-        prevComments.map(comment => 
-          comment.id === commentId 
-            ? { 
-                ...comment, 
-                is_liked: response.data.liked,
-                like_count: response.data.liked 
-                  ? (comment.like_count || 0) + 1 
-                  : (comment.like_count || 0) - 1
-              }
-            : comment
-        )
-      );
-    } catch (error) {
-      console.error('Error liking comment:', error);
-      toast.error('Failed to like comment');
-    }
+  const handleLikeComment = (commentId) => {
+    likeCommentMutation.mutate({ postId, commentId })
   };
 
   const handleKeyPress = (e) => {
@@ -202,17 +165,17 @@ const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
             onChange={(e) => setShareMessage(e.target.value)}
             placeholder="Write a comment..."
             onKeyDown={handleKeyPress}
-            disabled={posting}
+            disabled={createCommentMutation.isPending}
             className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
             rows="4"
           />
           <div className="flex justify-end mt-2">
             <button
               onClick={handlePostComment}
-              disabled={posting || !shareMessage.trim()}
+              disabled={createCommentMutation.isPending || !shareMessage.trim()}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {posting ? "Posting..." : "Post Comment"}
+              {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
             </button>
           </div>
         </div>

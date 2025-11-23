@@ -1,6 +1,28 @@
 "use client"
 
 function ChatListItem({ chat, isSelected, onClick }) {
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return ""
+    
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffMs = now - date
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) {
+      // Today - show time
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    } else if (diffDays === 1) {
+      return "Yesterday"
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`
+    } else if (diffDays < 30) {
+      return `${Math.floor(diffDays / 7)}w ago`
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+  }
+
   return (
     <div
       onClick={onClick}
@@ -20,7 +42,7 @@ function ChatListItem({ chat, isSelected, onClick }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-gray-900 text-sm truncate">{chat.name}</h3>
-          <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{chat.timestamp}</span>
+          <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatTimestamp(chat.timestamp)}</span>
         </div>
         <p className="text-sm text-gray-600 truncate">{chat.lastMessage}</p>
       </div>

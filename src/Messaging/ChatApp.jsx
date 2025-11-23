@@ -3,211 +3,102 @@ import { useSearchParams } from "react-router-dom"
 import ChatSidebar from "./ChatSidebar"
 import ChatWindow from "./ChatWindow"
 import Navbar from "../Components/Navbar"
-import { apiMethods } from "../utils/api"
-import { ENDPOINTS, WS_ENDPOINTS } from "../config/apiConfig"
-import { useAuth } from "../context/AuthContext"
+import { WS_ENDPOINTS } from "../config/apiConfig"
+import { useCurrentUser } from "../hooks/queries/useUser"
+import { useConversations, useConversationMessages } from "../hooks/queries/useChat"
+import { 
+    useMarkAsReadMutation, 
+    useSendMessageMutation,
+    useCreateConversationMutation,
+    useDeleteConversationMutation 
+} from "../hooks/mutations/useChat"
 import { toast } from "react-toastify"
 
 function ChatApp() {
-    const { user } = useAuth()
+    const { data: user } = useCurrentUser()
     const [searchParams, setSearchParams] = useSearchParams()
     const [selectedChat, setSelectedChat] = useState(null)
     const [filter, setFilter] = useState("all")
-    const [conversations, setConversations] = useState([])
-    const [messages, setMessages] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [loadingMore, setLoadingMore] = useState(false)
-    const [hasMoreMessages, setHasMoreMessages] = useState(true)
-    const [nextMessagesUrl, setNextMessagesUrl] = useState(null)
     const [error, setError] = useState(null)
     const wsRef = useRef(null)
+    
+    // Use TanStack Query for conversations list
+    const { data: conversationsData = [], isLoading: loading, refetch: refetchConversations } = useConversations()
+    
+    // Use TanStack Query for messages of selected conversation
+    const {
+        data: messagesData,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage: loadingMore,
+        isLoading: loadingMessages,
+        refetch: refetchMessages,
+    } = useConversationMessages(selectedChat?.id, { enabled: !!selectedChat })
+    
+    // Flatten all pages into single messages array
+    const messages = messagesData?.pages.flatMap(page => page.messages) || []
+    
+    // Chat mutations
+    const markAsReadMutation = useMarkAsReadMutation()
+    const sendMessageMutation = useSendMessageMutation()
+    const createConversationMutation = useCreateConversationMutation()
+    const deleteConversationMutation = useDeleteConversationMutation()
 
-    // Fetch conversations on mount
-    useEffect(() => {
-        fetchConversations()
-    }, [])
+    // Fetch conversations on mount - handled by TanStack Query automatically
 
     // Connect to WebSocket when a chat is selected
     useEffect(() => {
         if (selectedChat) {
             connectWebSocket(selectedChat.id)
-            fetchMessages(selectedChat.id, true) // true = initial load
+            // Mark as read when opening conversation
+            markAsReadMutation.mutate(selectedChat.id)
         }
 
         return () => {
             disconnectWebSocket()
         }
     }, [selectedChat])
-
-    const fetchConversations = async () => {
-        try {
-            setLoading(true)
-            const response = await apiMethods.get(ENDPOINTS.CHAT.CONVERSATIONS)
-            
-            // Handle paginated response or plain array
-            const conversationsData = response.data.results || response.data
-            const conversations = Array.isArray(conversationsData) ? conversationsData : []
-            
-            // Helper function for default profile image
-            const getDefaultProfileImage = (user) => {
-                if (!user) return "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-                const name = user.profile_name || user.email || "User";
-                return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-            };
-            
-            // Transform API response to match component structure
-            const transformedConversations = conversations.map(conv => ({
-                id: conv.id,
-                name: conv.other_participant?.profile_name || conv.other_participant?.email || "Unknown User",
-                avatar: conv.other_participant?.profile_image || getDefaultProfileImage(conv.other_participant),
-                lastMessage: conv.last_message?.content || "No messages yet",
-                timestamp: formatTimestamp(conv.last_message?.created_at),
-                isActive: conv.other_participant?.is_online || false,
-                unread: conv.unread_count > 0,
-                userId: conv.other_participant?.id,
-            }))
-            
-            setConversations(transformedConversations)
-            
-            // Try to restore conversation from URL parameter
+    
+    // Auto-select conversation from URL or first conversation
+    useEffect(() => {
+        if (conversationsData.length > 0 && !selectedChat) {
             const conversationIdFromUrl = searchParams.get('conversation')
             let conversationToSelect = null
             
             if (conversationIdFromUrl) {
-                // Find the conversation from URL
-                conversationToSelect = transformedConversations.find(conv => conv.id === conversationIdFromUrl)
+                conversationToSelect = conversationsData.find(conv => conv.id === conversationIdFromUrl)
                 console.log(`🔗 Restoring conversation from URL: ${conversationIdFromUrl}`, conversationToSelect ? '✅' : '❌')
             }
             
-            // If no conversation found in URL or URL param doesn't exist, select first conversation
-            if (!conversationToSelect && transformedConversations.length > 0) {
-                conversationToSelect = transformedConversations[0]
+            // If no conversation found in URL, select first conversation
+            if (!conversationToSelect && conversationsData.length > 0) {
+                conversationToSelect = conversationsData[0]
                 console.log(`📋 Auto-selecting first conversation: ${conversationToSelect.name}`)
             }
             
-            // Set the selected conversation if one was found and no chat is currently selected
-            if (conversationToSelect && !selectedChat) {
+            // Set the selected conversation
+            if (conversationToSelect) {
                 setSelectedChat(conversationToSelect)
                 // Update URL if it's different
                 if (conversationToSelect.id !== conversationIdFromUrl) {
                     setSearchParams({ conversation: conversationToSelect.id })
                 }
             }
-            
-            setError(null)
-        } catch (err) {
-            console.error("Failed to fetch conversations:", err)
-            setError("Failed to load conversations")
-        } finally {
-            setLoading(false)
         }
-    }
-
-    const fetchMessages = async (conversationId, isInitialLoad = false) => {
-        try {
-            if (isInitialLoad) {
-                setLoading(true)
-                setMessages([])
-                setHasMoreMessages(true)
-                setNextMessagesUrl(null)
-            } else {
-                setLoadingMore(true)
-            }
-            
-            // Use pagination URL if loading more, otherwise fetch first page
-            const url = isInitialLoad 
-                ? ENDPOINTS.CHAT.MESSAGES(conversationId)
-                : nextMessagesUrl
-            
-            if (!url) {
-                setLoadingMore(false)
-                return
-            }
-            
-            const response = await apiMethods.get(url)
-            
-            // Helper function for default profile image
-            const getDefaultProfileImage = (user) => {
-                if (!user) return "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-                const name = user.profile_name || user.email || "User";
-                return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-            };
-            
-            // Handle paginated response
-            const messageData = response.data.results || response.data
-            const nextUrl = response.data.next
-            
-            // Transform API response to match component structure
-            const transformedMessages = messageData.map(msg => ({
-                id: msg.id,
-                text: msg.content,
-                timestamp: formatTimestamp(msg.created_at),
-                isOwn: msg.sender?.id === user?.id,
-                senderName: msg.sender?.profile_name || msg.sender?.email || "Unknown",
-                senderAvatar: msg.sender?.profile_image || getDefaultProfileImage(msg.sender),
-                file_url: msg.file_url,
-                file_type: msg.file_type,
-            }))
-            
-            if (isInitialLoad) {
-                setMessages(transformedMessages)
-            } else {
-                // Prepend older messages
-                setMessages(prev => [...transformedMessages, ...prev])
-            }
-            
-            setNextMessagesUrl(nextUrl)
-            setHasMoreMessages(!!nextUrl)
-            setError(null)
-            
-            // Mark messages as read
-            if (isInitialLoad) {
-                await apiMethods.post(ENDPOINTS.CHAT.MARK_AS_READ(conversationId))
-            }
-        } catch (err) {
-            console.error("Failed to fetch messages:", err)
-            setError("Failed to load messages")
-        } finally {
-            setLoading(false)
-            setLoadingMore(false)
-        }
-    }
+    }, [conversationsData, selectedChat, searchParams, setSearchParams])
 
     const handleLoadMoreMessages = () => {
-        if (selectedChat && hasMoreMessages && !loadingMore) {
-            console.log("📜 Loading more messages...")
-            fetchMessages(selectedChat.id, false)
+        if (selectedChat && hasNextPage && !isFetchingNextPage) {
+            console.log("� Loading more messages...")
+            fetchNextPage()
         }
     }
 
     const updateConversationList = (conversationId, lastMessageContent, timestamp, markAsUnread = false) => {
         console.log(`📝 Updating conversation ${conversationId}, unread: ${markAsUnread}`)
         
-        setConversations(prev => {
-            // Find the conversation to update
-            const conversationIndex = prev.findIndex(conv => conv.id === conversationId)
-            
-            if (conversationIndex === -1) {
-                console.log("⚠️ Conversation not found in list:", conversationId)
-                return prev
-            }
-            
-            // Create updated conversation
-            const updatedConversation = {
-                ...prev[conversationIndex],
-                lastMessage: lastMessageContent,
-                timestamp: formatTimestamp(timestamp),
-                unread: markAsUnread || prev[conversationIndex].unread,
-            }
-            
-            // Remove from current position and add to top
-            const newConversations = [...prev]
-            newConversations.splice(conversationIndex, 1)
-            newConversations.unshift(updatedConversation)
-            
-            console.log(`✅ Conversation moved to top: ${updatedConversation.name}`)
-            return newConversations
-        })
+        // Refetch conversations to get updated data from server
+        refetchConversations()
     }
 
     const connectWebSocket = (conversationId) => {
@@ -240,58 +131,17 @@ function ChatApp() {
             console.log("📨 WebSocket message received:", data)
             
             if (data.type === "chat_message") {
-                // Helper function for default profile image
-                const getDefaultProfileImage = (user) => {
-                    if (!user) return "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-                    const name = user.profile_name || user.email || "User";
-                    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-                };
-                
-                const newMessage = {
-                    id: data.id || Date.now(),
-                    text: data.content,
-                    timestamp: formatTimestamp(data.created_at || new Date().toISOString()),
-                    isOwn: data.sender?.id === user?.id,
-                    senderName: data.sender?.profile_name || data.sender?.email || "Unknown",
-                    senderAvatar: data.sender?.profile_image || getDefaultProfileImage(data.sender),
-                    file_url: data.file_url,
-                    file_type: data.file_type,
-                }
-                
-                console.log("➕ Adding message to UI:", newMessage.id, "isOwn:", newMessage.isOwn)
-                
-                // Add message or replace temporary message
-                setMessages(prev => {
-                    // Check if this is a real message replacing a temporary one
-                    if (newMessage.isOwn) {
-                        // Remove any temporary messages with same content (optimistic updates)
-                        const withoutTemp = prev.filter(msg => 
-                            !(msg.id.toString().startsWith('temp-') && msg.text === newMessage.text)
-                        );
-                        
-                        // Check if real message already exists
-                        const exists = withoutTemp.find(msg => msg.id === newMessage.id);
-                        if (exists) {
-                            console.log("⚠️ Message already exists, skipping:", newMessage.id)
-                            return prev;
-                        }
-                        
-                        console.log("✅ Message added to state (replaced temp)")
-                        return [...withoutTemp, newMessage];
-                    } else {
-                        // For messages from others, just check duplicates
-                        const exists = prev.find(msg => msg.id === newMessage.id);
-                        if (exists) {
-                            console.log("⚠️ Message already exists, skipping:", newMessage.id)
-                            return prev;
-                        }
-                        console.log("✅ Message added to state")
-                        return [...prev, newMessage];
-                    }
-                });
+                console.log("💬 New message received, refetching messages...")
+                // Refetch messages to get the new message from server
+                refetchMessages()
                 
                 // Update conversation list with new message
-                updateConversationList(conversationId, data.content, data.created_at, !newMessage.isOwn);
+                updateConversationList(
+                    selectedChat.id, 
+                    data.content, 
+                    data.created_at, 
+                    data.sender?.id !== user?.id
+                );
             } else if (data.type === "conversation_update") {
                 // Handle conversation list updates even when in different conversations
                 console.log("🔔 Conversation update received:", data.conversation_id)
@@ -334,82 +184,48 @@ function ChatApp() {
         
         // Update URL with selected conversation ID
         setSearchParams({ conversation: chat.id })
-        
-        // Mark conversation as read in the list when selected
-        setConversations(prev => 
-            prev.map(conv => 
-                conv.id === chat.id ? { ...conv, unread: false } : conv
-            )
-        )
     }
 
     const handleSendMessage = async (message, file = null) => {
         if (!selectedChat) return
 
         try {
-            // If there's a file, we need to use REST API
-            if (file) {
-                console.log("📎 Sending message with file via REST API")
-                const formData = new FormData()
-                formData.append('content', message)
-                formData.append('file', file)
+            // Use TanStack Query mutation for sending messages
+            if (file || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+                // Use REST API for file messages or when WebSocket is not available
+                console.log(file ? "📎 Sending message with file via REST API" : "📤 Sending message via REST API (WebSocket unavailable)")
                 
-                // Determine file type based on file MIME type
-                if (file.type.startsWith('image/')) {
-                    formData.append('file_type', 'image')
-                } else if (file.type.startsWith('video/')) {
-                    formData.append('file_type', 'video')
-                } else if (file.type.startsWith('audio/')) {
-                    formData.append('file_type', 'audio')
-                } else {
-                    formData.append('file_type', 'document')
-                }
-
-                await apiMethods.post(ENDPOINTS.CHAT.SEND_MESSAGE(selectedChat.id), formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
+                sendMessageMutation.mutate(
+                    { 
+                        conversationId: selectedChat.id, 
+                        content: message, 
+                        file 
                     },
-                })
-                
-                console.log("✅ File message sent via REST API (will appear via WebSocket)")
-                // No need to reload - message will come via WebSocket broadcast
-                
-                // Update conversation list
-                updateConversationList(selectedChat.id, message || '[File]', new Date().toISOString(), false)
-            } else {
-                // For text-only messages, send via WebSocket for instant delivery
-                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                    console.log("📤 Sending message via WebSocket:", message)
-                    console.log("👤 From user:", user?.profile_name, "ID:", user?.id)
-                    
-                    // Optimistic update - add message to UI immediately
-                    const tempId = `temp-${Date.now()}`
-                    const optimisticMessage = {
-                        id: tempId,
-                        text: message,
-                        timestamp: formatTimestamp(new Date().toISOString()),
-                        isOwn: true,
-                        senderName: user?.profile_name || user?.email || "You",
-                        senderAvatar: user?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.profile_name || 'You')}&size=150&background=3b82f6&color=fff`,
-                        file_url: null,
-                        file_type: 'text',
+                    {
+                        onSuccess: () => {
+                            console.log("✅ Message sent via REST API")
+                            // Update conversation list
+                            updateConversationList(selectedChat.id, message || '[File]', new Date().toISOString(), false)
+                        },
+                        onError: (error) => {
+                            console.error("❌ Failed to send message:", error)
+                            setError("Failed to send message")
+                        }
                     }
-                    
-                    setMessages(prev => [...prev, optimisticMessage])
-                    console.log("✅ Optimistic message added to UI")
-                    
-                    wsRef.current.send(JSON.stringify({
-                        type: 'chat_message',
-                        content: message
-                    }))
-                    console.log("✅ Message sent via WebSocket")
-                    
-                    // Update conversation list (no need to mark as unread since we sent it)
-                    updateConversationList(selectedChat.id, message, new Date().toISOString(), false)
-                } else {
-                    console.error("❌ WebSocket is not connected. State:", wsRef.current?.readyState)
-                    setError("Connection lost. Please refresh.")
-                }
+                )
+            } else {
+                // For text-only messages with active WebSocket, send via WebSocket for instant delivery
+                console.log("📤 Sending message via WebSocket:", message)
+                console.log("👤 From user:", user?.profile_name, "ID:", user?.id)
+                
+                wsRef.current.send(JSON.stringify({
+                    type: 'chat_message',
+                    content: message
+                }))
+                console.log("✅ Message sent via WebSocket")
+                
+                // Update conversation list (no need to mark as unread since we sent it)
+                updateConversationList(selectedChat.id, message, new Date().toISOString(), false)
             }
             
         } catch (err) {
@@ -445,58 +261,61 @@ function ChatApp() {
     }
 
     const handleCreateConversation = async (friendId) => {
-        try {
-            const response = await apiMethods.post(ENDPOINTS.CHAT.CREATE_CONVERSATION, {
-                user_id: friendId
-            })
-            
-            // Format the conversation data
-            const newConversation = {
-                id: response.data.id,
-                userId: response.data.other_participant.id,
-                name: response.data.other_participant.profile_name,
-                avatar: response.data.other_participant.profile_image,
-                lastMessage: "",
-                timestamp: new Date().toISOString(),
-                unread: false,
-                isActive: true
+        createConversationMutation.mutate(friendId, {
+            onSuccess: (newConversation) => {
+                console.log("✅ Conversation created:", newConversation)
+                
+                // Format the conversation data
+                const formattedConversation = {
+                    id: newConversation.id,
+                    userId: newConversation.other_participant.id,
+                    name: newConversation.other_participant.profile_name || newConversation.other_participant.email,
+                    avatar: newConversation.other_participant.profile_image,
+                    lastMessage: "",
+                    timestamp: new Date().toISOString(),
+                    unread: false,
+                    isActive: true
+                }
+                
+                // Select the new conversation
+                setSelectedChat(formattedConversation)
+                setSearchParams({ conversation: formattedConversation.id })
+            },
+            onError: (error) => {
+                console.error("Error creating conversation:", error)
             }
-            
-            // Add to conversations list
-            setConversations(prev => [newConversation, ...prev])
-            
-            // Select the new conversation
-            setSelectedChat(newConversation)
-            setSearchParams({ conversation: newConversation.id })
-            
-            toast.success("Conversation created")
-        } catch (error) {
-            console.error("Error creating conversation:", error)
-            toast.error("Failed to create conversation")
-        }
+        })
     }
 
     const handleDeleteConversation = async (conversationId) => {
-        // Remove from list
-        setConversations(prev => prev.filter(conv => conv.id !== conversationId))
-        
-        // Clear selected chat if it was the deleted one
-        if (selectedChat?.id === conversationId) {
-            setSelectedChat(null)
-            setSearchParams({})
-        }
+        deleteConversationMutation.mutate(conversationId, {
+            onSuccess: () => {
+                console.log("✅ Conversation deleted:", conversationId)
+                
+                // Clear selected chat if it was the deleted one
+                if (selectedChat?.id === conversationId) {
+                    setSelectedChat(null)
+                    setSearchParams({})
+                }
+            },
+            onError: (error) => {
+                console.error("Error deleting conversation:", error)
+            }
+        })
     }
 
-    const filteredChats = filter === "unread" ? conversations.filter((chat) => chat.unread) : conversations
+    const filteredChats = filter === "unread" 
+        ? conversationsData.filter((chat) => chat.unread) 
+        : conversationsData
 
     return (
         <div className="min-h-screen  bg-gray-100 ">
             <div className="py-7">
                 <Navbar></Navbar>
             </div>
-            {loading && conversations.length === 0 ? (
+            {loading && conversationsData.length === 0 ? (
                 <div className="flex h-[calc(100vh-160px)] items-center justify-center text-gray-500">Loading conversations...</div>
-            ) : error && conversations.length === 0 ? (
+            ) : error && conversationsData.length === 0 ? (
                 <div className="flex h-[calc(100vh-160px)] items-center justify-center text-red-500">{error}</div>
             ) : (
                 <div className="flex h-[calc(100vh-160px)]  ">
@@ -515,7 +334,7 @@ function ChatApp() {
                             onSendMessage={handleSendMessage}
                             onDeleteConversation={handleDeleteConversation}
                             onLoadMoreMessages={handleLoadMoreMessages}
-                            hasMoreMessages={hasMoreMessages}
+                            hasMoreMessages={hasNextPage}
                             loadingMore={loadingMore}
                         />
                     ) : (

@@ -1,55 +1,36 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { FiSearch, FiMenu } from "react-icons/fi"
 import Navbar from "../Components/Navbar"
 import { RiMenuAddLine } from "react-icons/ri"
-import { apiMethods } from '../utils/api';
-import { ENDPOINTS } from '../config/apiConfig';
 import { toast } from 'react-toastify';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentUser } from '../hooks/queries/useUser';
+import { useFriends } from '../hooks/queries/useFriends';
+import { useUnfriendMutation } from '../hooks/mutations/useFriends';
 import { useNavigate } from 'react-router-dom';
 
 function FriendsList() {
-  const { user: currentUser } = useAuth();
+  const { data: currentUser } = useCurrentUser();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("")
   const [showMenu, setShowMenu] = useState(false)
-  const [friends, setFriends] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchFriends();
-  }, []);
-
-  const fetchFriends = async () => {
-    try {
-      setLoading(true);
-      const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST);
-      
-      // Handle paginated response or plain array
-      const friendshipsData = response.data.results || response.data;
-      const friendships = Array.isArray(friendshipsData) ? friendshipsData : [];
-      
-      // Transform the friendship data to get friend details
-      const friendsList = friendships.map(friendship => {
-        // Determine which user is the friend (not the current user)
-        const friend = friendship.requester.id === currentUser?.id 
-          ? friendship.receiver 
-          : friendship.requester;
-        return {
-          ...friend,
-          friendshipId: friendship.id
-        };
-      });
-      setFriends(friendsList);
-    } catch (error) {
-      console.error('Error fetching friends:', error);
-      toast.error('Failed to load friends');
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  // Fetch friends using TanStack Query
+  const { data: friendshipsData = [], isLoading: loading } = useFriends();
+  const unfriendMutation = useUnfriendMutation();
+  
+  // Transform the friendship data to get friend details
+  const friends = friendshipsData.map(friendship => {
+    // Determine which user is the friend (not the current user)
+    const friend = friendship.requester?.id === currentUser?.id 
+      ? friendship.receiver 
+      : friendship.requester;
+    return {
+      ...friend,
+      friendshipId: friendship.id
+    };
+  });
 
   // Handle search
   const handleSearch = (e) => {
@@ -65,16 +46,12 @@ function FriendsList() {
   }
 
   // Handle unfriend
-  const handleUnfriend = async (friendId, friendName) => {
-    try {
-      await apiMethods.delete(ENDPOINTS.FRIENDS.UNFRIEND(friendId));
-      toast.success(`Unfriended ${friendName}`);
-      // Remove friend from list
-      setFriends(friends.filter((friend) => friend.id !== friendId));
-    } catch (error) {
-      console.error('Error unfriending:', error);
-      toast.error('Failed to unfriend');
-    }
+  const handleUnfriend = (friendId, friendName) => {
+    unfriendMutation.mutate(friendId, {
+      onSuccess: () => {
+        toast.success(`Unfriended ${friendName}`);
+      }
+    });
   };
 
   // Filter friends based on search

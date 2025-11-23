@@ -1,32 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Navbar from '../Navbar';
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
+import { useFriendRequests } from '../../hooks/queries/useFriends';
+import { useRespondToRequestMutation } from '../../hooks/mutations/useFriends';
 
 const FriendRequestList = () => {
-    const [friendRequests, setFriendRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetchFriendRequests();
-    }, []);
-
-    const fetchFriendRequests = async () => {
-        try {
-            setLoading(true);
-            const response = await apiMethods.get(ENDPOINTS.FRIENDS.REQUESTS);
-            
-            // Handle paginated response or plain array
-            const requestsData = response.data.results || response.data;
-            setFriendRequests(Array.isArray(requestsData) ? requestsData : []);
-        } catch (error) {
-            console.error('Error fetching friend requests:', error);
-            toast.error('Failed to load friend requests');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { data: friendRequests = [], isLoading: loading } = useFriendRequests();
+    const respondMutation = useRespondToRequestMutation();
 
     // Helper function for default profile image
     const getDefaultProfileImage = (name, email) => {
@@ -34,32 +14,12 @@ const FriendRequestList = () => {
         return `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&size=128`;
     };
 
-    const handleAccept = async (userId) => {
-        try {
-            await apiMethods.post(ENDPOINTS.FRIENDS.RESPOND_REQUEST(userId), {
-                action: 'accept'
-            });
-            toast.success('Friend request accepted!');
-            // Remove from list
-            setFriendRequests(friendRequests.filter(req => req.requester.id !== userId));
-        } catch (error) {
-            console.error('Error accepting friend request:', error);
-            toast.error('Failed to accept friend request');
-        }
+    const handleAccept = (userId) => {
+        respondMutation.mutate({ userId, action: 'accept' });
     };
 
-    const handleReject = async (userId) => {
-        try {
-            await apiMethods.post(ENDPOINTS.FRIENDS.RESPOND_REQUEST(userId), {
-                action: 'reject'
-            });
-            toast.success('Friend request rejected');
-            // Remove from list
-            setFriendRequests(friendRequests.filter(req => req.requester.id !== userId));
-        } catch (error) {
-            console.error('Error rejecting friend request:', error);
-            toast.error('Failed to reject friend request');
-        }
+    const handleReject = (userId) => {
+        respondMutation.mutate({ userId, action: 'reject' });
     };
 
     return (

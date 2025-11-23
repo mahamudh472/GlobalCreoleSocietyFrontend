@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Navbar from '../Navbar'
 import GlobalCreoleSocietyCard from './GlobalCreoleSocietyCard'
@@ -8,49 +8,18 @@ import PostCard from '../Feed/PostCard'
 import ShareModal from '../Feed/ShareModal'
 import CommentsModal from '../Feed/CommentsModal'
 import CreatePostSection from '../Feed/CreatePostSection'
-import { apiMethods } from '../../utils/api'
-import { ENDPOINTS } from '../../config/apiConfig'
 import { toast } from 'react-toastify'
-import { useAuth } from '../../context/AuthContext'
+import { useCurrentUser } from '../../hooks/queries/useUser'
+import { useSociety } from '../../hooks/queries/useSocieties'
+import { useSocietyPosts } from '../../hooks/queries/usePosts'
 
 const MySociety = () => {
     const { id: societyId } = useParams()
-    const { user: currentUser } = useAuth()
-    const [posts, setPosts] = useState([])
-    const [society, setSociety] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [isModalOpen, setIsModalOpen] = useState(false)
-
-    useEffect(() => {
-        fetchSocietyData()
-        fetchSocietyPosts()
-    }, [societyId])
-
-    const fetchSocietyData = async () => {
-        try {
-            const response = await apiMethods.get(ENDPOINTS.SOCIETIES.DETAIL(societyId))
-            setSociety(response.data)
-        } catch (error) {
-            console.error('Error fetching society data:', error)
-            toast.error('Failed to load society details')
-        }
-    }
-
-    const fetchSocietyPosts = async () => {
-        try {
-            setLoading(true)
-            const response = await apiMethods.get(ENDPOINTS.SOCIETIES.POSTS(societyId))
-            const postsData = response.data.results || response.data
-            setPosts(Array.isArray(postsData) ? postsData : [])
-        } catch (error) {
-            console.error('Error fetching society posts:', error)
-            toast.error('Failed to load society posts')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-
+    const { data: currentUser } = useCurrentUser()
+    
+    // Fetch society data and posts using TanStack Query
+    const { data: society } = useSociety(societyId)
+    const { data: posts = [], isLoading: loading } = useSocietyPosts(societyId)
 
     // Modals: comment & share ...................................................
     const [activeSharePostId, setActiveSharePostId] = useState(null)
@@ -63,19 +32,12 @@ const MySociety = () => {
     const closeCommentModal = () => setActiveCommentPostId(null)
 
     const handleCommentAdded = (postId) => {
-        // Update the comment count for the specific post
-        setPosts((prev) => 
-            prev.map(post => 
-                post.id === postId 
-                    ? { ...post, comment_count: (post.comment_count || post.comments || 0) + 1 }
-                    : post
-            )
-        );
-    };
+        // Query will auto-update via cache invalidation
+        toast.success('Comment added!')
+    }
 
     const handleCreatePost = (newPost) => {
-        // Add the new post to the beginning of the posts array
-        setPosts((prev) => [newPost, ...prev])
+        // Query will auto-update via cache invalidation
         toast.success('Post created successfully!')
     }
 // ..................................................................................

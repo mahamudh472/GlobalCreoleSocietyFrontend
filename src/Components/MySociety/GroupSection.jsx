@@ -1,35 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { FaUserCircle } from 'react-icons/fa';
 import MySocietyCoverpicUpload from './MySocietyCoverpicUpload';
 import { useParams } from 'react-router-dom';
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
+import { useSocietyMembers } from '../../hooks/queries/useSocieties';
 
 const GroupSection = ({ society }) => {
   const { id: societyId } = useParams();
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
   
+  // Use TanStack Query for fetching members
+  const { data: membersData = [], isLoading: loading } = useSocietyMembers(societyId);
+  
+  // Show first 8 members
+  const members = membersData.slice(0, 8);
   const membersCount = society?.members_count || society?.member_count || 0;
-
-  useEffect(() => {
-    if (societyId) {
-      fetchMembers();
-    }
-  }, [societyId]);
-
-  const fetchMembers = async () => {
-    try {
-      setLoading(true);
-      const response = await apiMethods.get(ENDPOINTS.SOCIETIES.MEMBERS(societyId));
-      const membersData = response.data.results || response.data;
-      setMembers(Array.isArray(membersData) ? membersData.slice(0, 8) : []); // Show first 8 members
-    } catch (error) {
-      console.error('Error fetching members:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden mx-auto ">

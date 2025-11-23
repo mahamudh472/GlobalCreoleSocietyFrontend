@@ -5,20 +5,54 @@ import chatIcon from "../../assets/globalchat.png"
 import ChatHeader from "./ChatHeader"
 import ChatMessages from "./ChatMessages"
 import ChatInput from "./ChatInput"
-import { apiMethods } from "../../utils/api"
-import { ENDPOINTS, WS_ENDPOINTS } from "../../config/apiConfig"
-import { useAuth } from "../../context/AuthContext"
+import { WS_ENDPOINTS } from "../../config/apiConfig"
+import { useCurrentUser } from "../../hooks/queries/useUser"
+import { useGlobalMessages } from "../../hooks/queries/useChat"
+import { useSendGlobalMessageMutation } from "../../hooks/mutations/useChat"
 
 const GlobalChatPopUp = () => {
-    const { user } = useAuth()
+    const { data: user } = useCurrentUser()
     const [isOpen, setIsOpen] = useState(false)
     const [isActive, setIsActive] = useState(false)
     const [message, setMessage] = useState("")
-    const [messages, setMessages] = useState([])
-    const [loading, setLoading] = useState(false)
+    
+    // Define formatTimestamp function before using it
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp) return ""
+        
+        const date = new Date(timestamp)
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    }
+    
+    // Use TanStack Query for messages
+    const {
+        data: messagesData,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        refetch: refetchMessages,
+    } = useGlobalMessages({ enabled: isActive })
+    
+    // Flatten all pages into single messages array and transform to component format
+    // Backend returns newest first within each page, so reverse each page to show oldest first
+    // Then flatten all reversed pages to maintain chronological order
+    const messages = messagesData?.pages.flatMap(page => 
+        page.messages.map(msg => ({
+            id: msg.id,
+            user: msg.senderName,
+            message: msg.text,
+            time: formatTimestamp(msg.timestamp),
+            avatar: msg.senderAvatar,
+            isOwn: msg.isOwn,
+            file_url: msg.file_url,
+            file_type: msg.file_type,
+        })).reverse()
+    ) || []
+    
+    const sendMessageMutation = useSendGlobalMessageMutation()
+    
     const [loadingMore, setLoadingMore] = useState(false)
-    const [hasMore, setHasMore] = useState(true)
-    const [nextUrl, setNextUrl] = useState(null)
     const messagesEndRef = useRef(null)
     const messagesContainerRef = useRef(null)
     const popupRef = useRef(null)
@@ -62,17 +96,17 @@ const GlobalChatPopUp = () => {
         console.log(`📊 Global chat scroll - scrollTop: ${scrollTop}, scrollHeight: ${scrollHeight}, clientHeight: ${clientHeight}`)
 
         // Prevent multiple simultaneous loads
-        if (isLoadingRef.current || loadingMore) {
+        if (isLoadingRef.current || isFetchingNextPage) {
             console.log("⏸️ Already loading, skipping...")
             return
         }
 
         // Check if scrolled near top (within 150px) and has more messages
-        if (scrollTop < 150 && hasMore) {
+        if (scrollTop < 150 && hasNextPage) {
             console.log("📜 Near top - loading more global messages")
             isLoadingRef.current = true
             previousScrollHeightRef.current = scrollHeight
-            fetchGlobalMessages(false) // false = load more
+            fetchNextPage() // Use TanStack Query's fetchNextPage
         }
     }
 
@@ -99,10 +133,9 @@ const GlobalChatPopUp = () => {
         }
     }, [loadingMore])
 
-    // Fetch global chat messages on mount
+    // Fetch global chat messages on mount  
     useEffect(() => {
         if (isActive) {
-            fetchGlobalMessages(true) // true = initial load
             connectWebSocket()
         }
         
@@ -110,67 +143,15 @@ const GlobalChatPopUp = () => {
             disconnectWebSocket()
         }
     }, [isActive])
-
-    const fetchGlobalMessages = async (isInitialLoad = true) => {
-        try {
-            if (isInitialLoad) {
-                setLoading(true)
-                setMessages([])
-                setHasMore(true)
-                setNextUrl(null)
-            } else {
-                setLoadingMore(true)
-            }
-            
-            // Use pagination URL if loading more, otherwise fetch first page
-            const url = isInitialLoad ? ENDPOINTS.CHAT.GLOBAL_CHAT : nextUrl
-            
-            if (!url) {
-                setLoadingMore(false)
-                return
-            }
-            
-            const response = await apiMethods.get(url)
-            
-            // Handle paginated response
-            const messageData = response.data.results || response.data
-            const next = response.data.next
-            
-            // Helper function for default profile image
-            const getDefaultProfileImage = (sender) => {
-                if (!sender) return "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-                const name = sender.profile_name || sender.email || "User";
-                return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-            };
-            
-            // Transform API response to match component structure
-            const transformedMessages = messageData.map(msg => ({
-                id: msg.id,
-                user: msg.sender?.profile_name || msg.sender?.email || "Unknown",
-                message: msg.content,
-                time: formatTimestamp(msg.created_at),
-                avatar: msg.sender?.profile_image || getDefaultProfileImage(msg.sender),
-                isOwn: msg.sender?.id === user?.id,
-                file_url: msg.file_url,
-                file_type: msg.file_type,
-            }))
-            
-            if (isInitialLoad) {
-                setMessages(transformedMessages)
-            } else {
-                // Prepend older messages
-                setMessages(prev => [...transformedMessages, ...prev])
-            }
-            
-            setNextUrl(next)
-            setHasMore(!!next)
-        } catch (err) {
-            console.error("Failed to fetch global messages:", err)
-        } finally {
-            setLoading(false)
+    
+    // Handle loading more messages
+    useEffect(() => {
+        if (isFetchingNextPage) {
+            setLoadingMore(true)
+        } else {
             setLoadingMore(false)
         }
-    }
+    }, [isFetchingNextPage])
 
     const connectWebSocket = () => {
         disconnectWebSocket() // Close existing connection if any
@@ -196,32 +177,9 @@ const GlobalChatPopUp = () => {
             console.log("Global WebSocket message received:", data)
             
             if (data.type === "chat_message") {
-                // Helper function for default profile image
-                const getDefaultProfileImage = (sender) => {
-                    if (!sender) return "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-                    const name = sender.profile_name || sender.email || "User";
-                    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-                };
-                
-                const newMessage = {
-                    id: data.id || Date.now(),
-                    user: data.sender?.profile_name || data.sender?.email || "Unknown",
-                    message: data.content,
-                    time: formatTimestamp(data.created_at || new Date().toISOString()),
-                    avatar: data.sender?.profile_image || getDefaultProfileImage(data.sender),
-                    isOwn: data.sender?.id === user?.id,
-                    file_url: data.file_url,
-                    file_type: data.file_type,
-                }
-                
-                // Add message only if it doesn't already exist (avoid duplicates)
-                setMessages(prev => {
-                    const exists = prev.find(msg => msg.id === newMessage.id);
-                    if (exists) {
-                        return prev;
-                    }
-                    return [...prev, newMessage];
-                });
+                console.log("💬 New global message received, refetching messages...")
+                // Refetch messages to get the new message from server
+                refetchMessages()
             }
         }
 
@@ -242,13 +200,6 @@ const GlobalChatPopUp = () => {
         }
     }
 
-    const formatTimestamp = (timestamp) => {
-        if (!timestamp) return ""
-        
-        const date = new Date(timestamp)
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    }
-
     const handleSendMessage = async (e) => {
         e.preventDefault()
         if (message.trim()) {
@@ -262,15 +213,8 @@ const GlobalChatPopUp = () => {
                     setMessage("")
                 } else {
                     console.error("WebSocket is not connected")
-                    // Fallback to REST API if WebSocket is not available
-                    const formData = new FormData()
-                    formData.append('content', message.trim())
-
-                    await apiMethods.post(ENDPOINTS.CHAT.SEND_GLOBAL_MESSAGE, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    })
+                    // Fallback to REST API mutation if WebSocket is not available
+                    sendMessageMutation.mutate({ content: message.trim() })
                     setMessage("")
                 }
             } catch (err) {
@@ -354,7 +298,7 @@ const GlobalChatPopUp = () => {
                     // Active chat state with gradient background
                     <div className="h-full flex flex-col transition-all duration-500 ease-in-out bg-gradient-to-br from-[#1B3B66] via-[#0057FF] to-[#CAF4F7]">
                         <ChatHeader onClose={handleClose} />
-                        {loading ? (
+                        {isLoading ? (
                             <div className="flex-1 flex items-center justify-center text-white">
                                 Loading messages...
                             </div>
@@ -365,13 +309,13 @@ const GlobalChatPopUp = () => {
                                 className="flex-1 overflow-y-auto p-4 space-y-3"
                             >
                                 {/* Loading indicator at top */}
-                                {loadingMore && hasMore && (
+                                {isFetchingNextPage && hasNextPage && (
                                     <div className="flex justify-center py-2">
                                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                                     </div>
                                 )}
                                 
-                                {!loadingMore && hasMore && messages.length > 0 && (
+                                {!isFetchingNextPage && hasNextPage && messages.length > 0 && (
                                     <div className="text-center py-2">
                                         <p className="text-xs text-gray-300">Scroll up to load older messages</p>
                                     </div>

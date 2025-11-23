@@ -1,57 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Navbar from '../Navbar';
 import { useNavigate } from 'react-router-dom';
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
+import { useSocieties } from '../../hooks/queries/useSocieties';
+import { useJoinSocietyMutation } from '../../hooks/mutations/useSocieties';
 
 const JoinSocietyList = () => {
     const navigate = useNavigate();
-    const [joinSocieties, setJoinSocieties] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: joinSocieties = [], isLoading: loading } = useSocieties({ available: true });
+    const joinSocietyMutation = useJoinSocietyMutation();
 
-    useEffect(() => {
-        fetchAvailableSocieties();
-    }, []);
-
-    const fetchAvailableSocieties = async () => {
-        try {
-            setLoading(true);
-            // Fetch only societies available to join (not a member of)
-            const response = await apiMethods.get(`${ENDPOINTS.SOCIETIES.LIST}?available=true`);
-            
-            // Handle paginated response or plain array
-            const societiesData = response.data.results || response.data;
-            const societies = Array.isArray(societiesData) ? societiesData : [];
-            
-            setJoinSocieties(societies);
-        } catch (error) {
-            console.error('Error fetching available societies:', error);
-            toast.error('Failed to load available societies');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleJoin = async (e, societyId, societyName, privacy) => {
+    const handleJoin = (e, societyId, societyName, privacy) => {
         e.stopPropagation();
         
-        try {
-            await apiMethods.post(ENDPOINTS.SOCIETIES.JOIN(societyId));
-            
-            if (privacy === 'private') {
-                toast.success(`Join request sent to ${societyName}`);
-                // Remove from list after request sent
-                setJoinSocieties(joinSocieties.filter(soc => soc.id !== societyId));
-            } else {
-                toast.success(`Joined ${societyName}`);
-                // Remove from list after joining
-                setJoinSocieties(joinSocieties.filter(soc => soc.id !== societyId));
+        joinSocietyMutation.mutate(societyId, {
+            onSuccess: () => {
+                if (privacy === 'private') {
+                    toast.success(`Join request sent to ${societyName}`);
+                } else {
+                    toast.success(`Joined ${societyName}`);
+                }
             }
-        } catch (error) {
-            console.error('Error joining society:', error);
-            toast.error(error.response?.data?.error || 'Failed to join society');
-        }
+        });
     };
 
     const handleView = (societyId) => {

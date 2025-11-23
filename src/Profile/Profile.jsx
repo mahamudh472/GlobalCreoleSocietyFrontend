@@ -11,14 +11,22 @@ import ShareModal from '../Components/Feed/ShareModal'
 import CommentsModal from '../Components/Feed/CommentsModal'
 import { apiMethods } from '../utils/api'
 import { ENDPOINTS } from '../config/apiConfig'
-import { useAuth } from '../context/AuthContext'
+import { useCurrentUser } from '../hooks/queries/useUser'
+import { useFriends, useUserFriendsQuery } from '../hooks/queries/useFriends'
 
 const Profile = () => {
     const { userId } = useParams() // Get user ID from URL if viewing another user's profile
-    const { user: currentUser, updateUser } = useAuth()
+    const { data: currentUser, refetch: refetchCurrentUser } = useCurrentUser()
+    
+    // Determine which friends list to fetch
+    const shouldFetchUserFriends = userId && userId !== currentUser?.id
+    const { data: ownFriends = [] } = useFriends({ enabled: !shouldFetchUserFriends })
+    const { data: otherUserFriends = [] } = useUserFriendsQuery(userId, { enabled: shouldFetchUserFriends })
+    
+    const friendsCount = shouldFetchUserFriends ? otherUserFriends.length : ownFriends.length
+    
     const [profile, setProfile] = useState(null)
     const [posts, setPosts] = useState([])
-    const [friendsCount, setFriendsCount] = useState(0)
     const [loading, setLoading] = useState(true)
     const [loadingMore, setLoadingMore] = useState(false)
     const [hasMore, setHasMore] = useState(true)
@@ -56,7 +64,6 @@ const Profile = () => {
     useEffect(() => {
         fetchProfile()
         fetchProfilePosts(1)
-        fetchFriendsCount()
     }, [userId])
 
     // Infinite scroll observer
@@ -161,18 +168,6 @@ const Profile = () => {
         } catch (err) {
             console.error("Failed to update profile:", err)
             return { success: false, error: err.response?.data || "Update failed" }
-        }
-    }
-
-    const fetchFriendsCount = async () => {
-        try {
-            const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST)
-            const friendsData = response.data.results || response.data
-            const friendsList = Array.isArray(friendsData) ? friendsData : []
-            setFriendsCount(friendsList.length)
-        } catch (err) {
-            console.error("Failed to fetch friends count:", err)
-            setFriendsCount(0)
         }
     }
     
@@ -293,9 +288,9 @@ const Profile = () => {
                         isOwnProfile={isOwnProfile}
                         onProfileUpdate={(updatedProfile) => {
                             setProfile(updatedProfile);
-                            // Update AuthContext - this updates Navbar and everywhere
+                            // Update current user cache if viewing own profile
                             if (isOwnProfile) {
-                                updateUser(updatedProfile);
+                                refetchCurrentUser();
                             }
                         }}
                     />

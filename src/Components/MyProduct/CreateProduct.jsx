@@ -1,23 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FaImage, FaTimes } from "react-icons/fa"
+import { useNavigate } from "react-router-dom"
 import Navbar from "../Navbar"
+import { useCreateProductMutation } from "../../hooks/mutations/useProducts"
+import { useCurrentUser } from "../../hooks/queries/useUser"
+import { useProductCategories } from "../../hooks/queries/useProducts"
 
 function CreateProduct() {
+  const navigate = useNavigate()
+  const { data: user } = useCurrentUser()
+  const { data: categoriesData = [], isLoading: loadingCategories } = useProductCategories()
+  const createProductMutation = useCreateProductMutation()
+  
+  // Ensure categories is always an array
+  const categories = Array.isArray(categoriesData) ? categoriesData : []
+  
   const [formData, setFormData] = useState({
     title: "",
     price: "",
     description: "",
+    category: "",
+    stock: "0",
   })
   const [mediaFiles, setMediaFiles] = useState([])
-
-  // Mock seller data - replace with actual user data from backend
-  const seller = {
-    name: "Ahmad Nur Fawaid",
-    avatar: "https://i.pravatar.cc/150?img=12",
-    shopName: "Sell in this shop",
-  }
+  
+  // Set first category as default when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !formData.category) {
+      setFormData(prev => ({ ...prev, category: categories[0].id.toString() }))
+    }
+  }, [categories])
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -26,7 +40,6 @@ function CreateProduct() {
       ...prev,
       [name]: value,
     }))
-    console.log(`[v0] ${name} updated:`, value)
   }
 
   // Handle media upload
@@ -38,13 +51,16 @@ function CreateProduct() {
       preview: URL.createObjectURL(file),
     }))
     setMediaFiles((prev) => [...prev, ...newMedia])
-    console.log("[v0] Media files uploaded:", files)
   }
 
   // Remove media file
   const removeMedia = (id) => {
     setMediaFiles((prev) => prev.filter((media) => media.id !== id))
-    console.log("[v0] Media removed:", id)
+    // Revoke object URL to free memory
+    const media = mediaFiles.find(m => m.id === id)
+    if (media?.preview) {
+      URL.revokeObjectURL(media.preview)
+    }
   }
 
   // Handle form submission
@@ -54,20 +70,24 @@ function CreateProduct() {
     const productData = {
       ...formData,
       media: mediaFiles,
-      seller: seller.name,
-      createdAt: new Date().toISOString(),
     }
 
-    console.log("[v0] Product submitted:", productData)
-
-    // Here you would send data to backend
-    // Example: await api.createProduct(productData);
-
-    alert("Product posted successfully!")
-
-    // Reset form
-    setFormData({ title: "", price: "", description: "" })
-    setMediaFiles([])
+    createProductMutation.mutate(productData, {
+      onSuccess: () => {
+        // Reset form
+        setFormData({ 
+          title: "", 
+          price: "", 
+          description: "",
+          category: "",
+          stock: "",
+        })
+        setMediaFiles([])
+        
+        // Navigate back to product list
+        navigate('/marketplace/myproduct')
+      }
+    })
   }
 
   return (
@@ -86,13 +106,13 @@ function CreateProduct() {
             {/* Seller Info */}
             <div className="flex items-center space-x-3 mb-6 pb-6 border-b border-gray-200">
               <img
-                src={seller.avatar || "/placeholder.svg"}
-                alt={seller.name}
+                src={user?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.profile_name || 'User')}&size=150&background=3b82f6&color=fff`}
+                alt={user?.profile_name || 'User'}
                 className="w-12 h-12 rounded-full object-cover"
               />
               <div>
-                <h3 className="font-semibold text-gray-900">{seller.name}</h3>
-                <p className="text-sm text-gray-500">{seller.shopName}</p>
+                <h3 className="font-semibold text-gray-900">{user?.profile_name || user?.email || 'User'}</h3>
+                <p className="text-sm text-gray-500">Sell in this shop</p>
               </div>
             </div>
 
@@ -158,12 +178,53 @@ function CreateProduct() {
                 {/* Price Input */}
                 <div className="mb-4">
                   <input
-                    type="text"
+                    type="number"
+                    step="0.01"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
                     placeholder="Price"
                     required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                {/* Category Select */}
+                <div className="mb-4">
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    required
+                    disabled={loadingCategories}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {loadingCategories ? (
+                      <option value="">Loading categories...</option>
+                    ) : categories.length === 0 ? (
+                      <option value="">No categories available</option>
+                    ) : (
+                      <>
+                        <option value="">Select a category</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                </div>
+                
+                {/* Stock Input */}
+                <div className="mb-4">
+                  <input
+                    type="number"
+                    name="stock"
+                    value={formData.stock}
+                    onChange={handleInputChange}
+                    placeholder="Stock quantity"
+                    min="0"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -185,9 +246,10 @@ function CreateProduct() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="cursor-pointer w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors"
+                disabled={createProductMutation.isPending}
+                className="cursor-pointer w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
               >
-                Post Product
+                {createProductMutation.isPending ? 'Creating Product...' : 'Post Product'}
               </button>
             </form>
           </div>

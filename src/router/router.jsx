@@ -39,6 +39,7 @@ import OrderCart from "../Components/Marketplace/OrderCart";
 import ProductManagement from "../Components/MyProduct/ProductManagement";
 import CreateProduct from "../Components/MyProduct/CreateProduct";
 import MyProductList from "../Components/MyProduct/MyProductList";
+import EditProduct from "../Components/MyProduct/EditProduct";
 import ProductCard from "../Components/Marketplace/ProductCard";
 import MyProductDetails from "../Components/MyProduct/MyProductDetails";
 import Payment from "../Components/Marketplace/Payment";
@@ -100,8 +101,8 @@ const router = createBrowserRouter([
         element: <ProtectedRoute><OrderCart /></ProtectedRoute>
     },
     {
-        path: "/marketplace/:id",
-        element: <ProtectedRoute><ProductPage /></ProtectedRoute>
+        path: "/marketplace/product/:id",
+        element: <ProtectedRoute><ProductCard /></ProtectedRoute>
     },
     {
         path: "/marketplace/:id/payment",
@@ -112,16 +113,16 @@ const router = createBrowserRouter([
         element: <ProtectedRoute><ProductManagement /></ProtectedRoute>
     },
     {
-        path: "/marketplace/myproduct/product details",
-        element: <ProtectedRoute><MyProductDetails /></ProtectedRoute>
-    },
-    {
         path: "/marketplace/myproduct/list",
         element: <ProtectedRoute><MyProductList /></ProtectedRoute>
     },
     {
         path: "/marketplace/myproduct/addproduct",
         element: <ProtectedRoute><CreateProduct /></ProtectedRoute>
+    },
+    {
+        path: "/marketplace/myproduct/edit/:id",
+        element: <ProtectedRoute><EditProduct /></ProtectedRoute>
     },
 
 

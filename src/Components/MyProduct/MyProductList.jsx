@@ -1,49 +1,33 @@
 import React, { useState } from 'react'
 import Navbar from '../Navbar'
-import { FaPlus, FaSearch } from 'react-icons/fa'
+import { FaPlus, FaSearch, FaEdit } from 'react-icons/fa'
+import { useNavigate } from 'react-router-dom'
+import { useMyProducts } from '../../hooks/queries/useProducts'
 
 const MyProductList = () => {
-
+    const navigate = useNavigate()
     const [searchQuery, setSearchQuery] = useState("")
-    const [products, setProducts] = useState({
-        statuse: "Pending",
-        productslist: [
-            {
-                id: 1,
-                name: "Jaket Trucker Denim",
-                price: 58.01,
-                image: "https://img.freepik.com/free-photo/skin-regeneration-product-still-life_23-2151232228.jpg"
-
-            },
-            {
-                id: 2,
-                name: "Vintage T-Shirt",
-                price: 25.99,
-                image: "https://img.freepik.com/free-photo/skin-regeneration-product-still-life_23-2151232228.jpg"
-
-            },
-            {
-                id: 3,
-                name: "Designer Sneakers",
-                price: 89.99,
-                image: "https://img.freepik.com/free-photo/skin-regeneration-product-still-life_23-2151232228.jpg"
-
-            },
-            {
-                id: 4,
-                name: "Winter Jacket",
-                price: 120.50,
-                image: "https://img.freepik.com/free-photo/skin-regeneration-product-still-life_23-2151232228.jpg"
-            }
-        ]
-    });
-
-
+    
+    // Use TanStack Query to fetch user's products
+    const { data: products = [], isLoading, error } = useMyProducts()
+    
+    // Filter products based on search query
+    const filteredProducts = products.filter(product => 
+        product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
     // Handle search
     const handleSearch = (e) => {
         setSearchQuery(e.target.value)
-        console.log("[v0] Search query:", e.target.value)
+    }
+    
+    const handleViewDetails = (product) => {
+        navigate(`/marketplace/product/${product.id}`)
+    }
+
+    const handleEditProduct = (product) => {
+        navigate(`/marketplace/myproduct/edit/${product.id}`)
     }
 
     return (
@@ -67,19 +51,13 @@ const MyProductList = () => {
                     </div>
                     <div className="flex gap-3">
                         <button
-                            onClick={() => {
-                                handleOtherList()
-                                navigate("/marketplace/orderlist")
-                            }}
+                            onClick={() => navigate("/marketplace/orderlist")}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer"
                         >
                             Other List
                         </button>
                         <button
-                            onClick={() => {
-                                handleAddProduct()
-                                navigate('/marketplace/myproduct/addproduct')
-                            }}
+                            onClick={() => navigate('/marketplace/myproduct/addproduct')}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer"
                         >
                             <FaPlus className="text-sm" />
@@ -92,28 +70,55 @@ const MyProductList = () => {
 
                 {/* Product list based on categories */}
                 <div className='space-y-5'>
-                    {
-                        products?.productslist.map(product => <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                                <img
-                                    src={product.image || "/placeholder.svg"}
-                                    alt={product.name}
-                                    className="w-16 h-16 object-cover rounded-lg bg-gray-100"
-                                />
-                                <div>
-
-                                    <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                                    <p className="text-lg font-bold text-gray-900">{product.price}</p>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                        </div>
+                    ) : error ? (
+                        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                            <p className="text-red-500">Failed to load products</p>
+                        </div>
+                    ) : filteredProducts.length === 0 ? (
+                        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                            <p className="text-gray-500">
+                                {searchQuery ? 'No products match your search' : 'No products yet. Create your first product!'}
+                            </p>
+                        </div>
+                    ) : (
+                        filteredProducts.map(product => (
+                            <div key={product.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                    <img
+                                        src={product.primary_image?.image_url || "https://via.placeholder.com/150"}
+                                        alt={product.name}
+                                        className="w-16 h-16 object-cover rounded-lg bg-gray-100"
+                                    />
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900">{product.name}</h3>
+                                        <p className="text-lg font-bold text-gray-900">${product.price}</p>
+                                        {product.stock !== undefined && (
+                                            <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleEditProduct(product)}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-2"
+                                    >
+                                        <FaEdit />
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={() => handleViewDetails(product)}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                                    >
+                                        View Details
+                                    </button>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => handleViewDetails(product, section)}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                            >
-                                View Details
-                            </button>
-                        </div>)
-                    }
+                        ))
+                    )}
                 </div>
 
 

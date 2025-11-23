@@ -1,34 +1,14 @@
-import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { apiMethods } from "../utils/api"
-import { ENDPOINTS } from "../config/apiConfig"
+import { useFriends } from "../hooks/queries/useFriends"
+import { useCurrentUser } from "../hooks/queries/useUser"
 
 const FriendsGrid = ({ userId }) => {
   const navigate = useNavigate()
-  const [friends, setFriends] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchFriends()
-  }, [userId])
-
-  const fetchFriends = async () => {
-    try {
-      setLoading(true)
-      const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST)
-      
-      // Handle paginated response or plain array
-      const friendsData = response.data.results || response.data
-      const friendsList = Array.isArray(friendsData) ? friendsData : []
-      
-      // Take only first 6 friends for grid display
-      setFriends(friendsList.slice(0, 6))
-    } catch (err) {
-      console.error("Failed to fetch friends:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: currentUser } = useCurrentUser()
+  const { data: friendsData = [], isLoading: loading } = useFriends()
+  
+  // Take only first 6 friends for grid display
+  const friends = friendsData.slice(0, 6)
 
   const getDefaultProfileImage = (friend) => {
     const name = friend.profile_name || friend.email || "User";
@@ -67,7 +47,7 @@ const FriendsGrid = ({ userId }) => {
       ) : (
         <div className="grid grid-cols-4 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {friends.map(friend => {
-            const friendData = friend.requester?.id === userId ? friend.receiver : friend.requester
+            const friendData = friend.requester?.id === currentUser?.id ? friend.receiver : friend.requester
             return (
               <div key={friend.id} className="flex flex-col items-center">
                 <div 

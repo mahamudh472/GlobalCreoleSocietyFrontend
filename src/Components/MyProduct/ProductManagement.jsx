@@ -1,44 +1,31 @@
 "use client"
 
-import { useState } from "react"
-import { FaSearch, FaPlus } from "react-icons/fa"
+import { useState, useMemo } from "react"
+import { FaSearch, FaPlus, FaEdit } from "react-icons/fa"
 import Navbar from "../Navbar"
 import { useNavigate } from "react-router-dom"
+import { useMyProducts } from "../../hooks/queries/useProducts"
 
 function ProductManagement() {
     const [searchQuery, setSearchQuery] = useState("")
     const navigate = useNavigate();
 
-    // Mock product data - replace with actual data from backend
-    const [products] = useState({
-        pending: [
-            {
-                id: 1,
-                name: "Jaket Trucker Denim",
-                price: "$58,01",
-                image: "https://plus.unsplash.com/premium_photo-1679913792906-13ccc5c84d44?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8cHJvZHVjdHxlbnwwfHwwfHx8MA%3D%3D",
-                status: "Change to fill",
-            },
-        ],
-        accepted: [
-            {
-                id: 2,
-                name: "Jaket Trucker Denim",
-                price: "$58,01",
-                image: "https://plus.unsplash.com/premium_photo-1679913792906-13ccc5c84d44?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8cHJvZHVjdHxlbnwwfHwwfHx8MA%3D%3D",
-                status: "Change to fill",
-            },
-        ],
-        delivered: [
-            {
-                id: 3,
-                name: "Jaket Trucker Denim",
-                price: "$58,01",
-                image: "https://plus.unsplash.com/premium_photo-1679913792906-13ccc5c84d44?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8cHJvZHVjdHxlbnwwfHwwfHx8MA%3D%3D",
-                status: "Change to fill",
-            },
-        ],
-    })
+    // Fetch real product data from backend
+    const { data: allProducts = [], isLoading, error } = useMyProducts()
+    
+    // Group products by status and filter by search query
+    const products = useMemo(() => {
+        const filtered = allProducts.filter(product => 
+            product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        
+        return {
+            pending: filtered.filter(p => p.status === 'pending'),
+            accepted: filtered.filter(p => p.status === 'approved'),
+            rejected: filtered.filter(p => p.status === 'rejected'),
+        }
+    }, [allProducts, searchQuery])
 
     // Handle search
     const handleSearch = (e) => {
@@ -66,30 +53,47 @@ function ProductManagement() {
         console.log("[v0] Add Product clicked")
     }
 
+    // Handle edit product
+    const handleEditProduct = (product) => {
+        navigate(`/marketplace/myproduct/edit/${product.id}`)
+    }
+
     // Product Card Component
     const ProductCard = ({ product, section }) => (
         <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
             <div className="flex items-center space-x-4">
                 <img
-                    src={product.image || "/placeholder.svg"}
+                    src={product.primary_image?.image_url || "https://via.placeholder.com/150"}
                     alt={product.name}
                     className="w-16 h-16 object-cover rounded-lg bg-gray-100"
                 />
                 <div>
-                    <p className="text-xs text-gray-400 mb-1">{product.status}</p>
+                    <p className="text-xs text-gray-400 mb-1 capitalize">{product.status}</p>
                     <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                    <p className="text-lg font-bold text-gray-900">{product.price}</p>
+                    <p className="text-lg font-bold text-gray-900">${product.price}</p>
+                    {product.stock !== undefined && (
+                        <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                    )}
                 </div>
             </div> 
-            <button
-                onClick={() => {
-                    handleViewDetails(product, section)
-                    navigate("/marketplace/myproduct/product details")
-                }}
-                className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-                View Details
-            </button>
+            <div className="flex gap-2">
+                <button
+                    onClick={() => handleEditProduct(product)}
+                    className="cursor-pointer bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                    <FaEdit />
+                    Edit
+                </button>
+                <button
+                    onClick={() => {
+                        handleViewDetails(product, section)
+                        navigate(`/marketplace/product/${product.id}`)
+                    }}
+                    className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                    View Details
+                </button>
+            </div>
         </div>
     )
 
@@ -97,24 +101,60 @@ function ProductManagement() {
     const ProductSection = ({ title, products, sectionKey }) => (
         <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+                <h2 className="text-lg font-bold text-gray-900">
+                    {title} ({products.length})
+                </h2>
                 <button
                     onClick={() => {
                         handleSellAll(sectionKey)
                         navigate("/marketplace/myproduct/list")
                     }}
-                    className= "cursor-pointer text-blue-500 hover:text-blue-600 text-sm font-medium"
+                    className="cursor-pointer text-blue-500 hover:text-blue-600 text-sm font-medium"
                 >
-                    Sell All
+                    View All
                 </button>
             </div>
-            <div className="space-y-3">
-                {products.map((product) => (
-                    <ProductCard key={product.id} product={product} section={sectionKey} />
-                ))}
-            </div>
+            {products.length === 0 ? (
+                <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                    <p className="text-gray-500">No {sectionKey} products</p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {products.map((product) => (
+                        <ProductCard key={product.id} product={product} section={sectionKey} />
+                    ))}
+                </div>
+            )}
         </div>
     )
+
+    if (isLoading) {
+        return (
+            <div>
+                <div className="py-7">
+                    <Navbar></Navbar>
+                </div>
+                <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div>
+                <div className="py-7">
+                    <Navbar></Navbar>
+                </div>
+                <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                    <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                        <p className="text-red-500">Failed to load products</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div>
@@ -163,9 +203,9 @@ function ProductManagement() {
                     </div>
 
                     {/* Product Sections */}
-                    <ProductSection title="Pending Product" products={products.pending} sectionKey="pending" />
-                    <ProductSection title="Accept Product" products={products.accepted} sectionKey="accepted" />
-                    <ProductSection title="Delivered Product" products={products.delivered} sectionKey="delivered" />
+                    <ProductSection title="Pending Products" products={products.pending} sectionKey="pending" />
+                    <ProductSection title="Approved Products" products={products.accepted} sectionKey="accepted" />
+                    <ProductSection title="Rejected Products" products={products.rejected} sectionKey="rejected" />
                 </div>
             </div>
         </div>

@@ -4,6 +4,31 @@ function Message({ message }) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
   };
 
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return ""
+    
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffMs = now - date
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    
+    if (diffMinutes < 1) {
+      return "Just now"
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`
+    } else if (diffDays === 1) {
+      return "Yesterday"
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+  }
+
   const renderFileContent = () => {
     if (!message.file_url) return null
 
@@ -68,7 +93,7 @@ function Message({ message }) {
           {message.text && <p className="text-sm leading-relaxed">{message.text}</p>}
         </div>
         <p className={`text-xs text-gray-500 mt-1 ${message.isOwn ? "text-right mr-1" : "ml-1"}`}>
-          {message.timestamp}
+          {formatTimestamp(message.timestamp)}
         </p>
       </div>
     </div>

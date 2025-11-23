@@ -1,19 +1,18 @@
 import React, { useState, useRef } from "react"
 import { Video, ImageIcon, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { apiMethods } from "../../utils/api"
-import { ENDPOINTS } from "../../config/apiConfig"
 import { toast } from "react-toastify"
-import { useAuth } from "../../context/AuthContext"
+import { useCurrentUser } from "../../hooks/queries/useUser"
+import { useCreatePostMutation } from "../../hooks/mutations/usePosts"
 
 const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
   const [postText, setPostText] = useState("")
   const [selectedFiles, setSelectedFiles] = useState([])
   const [privacy, setPrivacy] = useState("public")
-  const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { data: user } = useCurrentUser();
+  const createPostMutation = useCreatePostMutation();
 
   const DEFAULT_PROFILE_IMAGE = (user || currentUser)
     ? `https://ui-avatars.com/api/?name=${encodeURIComponent((user || currentUser).profile_name || (user || currentUser).email || "User")}&size=150&background=3b82f6&color=fff`
@@ -36,50 +35,39 @@ const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
       return
     }
 
-    setLoading(true)
-    try {
-      const formData = new FormData()
-      formData.append('content', postText)
-      formData.append('privacy', privacy)
+    const formData = new FormData()
+    formData.append('content', postText)
+    formData.append('privacy', privacy)
 
-      // Add society ID if posting to a society
-      if (societyId) {
-        formData.append('society', societyId)
-      }
-
-      // Add media files properly
-      if (selectedFiles.length > 0) {
-        selectedFiles.forEach((file, index) => {
-          formData.append('media_files', file)
-        })
-      }
-
-      const response = await apiMethods.post(
-        ENDPOINTS.POSTS.CREATE,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      )
-      
-      console.log('Post created response:', response.data); // Debug log
-      
-      toast.success("Post created successfully!")
-      setPostText("")
-      setSelectedFiles([])
-      setPrivacy("public")
-      
-      if (onCreatePost) {
-        onCreatePost(response.data)
-      }
-    } catch (error) {
-      console.error('Error creating post:', error)
-      toast.error(error.response?.data?.error || "Failed to create post")
-    } finally {
-      setLoading(false)
+    // Add society ID if posting to a society
+    if (societyId) {
+      formData.append('society', societyId)
     }
+
+    // Add media files properly
+    if (selectedFiles.length > 0) {
+      selectedFiles.forEach((file, index) => {
+        formData.append('media_files', file)
+      })
+    }
+
+    createPostMutation.mutate(formData, {
+      onSuccess: (data) => {
+        console.log('Post created response:', data); // Debug log
+        toast.success("Post created successfully!")
+        setPostText("")
+        setSelectedFiles([])
+        setPrivacy("public")
+        
+        if (onCreatePost) {
+          onCreatePost(data)
+        }
+      },
+      onError: (error) => {
+        console.error('Error creating post:', error)
+        toast.error(error.response?.data?.error || "Failed to create post")
+      }
+    })
   }
 
   const displayUser = user || currentUser;
@@ -177,10 +165,10 @@ const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
           {(postText.trim() || selectedFiles.length > 0) && (
             <button
               type="submit"
-              disabled={loading}
+              disabled={createPostMutation.isPending}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Posting..." : "Post"}
+              {createPostMutation.isPending ? "Posting..." : "Post"}
             </button>
           )}
         </div>

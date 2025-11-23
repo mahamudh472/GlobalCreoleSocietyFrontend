@@ -1,37 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { FaUserPlus, FaComment, FaHeart, FaEllipsisH, FaTrash, FaEye, FaBell, FaUsers } from "react-icons/fa"
 import Navbar from "./Navbar"
-import { apiMethods } from "../utils/api"
-import { ENDPOINTS } from "../config/apiConfig"
 import { toast } from "react-toastify"
+import { useNotifications } from "../hooks/queries/useNotifications"
+import { 
+    useMarkAsReadMutation, 
+    useMarkAllAsReadMutation, 
+    useDeleteNotificationMutation 
+} from "../hooks/mutations/useNotifications"
 
 function Notifications() {
-    const [notifications, setNotifications] = useState([])
-    const [loading, setLoading] = useState(true)
     const [showMenu, setShowMenu] = useState(null)
-
-    // Fetch notifications on mount
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const fetchNotifications = async () => {
-        try {
-            setLoading(true);
-            const response = await apiMethods.get(ENDPOINTS.NOTIFICATIONS.LIST);
-            
-            // Handle paginated response or plain array
-            const notificationsData = response.data.results || response.data;
-            setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
-        } catch (error) {
-            console.error('Error fetching notifications:', error);
-            toast.error('Failed to load notifications');
-        } finally {
-            setLoading(false);
-        }
-    };
+    
+    // Use TanStack Query for notifications
+    const { data: notifications = [], isLoading: loading } = useNotifications()
+    
+    // Use mutations
+    const markAsReadMutation = useMarkAsReadMutation()
+    const markAllAsReadMutation = useMarkAllAsReadMutation()
+    const deleteNotificationMutation = useDeleteNotificationMutation()
 
     // Get icon based on notification type
     const getNotificationIcon = (type) => {
@@ -65,34 +54,26 @@ function Notifications() {
     }
 
     // Handle mark as read
-    const handleMarkAsRead = async (notificationId) => {
-        try {
-            await apiMethods.post(ENDPOINTS.NOTIFICATIONS.MARK_READ, {
-                notification_ids: [notificationId]
-            });
-            
-            setNotifications(notifications.map((n) => 
-                n.id === notificationId ? { ...n, is_read: true } : n
-            ));
-            setShowMenu(null);
-            toast.success("Marked as read");
-        } catch (error) {
-            console.error('Error marking as read:', error);
-            toast.error('Failed to mark as read');
-        }
+    const handleMarkAsRead = (notificationId) => {
+        markAsReadMutation.mutate(notificationId, {
+            onSuccess: () => {
+                setShowMenu(null)
+            }
+        })
+    }
+
+    // Handle delete notification
+    const handleDelete = (notificationId) => {
+        deleteNotificationMutation.mutate(notificationId, {
+            onSuccess: () => {
+                setShowMenu(null)
+            }
+        })
     }
 
     // Handle mark all as read
-    const handleMarkAllAsRead = async () => {
-        try {
-            await apiMethods.post(ENDPOINTS.NOTIFICATIONS.MARK_READ, {});
-            
-            setNotifications(notifications.map((n) => ({ ...n, is_read: true })));
-            toast.success("All notifications marked as read");
-        } catch (error) {
-            console.error('Error marking all as read:', error);
-            toast.error('Failed to mark all as read');
-        }
+    const handleMarkAllAsRead = () => {
+        markAllAsReadMutation.mutate()
     }
 
     // Handle notification click

@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentUser } from '../../hooks/queries/useUser';
+import { useCreateSocietyMutation } from '../../hooks/mutations/useSocieties';
 
 
 const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
   const modalRef = useRef(null);
   const modalContentRef = useRef(null);
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const { data: user } = useCurrentUser();
+  const createSocietyMutation = useCreateSocietyMutation();
   const [coverImage, setCoverImage] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -29,7 +28,7 @@ const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     if (!formData.name) {
@@ -37,36 +36,29 @@ const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
-    try {
-      setLoading(true);
-      const submitData = new FormData();
-      submitData.append('name', formData.name);
-      submitData.append('description', formData.description || '');
-      submitData.append('privacy', formData.privacy);
-      
-      if (coverImage) {
-        submitData.append('cover_picture', coverImage);
-      }
-
-      await apiMethods.postForm(ENDPOINTS.SOCIETIES.CREATE, submitData);
-      toast.success('Society created successfully!');
-      
-      // Reset form
-      setFormData({ name: '', description: '', privacy: 'public' });
-      setCoverImage(null);
-      
-      // Refresh societies list
-      if (onSuccess) {
-        onSuccess();
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error('Error creating society:', error);
-      toast.error(error.response?.data?.error || 'Failed to create society');
-    } finally {
-      setLoading(false);
+    const submitData = new FormData();
+    submitData.append('name', formData.name);
+    submitData.append('description', formData.description || '');
+    submitData.append('privacy', formData.privacy);
+    
+    if (coverImage) {
+      submitData.append('cover_picture', coverImage);
     }
+
+    createSocietyMutation.mutate(submitData, {
+      onSuccess: () => {
+        // Reset form
+        setFormData({ name: '', description: '', privacy: 'public' });
+        setCoverImage(null);
+        
+        // Refresh societies list
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        onClose();
+      }
+    });
   };
 
   // For Modal...................................
@@ -183,16 +175,16 @@ const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={createSocietyMutation.isPending}
           className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Creating...' : 'Create'}
+          {createSocietyMutation.isPending ? 'Creating...' : 'Create'}
         </button>
       </form>
 
       <button
        onClick={onClose}
-       disabled={loading}
+       disabled={createSocietyMutation.isPending}
         className="mt-4 bg-gray-300 py-2 px-4 rounded cursor-pointer w-full disabled:opacity-50">
         Close
       </button>

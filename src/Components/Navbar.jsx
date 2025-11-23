@@ -6,11 +6,13 @@ import { IoMdSearch, IoMdSettings } from "react-icons/io";
 import { MdExpandLess, MdLogout } from "react-icons/md";
 import SettingPopup from "./Settings/SettingPopup";
 import websitelogo from "../assets/websitelogo.png"
-import { useAuth } from "../context/AuthContext";
-import { toast } from "react-toastify";
+import { useCurrentUser } from "../hooks/queries";
+import { useLogoutMutation } from "../hooks/mutations";
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { data: user } = useCurrentUser();
+  const logoutMutation = useLogoutMutation();
+  
   const DEFAULT_PROFILE_IMAGE = user 
     ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
     : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
@@ -24,14 +26,11 @@ const Navbar = () => {
   const modalContentRef = useRef(null);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success("Logged out successfully!");
-      navigate('/signin');
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Error logging out");
-    }
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate('/signin');
+      }
+    });
   };
 
   const handleOpenModal = () => {

@@ -2,58 +2,75 @@ import React, { useState, useEffect } from "react"
 import { Heart, MessageCircle, MoreVertical, Trash2, Edit } from "lucide-react"
 import { FaShareFromSquare } from "react-icons/fa6"
 import { useNavigate } from "react-router-dom"
-import { apiMethods } from "../../utils/api"
-import { ENDPOINTS } from "../../config/apiConfig"
 import { toast } from "react-toastify"
-import { useAuth } from "../../context/AuthContext"
+import { useCurrentUser } from "../../hooks/queries/useUser"
+import { useLikePostMutation, useDeletePostMutation } from "../../hooks/mutations/usePosts"
 
 const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
-    const { user } = useAuth();
+    const { data: user } = useCurrentUser();
     const navigate = useNavigate();
+    const [commentCount, setCommentCount] = useState(post.comment_count || 0)
     const [isLiked, setIsLiked] = useState(post.is_liked || false)
     const [likesCount, setLikesCount] = useState(post.like_count || 0)
-    const [commentCount, setCommentCount] = useState(post.comment_count || 0)
     const [showMenu, setShowMenu] = useState(false)
-    const [isDeleting, setIsDeleting] = useState(false)
+
+    const likeMutation = useLikePostMutation()
+    const deleteMutation = useDeletePostMutation()
 
     const DEFAULT_PROFILE_IMAGE = post.user 
         ? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.user.profile_name || post.user.email || "User")}&size=150&background=3b82f6&color=fff`
         : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
 
-    // Update comment count when post prop changes
+    // Update counts when post prop changes (but not for likes - we handle those locally)
     React.useEffect(() => {
         setCommentCount(post.comment_count || 0);
     }, [post.comment_count]);
+    
+    // Only sync like state when post ID changes (new post)
+    React.useEffect(() => {
+        setIsLiked(post.is_liked || false);
+        setLikesCount(post.like_count || 0);
+    }, [post.id]);
 
-    const handleLike = async () => {
-        try {
-            const response = await apiMethods.post(ENDPOINTS.POSTS.LIKE(post.id));
-            const newLikedState = response.data.liked;
-            setIsLiked(newLikedState);
-            setLikesCount((prev) => newLikedState ? prev + 1 : prev - 1);
-        } catch (error) {
-            console.error('Error liking post:', error);
-            toast.error('Failed to like post');
-        }
+    const handleLike = () => {
+        // Capture current state before any changes
+        const oldIsLiked = isLiked;
+        const oldLikesCount = likesCount;
+        
+        // Immediate UI feedback with optimistic update
+        const newIsLiked = !oldIsLiked;
+        setIsLiked(newIsLiked);
+        setLikesCount(newIsLiked ? oldLikesCount + 1 : oldLikesCount - 1);
+        
+        // Send mutation with OLD state (before toggle)
+        likeMutation.mutate({ 
+            postId: post.id,
+            isLiked: oldIsLiked 
+        }, {
+            onError: () => {
+                // Revert on error
+                setIsLiked(oldIsLiked);
+                setLikesCount(oldLikesCount);
+            }
+        })
     }
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!window.confirm('Are you sure you want to delete this post?')) {
             return;
         }
 
-        setIsDeleting(true);
-        try {
-            await apiMethods.delete(ENDPOINTS.POSTS.DELETE(post.id));
-            toast.success('Post deleted successfully');
-            if (onDelete) onDelete(post.id);
-        } catch (error) {
-            console.error('Error deleting post:', error);
-            toast.error('Failed to delete post');
-        } finally {
-            setIsDeleting(false);
-            setShowMenu(false);
-        }
+        deleteMutation.mutate(post.id, {
+            onSuccess: () => {
+                toast.success('Post deleted successfully');
+                if (onDelete) onDelete(post.id);
+                setShowMenu(false);
+            },
+            onError: (error) => {
+                console.error('Error deleting post:', error);
+                toast.error('Failed to delete post');
+            }
+        });
     }
 
     const handleUserClick = () => {
@@ -133,11 +150,11 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                             <button
                                 onClick={handleDelete}
-                                disabled={isDeleting}
+                                disabled={deleteMutation.isPending}
                                 className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-2"
                             >
                                 <Trash2 className="w-4 h-4" />
-                                <span>{isDeleting ? 'Deleting...' : 'Delete Post'}</span>
+                                <span>{deleteMutation.isPending ? 'Deleting...' : 'Delete Post'}</span>
                             </button>
                         </div>
                     )}

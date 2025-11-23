@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../Navbar';
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
 import { FaUserPlus, FaSearch, FaSync } from 'react-icons/fa';
+import { useFriendSuggestions } from '../../hooks/queries/useFriends';
+import { useSendFriendRequestMutation } from '../../hooks/mutations/useFriends';
 
 const AddFriendList = () => {
-    const [suggestions, setSuggestions] = useState([]);
     const [filteredSuggestions, setFilteredSuggestions] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [sendingRequests, setSendingRequests] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
-
-    useEffect(() => {
-        fetchSuggestions();
-    }, []);
+    
+    const { data: suggestions = [], isLoading: loading, refetch } = useFriendSuggestions();
+    const sendRequestMutation = useSendFriendRequestMutation();
 
     useEffect(() => {
         // Filter suggestions based on search query
@@ -30,41 +27,17 @@ const AddFriendList = () => {
         }
     }, [searchQuery, suggestions]);
 
-    const fetchSuggestions = async () => {
-        try {
-            setLoading(true);
-            const response = await apiMethods.get(ENDPOINTS.FRIENDS.SUGGESTIONS);
-            
-            // Handle paginated response or plain array
-            const suggestionsData = response.data.results || response.data;
-            const suggestionsList = Array.isArray(suggestionsData) ? suggestionsData : [];
-            
-            setSuggestions(suggestionsList);
-            setFilteredSuggestions(suggestionsList);
-        } catch (error) {
-            console.error('Error fetching suggestions:', error);
-            toast.error('Failed to load friend suggestions');
-        } finally {
-            setLoading(false);
-        }
+    const handleSendRequest = (userId) => {
+        setSendingRequests(prev => ({ ...prev, [userId]: true }));
+        sendRequestMutation.mutate(userId, {
+            onSettled: () => {
+                setSendingRequests(prev => ({ ...prev, [userId]: false }));
+            }
+        });
     };
 
-    const handleSendRequest = async (userId) => {
-        try {
-            setSendingRequests(prev => ({ ...prev, [userId]: true }));
-            await apiMethods.post(ENDPOINTS.FRIENDS.SEND_REQUEST, {
-                receiver_id: userId
-            });
-            toast.success('Friend request sent!');
-            
-            // Remove the user from suggestions after sending request
-            setSuggestions(prev => prev.filter(user => user.id !== userId));
-        } catch (error) {
-            console.error('Error sending friend request:', error);
-            toast.error(error.response?.data?.error || 'Failed to send friend request');
-        } finally {
-            setSendingRequests(prev => ({ ...prev, [userId]: false }));
-        }
+    const handleRefresh = () => {
+        refetch();
     };
 
     return (
@@ -79,7 +52,7 @@ const AddFriendList = () => {
                         <p className="text-gray-600 text-sm">Connect with people who share your interests</p>
                     </div>
                     <button
-                        onClick={fetchSuggestions}
+                        onClick={handleRefresh}
                         disabled={loading}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
                     >

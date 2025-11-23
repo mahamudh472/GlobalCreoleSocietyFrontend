@@ -1,88 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Navbar from "../Navbar";
 import { useNavigate } from "react-router-dom";
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
 import { FaUserPlus } from 'react-icons/fa';
+import { useFriendRequests, useFriendSuggestions } from '../../hooks/queries/useFriends';
+import { useRespondToRequestMutation, useSendFriendRequestMutation } from '../../hooks/mutations/useFriends';
 
 const FriendCardGrid = () => {
     const navigate = useNavigate();
-    const [friendRequests, setFriendRequests] = useState([]);
-    const [suggestions, setSuggestions] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [sendingRequests, setSendingRequests] = useState({});
+    
+    // Fetch friend requests and suggestions using TanStack Query
+    const { data: allFriendRequests = [], isLoading: loadingRequests } = useFriendRequests();
+    const { data: allSuggestions = [], isLoading: loadingSuggestions } = useFriendSuggestions();
+    const respondMutation = useRespondToRequestMutation();
+    const sendRequestMutation = useSendFriendRequestMutation();
+    
+    // Limit to first 4 items for grid view
+    const friendRequests = allFriendRequests.slice(0, 4);
+    const suggestions = allSuggestions.slice(0, 4);
+    const loading = loadingRequests || loadingSuggestions;
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            // Fetch friend requests
-            const requestsResponse = await apiMethods.get(ENDPOINTS.FRIENDS.REQUESTS);
-            
-            // Handle paginated response (results) or plain array
-            const requestsData = requestsResponse.data.results || requestsResponse.data;
-            setFriendRequests(Array.isArray(requestsData) ? requestsData.slice(0, 4) : []);
-
-            // Fetch friend suggestions
-            const suggestionsResponse = await apiMethods.get(ENDPOINTS.FRIENDS.SUGGESTIONS);
-            
-            // Handle paginated response or plain array
-            const suggestionsData = suggestionsResponse.data.results || suggestionsResponse.data;
-            setSuggestions(Array.isArray(suggestionsData) ? suggestionsData.slice(0, 4) : []);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            toast.error('Failed to load data');
-        } finally {
-            setLoading(false);
-        }
+    const handleAccept = (userId) => {
+        respondMutation.mutate({ userId, action: 'accept' });
     };
 
-    const handleAccept = async (userId) => {
-        try {
-            await apiMethods.post(ENDPOINTS.FRIENDS.RESPOND_REQUEST(userId), {
-                action: 'accept'
-            });
-            toast.success('Friend request accepted!');
-            setFriendRequests(friendRequests.filter(req => req.requester.id !== userId));
-        } catch (error) {
-            console.error('Error accepting friend request:', error);
-            toast.error('Failed to accept friend request');
-        }
+    const handleReject = (userId) => {
+        respondMutation.mutate({ userId, action: 'reject' });
     };
 
-    const handleReject = async (userId) => {
-        try {
-            await apiMethods.post(ENDPOINTS.FRIENDS.RESPOND_REQUEST(userId), {
-                action: 'reject'
-            });
-            toast.success('Friend request rejected');
-            setFriendRequests(friendRequests.filter(req => req.requester.id !== userId));
-        } catch (error) {
-            console.error('Error rejecting friend request:', error);
-            toast.error('Failed to reject friend request');
-        }
-    };
-
-    const handleSendRequest = async (userId) => {
-        try {
-            setSendingRequests(prev => ({ ...prev, [userId]: true }));
-            await apiMethods.post(ENDPOINTS.FRIENDS.SEND_REQUEST, {
-                receiver_id: userId
-            });
-            toast.success('Friend request sent!');
-            
-            // Remove the user from suggestions after sending request
-            setSuggestions(prev => prev.filter(user => user.id !== userId));
-        } catch (error) {
-            console.error('Error sending friend request:', error);
-            toast.error(error.response?.data?.error || 'Failed to send friend request');
-        } finally {
-            setSendingRequests(prev => ({ ...prev, [userId]: false }));
-        }
+    const handleSendRequest = (userId) => {
+        setSendingRequests(prev => ({ ...prev, [userId]: true }));
+        sendRequestMutation.mutate(userId, {
+            onSettled: () => {
+                setSendingRequests(prev => ({ ...prev, [userId]: false }));
+            }
+        });
     };
 
     // Helper function for default profile image

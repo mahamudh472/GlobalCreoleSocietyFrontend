@@ -1,88 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '../Navbar';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import CreateSocietyForm from './CreateSocietyForm';
-import { apiMethods } from '../../utils/api';
-import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
+import { useSocieties } from '../../hooks/queries/useSocieties';
+import { useJoinSocietyMutation, useLeaveSocietyMutation } from '../../hooks/mutations/useSocieties';
 
 const SocietyCardGrid = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [yourSocieties, setYourSocieties] = useState([]);
-  const [joinSocieties, setJoinSocieties] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Use TanStack Query for fetching societies
+  const { data: societiesData = [], isLoading: loading } = useSocieties();
+  
+  // Use mutations
+  const joinMutation = useJoinSocietyMutation();
+  const leaveMutation = useLeaveSocietyMutation();
+  
+  // Separate user's societies from others
+  const yourSocieties = societiesData.filter(s => s.is_member).slice(0, 4);
+  const joinSocieties = societiesData.filter(s => !s.is_member).slice(0, 4);
 
-  useEffect(() => {
-    fetchSocieties();
-  }, []);
-
-  const fetchSocieties = async () => {
-    try {
-      setLoading(true);
-      // Fetch all societies
-      const response = await apiMethods.get(ENDPOINTS.SOCIETIES.LIST);
-      
-      // Handle paginated response or plain array
-      const societiesData = response.data.results || response.data;
-      const societies = Array.isArray(societiesData) ? societiesData : [];
-      
-      // The API should return societies with membership info
-      // Separate user's societies from others
-      const userSocs = societies.filter(s => s.is_member);
-      const otherSocs = societies.filter(s => !s.is_member);
-      
-      setYourSocieties(userSocs.slice(0, 4));
-      setJoinSocieties(otherSocs.slice(0, 4));
-    } catch (error) {
-      console.error('Error fetching societies:', error);
-      toast.error('Failed to load societies');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLeave = async (e, societyId, societyName) => {
+  const handleLeave = (e, societyId, societyName) => {
     e.stopPropagation(); // Prevent navigation when clicking leave
     if (!window.confirm(`Are you sure you want to leave ${societyName}?`)) {
       return;
     }
     
-    try {
-      await apiMethods.post(ENDPOINTS.SOCIETIES.LEAVE(societyId));
-      toast.success(`Left ${societyName}`);
-      // Move from user societies to join societies
-      const leftSociety = yourSocieties.find(soc => soc.id === societyId);
-      if (leftSociety) {
-        // Update the is_member flag
-        leftSociety.is_member = false;
-        setJoinSocieties([...joinSocieties, leftSociety]);
-        setYourSocieties(yourSocieties.filter(soc => soc.id !== societyId));
+    leaveMutation.mutate(societyId, {
+      onSuccess: () => {
+        toast.success(`Left ${societyName}`);
+        // Cache will be automatically updated by the mutation
+      },
+      onError: (error) => {
+        console.error('Error leaving society:', error);
+        toast.error('Failed to leave society');
       }
-    } catch (error) {
-      console.error('Error leaving society:', error);
-      toast.error('Failed to leave society');
-    }
+    });
   };
 
-  const handleJoin = async (e, societyId, societyName) => {
+  const handleJoin = (e, societyId, societyName) => {
     e.stopPropagation(); // Prevent navigation when clicking join
-    try {
-      await apiMethods.post(ENDPOINTS.SOCIETIES.JOIN(societyId));
-      toast.success(`Joined ${societyName}`);
-      // Move society from join list to user societies
-      const joinedSociety = joinSocieties.find(soc => soc.id === societyId);
-      if (joinedSociety) {
-        // Update the is_member flag
-        joinedSociety.is_member = true;
-        setYourSocieties([...yourSocieties, joinedSociety]);
-        setJoinSocieties(joinSocieties.filter(soc => soc.id !== societyId));
+    
+    joinMutation.mutate(societyId, {
+      onSuccess: () => {
+        toast.success(`Joined ${societyName}`);
+        // Cache will be automatically updated by the mutation
+      },
+      onError: (error) => {
+        console.error('Error joining society:', error);
+        toast.error('Failed to join society');
       }
-    } catch (error) {
-      console.error('Error joining society:', error);
-      toast.error(error.response?.data?.error || 'Failed to join society');
-    }
+    });
   };
 
   const handleOpenModal = () => setIsModalOpen(true);
@@ -107,7 +77,7 @@ const SocietyCardGrid = () => {
           </div>
         </div>
 
-        <CreateSocietyForm isOpen={isModalOpen} onClose={handleCloseModal} onSuccess={fetchSocieties}></CreateSocietyForm>
+        <CreateSocietyForm isOpen={isModalOpen} onClose={handleCloseModal}></CreateSocietyForm>
 
         {loading ? (
           <div className="flex justify-center items-center h-64">

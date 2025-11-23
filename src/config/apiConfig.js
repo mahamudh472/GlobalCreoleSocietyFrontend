@@ -3,7 +3,7 @@ export const API_BASE_URL = 'http://localhost:8000/api';
 
 // API Endpoints
 export const ENDPOINTS = {
-  // Authentication
+  // Authentication & Accounts
   AUTH: {
     LOGIN: '/accounts/login/',
     REGISTER: '/accounts/register/',
@@ -11,6 +11,20 @@ export const ENDPOINTS = {
     REFRESH_TOKEN: '/accounts/token/refresh/',
     PROFILE: '/accounts/profile/',
     OTHER_USER_PROFILE: (userId) => `/accounts/profile/${userId}/`,
+    CHANGE_PASSWORD: '/accounts/change-password/',
+    CHANGE_EMAIL: '/accounts/change-email/',
+    SEND_OTP: '/accounts/send-otp/',
+  },
+
+  // Accounts (alias for AUTH for consistency)
+  ACCOUNTS: {
+    LOGIN: '/accounts/login/',
+    REGISTER: '/accounts/register/',
+    LOGOUT: '/accounts/logout/',
+    REFRESH_TOKEN: '/accounts/token/refresh/',
+    PROFILE: '/accounts/profile/',
+    OTHER_USER_PROFILE: (userId) => `/accounts/profile/${userId}/`,
+    FRIENDS: (userId) => `/social/friends/?user=${userId}`,
     CHANGE_PASSWORD: '/accounts/change-password/',
     CHANGE_EMAIL: '/accounts/change-email/',
     SEND_OTP: '/accounts/send-otp/',
@@ -99,6 +113,7 @@ export const ENDPOINTS = {
     CATEGORY_DETAIL: (categoryId) => `/shop/categories/${categoryId}/`,
     PRODUCTS: '/shop/products/',
     PRODUCT_DETAIL: (productId) => `/shop/products/${productId}/`,
+    SUGGESTED_PRODUCTS: (productId) => `/shop/products/${productId}/suggested/`,
     MY_PRODUCTS: '/shop/products/my-products/',
     PENDING_PRODUCTS: '/shop/products/pending/',
     APPROVE_PRODUCT: (productId) => `/shop/products/${productId}/approve/`,

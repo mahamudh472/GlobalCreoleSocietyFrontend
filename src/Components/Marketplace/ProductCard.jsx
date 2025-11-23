@@ -2,35 +2,73 @@ import React, { useState, useEffect } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
-import 'swiper/css/free-mode';
 import 'swiper/css/navigation';
-import 'swiper/css/thumbs';
-import { FreeMode, Navigation, Thumbs } from 'swiper/modules';
+import 'swiper/css/pagination';
+import { Navigation, Pagination } from 'swiper/modules';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { apiMethods } from '../../utils/api';
 import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
+import Navbar from '../Navbar';
+import ProductGrid from './ProductGrid';
 
 const ProductCard = () => {
+  const { user } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [suggestedProducts, setSuggestedProducts] = useState([]);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [swiperReady, setSwiperReady] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // Check if current user is the seller (with type-safe comparison)
+  const isOwnProduct = product && user && (
+    product.seller === user.id || 
+    String(product.seller) === String(user.id)
+  );
+  
+  // Debug logging
+  useEffect(() => {
+    if (product && user) {
+      console.log('Product seller:', product.seller, typeof product.seller);
+      console.log('Current user ID:', user.id, typeof user.id);
+      console.log('Is own product?', isOwnProduct);
+    }
+  }, [product, user, isOwnProduct]);
+
   useEffect(() => {
     if (id) {
+      // Reset states when navigating to a new product
+      setQuantity(1);
+      setSwiperReady(false);
       fetchProduct();
     }
   }, [id]);
+
+  // Delay Swiper mount until product is loaded
+  useEffect(() => {
+    if (product && !loading) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        setSwiperReady(true);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [product, loading]);
 
   const fetchProduct = async () => {
     try {
       setLoading(true);
       const response = await apiMethods.get(ENDPOINTS.SHOP.PRODUCT_DETAIL(id));
+      console.log('Product data received:', response.data);
+      console.log('Seller name:', response.data.seller_name);
       setProduct(response.data);
+      
+      // Fetch suggested products using the new endpoint
+      fetchSuggestedProducts(response.data.id);
     } catch (error) {
       console.error('Error fetching product:', error);
       toast.error('Failed to load product');
@@ -39,7 +77,23 @@ const ProductCard = () => {
     }
   };
 
+  const fetchSuggestedProducts = async (productId) => {
+    try {
+      const response = await apiMethods.get(
+        ENDPOINTS.SHOP.SUGGESTED_PRODUCTS(productId)
+      );
+      setSuggestedProducts(response.data);
+    } catch (error) {
+      console.error('Error fetching suggested products:', error);
+    }
+  };
+
   const handleAddToCart = async () => {
+    if (isOwnProduct) {
+      toast.error('You cannot add your own product to cart');
+      return;
+    }
+    
     try {
       setAddingToCart(true);
       await apiMethods.post(ENDPOINTS.SHOP.ADD_TO_CART, {
@@ -56,6 +110,11 @@ const ProductCard = () => {
   };
 
   const handleBuyNow = () => {
+    if (isOwnProduct) {
+      toast.error('You cannot buy your own product');
+      return;
+    }
+    
     // Store product and quantity in state and navigate to payment
     navigate(`/marketplace/${id}/payment`, { 
       state: { 
@@ -78,17 +137,23 @@ const ProductCard = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
+      <>
+        <Navbar />
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </>
     );
   }
 
   if (!product) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p className="text-gray-500">Product not found</p>
-      </div>
+      <>
+        <Navbar />
+        <div className="flex justify-center items-center min-h-screen">
+          <p className="text-gray-500">Product not found</p>
+        </div>
+      </>
     );
   }
 
@@ -98,61 +163,44 @@ const ProductCard = () => {
     ? product.images.map(img => img.image_url || img.image)
     : (product.primary_image ? [product.primary_image.image_url || product.primary_image.image] : []);
 
+  const hasImages = productImages.length > 0;
+
   return (
-    <div className="flex flex-col lg:flex-row items-start rounded-lg p-4 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-0 lg:space-x-8">
+    <>
+      <Navbar />
+      <div className="flex flex-col lg:flex-row items-start rounded-lg p-4 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-0 lg:space-x-8">
 
       {/* Product Images */}
       <div className="w-full lg:w-[60%]">
-        {productImages.length > 0 ? (
-          <>
-            {/* Main Swiper */}
+        {hasImages && productImages.every(img => img) && swiperReady ? (
+          <div className="swiper-container-wrapper">
+            {/* Main Swiper - Simplified without thumbs */}
             <Swiper
-              loop={productImages.length > 1}
               spaceBetween={10}
-              navigation={true}
-              thumbs={{ swiper: thumbsSwiper }}
-              modules={[FreeMode, Navigation, Thumbs]}
+              navigation={productImages.length > 1}
+              pagination={{ clickable: true }}
+              modules={[Navigation, Pagination]}
               className="rounded-xl overflow-hidden"
+              style={{ '--swiper-navigation-size': '30px' }}
             >
               {productImages.map((img, idx) => (
-                <SwiperSlide key={idx}>
+                <SwiperSlide key={`slide-${id}-${idx}`}>
                   <img
                     src={img}
                     alt={`${product.name}-${idx}`}
                     className="w-full h-[300px] sm:h-[400px] md:h-[450px] object-cover rounded-xl"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
+                    }}
                   />
                 </SwiperSlide>
               ))}
             </Swiper>
-
-            {/* Thumbnail Swiper */}
-            {productImages.length > 1 && (
-              <Swiper
-                onSwiper={setThumbsSwiper}
-                loop={true}
-                spaceBetween={10}
-                slidesPerView={3}
-                breakpoints={{
-                  640: { slidesPerView: 4 },
-                  768: { slidesPerView: 5 },
-                }}
-                freeMode={true}
-                watchSlidesProgress={true}
-                modules={[FreeMode, Navigation, Thumbs]}
-                className="mt-4"
-              >
-                {productImages.map((img, idx) => (
-                  <SwiperSlide key={idx}>
-                    <img
-                      src={img}
-                      alt={`thumb-${idx}`}
-                      className="w-full h-16 sm:h-20 object-cover rounded-lg opacity-60 hover:opacity-100 transition"
-                    />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            )}
-          </>
+          </div>
+        ) : hasImages && !swiperReady ? (
+          <div className="w-full h-[400px] bg-gray-100 rounded-xl flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
         ) : (
           <div className="w-full h-[400px] bg-gray-200 rounded-xl flex items-center justify-center">
             <p className="text-gray-500">No image available</p>
@@ -168,10 +216,13 @@ const ProductCard = () => {
           <p className="text-xl font-semibold mt-2">{product.name}</p>
           <p className="text-sm text-gray-500 mt-1">{product.category_name}</p>
           <p className="text-sm text-gray-600 mt-3">{product.description}</p>
-          <p className="text-sm text-gray-500 mt-2">Stock: {product.stock} available</p>
-          <p className="text-sm text-gray-500">
-            Seller: {product.seller_name}
-          </p>
+          <div className="flex items-center gap-4 mt-3">
+            <p className="text-sm text-gray-500">Stock: {product.stock} available</p>
+            <span className="text-gray-300">|</span>
+            <p className="text-sm text-gray-700 font-medium">
+              Seller: <span className="text-blue-600">{product.seller_name || 'Unknown'}</span>
+            </p>
+          </div>
         </div>
 
         {/* Quantity Section */}
@@ -208,25 +259,53 @@ const ProductCard = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 mt-7">
-            <button 
-              onClick={handleAddToCart}
-              disabled={addingToCart || product.stock === 0}
-              className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {addingToCart ? 'Adding...' : 'Add to Cart'}
-            </button>
-            <button
-              onClick={handleBuyNow}
-              disabled={product.stock === 0}
-              className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Buy Now
-            </button>
-          </div>
+          {isOwnProduct ? (
+            <div className="mt-7 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 font-medium text-center">
+                This is your product
+              </p>
+              <p className="text-blue-600 text-sm text-center mt-2">
+                You cannot purchase your own products
+              </p>
+              <button
+                onClick={() => navigate(`/marketplace/myproduct/edit/${id}`)}
+                className="w-full mt-3 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+              >
+                Edit Product
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 mt-7">
+              <button 
+                onClick={handleAddToCart}
+                disabled={addingToCart || product.stock === 0}
+                className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addingToCart ? 'Adding...' : 'Add to Cart'}
+              </button>
+              <button
+                onClick={handleBuyNow}
+                disabled={product.stock === 0}
+                className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Buy Now
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
+
+    {/* Suggested Products Section */}
+    {suggestedProducts.length > 0 && (
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          Suggested Products
+        </h2>
+        <ProductGrid products={suggestedProducts} />
+      </div>
+    )}
+    </>
   );
 };
 
