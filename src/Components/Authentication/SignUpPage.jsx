@@ -3,10 +3,14 @@ import { useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { useNavigate } from "react-router-dom";
 import AuthButton from "./AuthButton";
+import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-toastify";
 
 
 const SignUpPage = ({ onSwitchToLogin }) => {
     const navigate = useNavigate();
+    const { register } = useAuth();
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         profileName: "",
         email: "",
@@ -37,9 +41,48 @@ const SignUpPage = ({ onSwitchToLogin }) => {
         }))
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        
+        setLoading(true);
+
+        try {
+            // Combine date of birth
+            const dateOfBirth = `${formData.birthYear}-${String(formData.birthMonth).padStart(2, '0')}-${String(formData.birthDate).padStart(2, '0')}`;
+            
+            // Prepare registration data according to API requirements
+            const registrationData = {
+                email: formData.email,
+                password: formData.password,
+                profile_name: formData.profileName,
+                phone_number: formData.countryCode + formData.phoneNumber,
+                date_of_birth: dateOfBirth,
+                gender: formData.gender || undefined,
+            };
+
+            const result = await register(registrationData);
+            
+            if (result.success) {
+                toast.success("Registration successful!");
+                navigate('/feed');
+            } else {
+                // Handle error messages from API
+                if (typeof result.error === 'object') {
+                    Object.entries(result.error).forEach(([field, messages]) => {
+                        if (Array.isArray(messages)) {
+                            messages.forEach(msg => toast.error(`${field}: ${msg}`));
+                        } else {
+                            toast.error(`${field}: ${messages}`);
+                        }
+                    });
+                } else {
+                    toast.error(result.error || "Registration failed");
+                }
+            }
+        } catch (error) {
+            toast.error("An error occurred. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     const months = [
@@ -283,9 +326,10 @@ const SignUpPage = ({ onSwitchToLogin }) => {
 
                   {/* Submit Button */}
                     <AuthButton
-                        text="Log In"
+                        text={loading ? "Creating Account..." : "Sign Up"}
                         type="submit"
                         className="w-full "
+                        disabled={loading}
                     />
 
                     {/* Switch to Login */}

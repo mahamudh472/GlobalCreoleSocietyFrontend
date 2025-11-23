@@ -1,29 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../Navbar';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import CreateSocietyForm from './CreateSocietyForm';
+import { apiMethods } from '../../utils/api';
+import { ENDPOINTS } from '../../config/apiConfig';
+import { toast } from 'react-toastify';
 
 const SocietyCardGrid = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [yourSocieties, setYourSocieties] = useState([]);
+  const [joinSocieties, setJoinSocieties] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSocieties();
+  }, []);
+
+  const fetchSocieties = async () => {
+    try {
+      setLoading(true);
+      // Fetch all societies
+      const response = await apiMethods.get(ENDPOINTS.SOCIETIES.LIST);
+      
+      // Handle paginated response or plain array
+      const societiesData = response.data.results || response.data;
+      const societies = Array.isArray(societiesData) ? societiesData : [];
+      
+      // The API should return societies with membership info
+      // Separate user's societies from others
+      const userSocs = societies.filter(s => s.is_member);
+      const otherSocs = societies.filter(s => !s.is_member);
+      
+      setYourSocieties(userSocs.slice(0, 4));
+      setJoinSocieties(otherSocs.slice(0, 4));
+    } catch (error) {
+      console.error('Error fetching societies:', error);
+      toast.error('Failed to load societies');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLeave = async (e, societyId, societyName) => {
+    e.stopPropagation(); // Prevent navigation when clicking leave
+    if (!window.confirm(`Are you sure you want to leave ${societyName}?`)) {
+      return;
+    }
+    
+    try {
+      await apiMethods.post(ENDPOINTS.SOCIETIES.LEAVE(societyId));
+      toast.success(`Left ${societyName}`);
+      // Remove from user societies list
+      setYourSocieties(yourSocieties.filter(soc => soc.id !== societyId));
+    } catch (error) {
+      console.error('Error leaving society:', error);
+      toast.error('Failed to leave society');
+    }
+  };
+
+  const handleJoin = async (e, societyId, societyName) => {
+    e.stopPropagation(); // Prevent navigation when clicking join
+    try {
+      await apiMethods.post(ENDPOINTS.SOCIETIES.JOIN(societyId));
+      toast.success(`Joined ${societyName}`);
+      // Move society from join list to user societies
+      const joinedSociety = joinSocieties.find(soc => soc.id === societyId);
+      if (joinedSociety) {
+        setYourSocieties([...yourSocieties, joinedSociety]);
+        setJoinSocieties(joinSocieties.filter(soc => soc.id !== societyId));
+      }
+    } catch (error) {
+      console.error('Error joining society:', error);
+      toast.error(error.response?.data?.error || 'Failed to join society');
+    }
+  };
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
-
-  const [yourSocieties, setYourSocieties] = useState([
-    { id: 1, name: "Society 1", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "1 hour" },
-    { id: 2, name: "Society 2", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "2 hours" },
-    { id: 3, name: "Society 3", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "3 hours" },
-    { id: 4, name: "Society 4", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "4 hours" },
-  ]);
-
-  const [joinSocieties, setJoinSocieties] = useState([
-    { id: 5, name: "Society 5", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "30 mins" },
-    { id: 6, name: "Society 6", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "10 mins" },
-    { id: 7, name: "Society 7", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "2 days" },
-    { id: 8, name: "Society 8", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "1 week" },
-  ]);
 
   return (
     <div className='bg-gray-100 min-h-screen'>
@@ -44,83 +99,109 @@ const SocietyCardGrid = () => {
           </div>
         </div>
 
-        <CreateSocietyForm isOpen={isModalOpen} onClose={handleCloseModal}></CreateSocietyForm>
+        <CreateSocietyForm isOpen={isModalOpen} onClose={handleCloseModal} onSuccess={fetchSocieties}></CreateSocietyForm>
 
-        {/* Your Societies */}
-        <div className='flex items-center justify-between mt-5'>
-          <h2 className="text-xl sm:text-2xl font-bold mb-3">Your Societies</h2>
-          <p
-            onClick={() => navigate('/society/my_society_list')}
-            className='text-[#3B82F6] font-semibold cursor-pointer'>
-            See All
-          </p>
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <>
+            {/* Your Societies */}
+            <div className='flex items-center justify-between mt-5'>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3">Your Societies</h2>
+              {yourSocieties.length > 0 && (
+                <p
+                  onClick={() => navigate('/society/my_society_list')}
+                  className='text-[#3B82F6] font-semibold cursor-pointer'>
+                  See All
+                </p>
+              )}
+            </div>
 
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {yourSocieties.map((society) => (
-            <div
-              onClick={() => {
-                navigate(`/society/${society?.id}`)
-              }}
-
-              key={society.id}
-              className="bg-gray-50 rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:scale-103 transform transition-transform duration-700 ease-in-out cursor-pointer"
-            >
-              <img
-                src={society.logo}
-                alt={society.name}
-                className="w-24 h-24 mb-2"
-              />
-              <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
-              <p className="text-gray-600 text-sm sm:text-base">Last Active {society.lastActive} ago</p>
-              <div className="flex justify-between space-x-2 mt-2">
-                <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
-                  Leave
-                </button>
-                <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
-                  View
-                </button>
+            {yourSocieties.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">You haven't joined any societies yet</p>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {yourSocieties.map((society) => (
+                  <div
+                    onClick={() => {
+                      navigate(`/society/${society?.id}`)
+                    }}
+                    key={society.id}
+                    className="bg-gray-50 rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:scale-103 transform transition-transform duration-700 ease-in-out cursor-pointer"
+                  >
+                    <img
+                      src={society.cover_picture || "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"}
+                      alt={society.name}
+                      className="w-24 h-24 mb-2 rounded-full object-cover"
+                    />
+                    <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
+                    <p className="text-gray-600 text-sm sm:text-base">{society.members_count} members</p>
+                    <div className="flex justify-between space-x-2 mt-2">
+                      <button
+                        onClick={(e) => handleLeave(e, society.id, society.name)}
+                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm sm:text-base"
+                      >
+                        Leave
+                      </button>
+                      <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
+                        View
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+
+            {/* Join Societies */}
+            <div className='flex items-center justify-between mt-15'>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3">Join Societies</h2>
+              {joinSocieties.length > 0 && (
+                <p
+                  onClick={() => navigate('/society/join_society_list')}
+                  className='text-[#3B82F6] font-semibold cursor-pointer'>
+                  See All
+                </p>
+              )}
             </div>
-          ))}
-        </div>
 
-
-        {/* Join Societies */}
-        <div className='flex items-center justify-between mt-15'>
-          <h2 className="text-xl sm:text-2xl font-bold mb-3">Join Societies</h2>
-          <p
-            onClick={() => navigate('/society/join_society_list')}
-            className='text-[#3B82F6] font-semibold cursor-pointer'>
-            See All
-          </p>
-        </div>
-
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {joinSocieties.map((society) => (
-            <div
-              onClick={() => {
-                navigate(`/society/${society?.id}`)
-              }}
-
-              key={society.id}
-              className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:scale-103 transform transition-transform duration-700 ease-in-out cursor-pointer"
-            >
-              <img
-                src={society.logo}
-                alt={society.name}
-                className="w-24 h-24 mb-2"
-              />
-              <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
-              <p className="text-gray-600 text-sm sm:text-base">Last Active {society.lastActive} ago</p>
-              <button className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
-                Join
-              </button>
-            </div>
-          ))}
-        </div>
+            {joinSocieties.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No societies available to join</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {joinSocieties.map((society) => (
+                  <div
+                    onClick={() => {
+                      navigate(`/society/${society?.id}`)
+                    }}
+                    key={society.id}
+                    className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:scale-103 transform transition-transform duration-700 ease-in-out cursor-pointer"
+                  >
+                    <img
+                      src={society.cover_picture || "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"}
+                      alt={society.name}
+                      className="w-24 h-24 mb-2 rounded-full object-cover"
+                    />
+                    <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
+                    <p className="text-gray-600 text-sm sm:text-base">{society.members_count} members</p>
+                    <button
+                      onClick={(e) => handleJoin(e, society.id, society.name)}
+                      className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
+                    >
+                      {society.privacy === 'private' ? 'Request to Join' : 'Join'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </section>
     </div>
   );

@@ -1,24 +1,75 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FaSearch } from "react-icons/fa"
 import ChatListItem from "./ChatListItem"
+import { apiMethods } from "../utils/api"
+import { ENDPOINTS } from "../config/apiConfig"
 
-function ChatSidebar({ chats, selectedChat, onChatSelect, filter, onFilterChange }) {
+function ChatSidebar({ chats, selectedChat, onChatSelect, filter, onFilterChange, onCreateConversation }) {
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+
+  useEffect(() => {
+    const searchFriends = async () => {
+      if (searchQuery.trim().length > 0) {
+        setIsSearching(true)
+        try {
+          const response = await apiMethods.get(ENDPOINTS.CHAT.SEARCH_FRIENDS, {
+            params: { q: searchQuery }
+          })
+          setSearchResults(response.data)
+        } catch (error) {
+          console.error("Error searching friends:", error)
+          setSearchResults([])
+        } finally {
+          setIsSearching(false)
+        }
+      } else {
+        setSearchResults([])
+      }
+    }
+
+    const debounce = setTimeout(() => {
+      searchFriends()
+    }, 300)
+
+    return () => clearTimeout(debounce)
+  }, [searchQuery])
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value)
-    console.log("Searching for:", e.target.value)
   }
 
-  const filteredChats = chats.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const handleFriendSelect = async (friend) => {
+    if (friend.has_conversation) {
+      // Find and select existing conversation
+      const existingChat = chats.find(chat => chat.id === friend.conversation_id)
+      if (existingChat) {
+        onChatSelect(existingChat)
+      }
+    } else {
+      // Create new conversation
+      if (onCreateConversation) {
+        await onCreateConversation(friend.id)
+      }
+    }
+    setSearchQuery("") // Clear search after selection
+    setSearchResults([])
+  }
+
+  const filteredChats = searchQuery.trim().length === 0 
+    ? chats.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : []
 
   return (
     <div className="w-full md:w-80 lg:w-96 border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Chats</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Chats</h2>
+        </div>
 
         {/* Search */}
         <div className="relative mb-4">
@@ -55,7 +106,38 @@ function ChatSidebar({ chats, selectedChat, onChatSelect, filter, onFilterChange
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredChats.length > 0 ? (
+        {searchQuery.trim().length > 0 ? (
+          // Show search results (friends)
+          isSearching ? (
+            <div className="p-4 text-center text-gray-500 text-sm">Searching...</div>
+          ) : searchResults.length > 0 ? (
+            searchResults.map((friend) => (
+              <div
+                key={friend.id}
+                onClick={() => handleFriendSelect(friend)}
+                className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100"
+              >
+                <div className="relative">
+                  <img
+                    src={friend.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.profile_name || 'User')}&size=150&background=3b82f6&color=fff`}
+                    alt={friend.profile_name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 truncate">{friend.profile_name}</h3>
+                  <p className="text-sm text-gray-500 truncate">{friend.email}</p>
+                  {!friend.has_conversation && (
+                    <p className="text-xs text-blue-500 mt-1">Click to start conversation</p>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-4 text-center text-gray-500 text-sm">No friends found</div>
+          )
+        ) : filteredChats.length > 0 ? (
+          // Show existing conversations
           filteredChats.map((chat) => (
             <ChatListItem
               key={chat.id}

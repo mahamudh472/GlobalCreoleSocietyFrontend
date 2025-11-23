@@ -1,102 +1,136 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { X, ChevronRight } from "lucide-react"
+import { X, Heart } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { apiMethods } from "../../utils/api"
+import { ENDPOINTS } from "../../config/apiConfig"
+import { toast } from "react-toastify"
+import { useAuth } from "../../context/AuthContext"
 
-const CommentsModal = ({ isOpen, onClose, postId }) => {
-  const [shareMessage, setShareMessage] = useState("") // For typing the comment
-  const [comments, setComments] = useState([]) // To store comments
+const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [shareMessage, setShareMessage] = useState("")
+  const [comments, setComments] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [posting, setPosting] = useState(false)
   const popupRef = useRef(null)
 
- 
-  // Mock data for comments - replace with actual API calls
-  const mockComments = [
-    {
-      id: 1,
-      user: {
-        username: "Mika Johnson",
-        avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg",
-      },
-      content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Diam nisl, eros neque, lorem vel vulputate vitae lorem.",
-      timestamp: "5m",
-      likes: 0,
-      isLiked: false,
-    },
-    {
-      id: 2,
-      user: {
-        username: "Mika Johnson",
-        avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg",
-      },
-      content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Diam nisl, eros neque, lorem vel vulputate vitae lorem.",
-      timestamp: "5m",
-      likes: 0,
-      isLiked: false,
-    },
-    {
-      id: 3,
-      user: {
-        username: "Mika Johnson",
-        avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg",
-      },
-      content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Diam nisl, eros neque, lorem vel vulputate vitae lorem.",
-      timestamp: "5m",
-      likes: 0,
-      isLiked: false,
-    },
-  ]
+  const DEFAULT_PROFILE_IMAGE = user 
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
+    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
 
-  // Handle Post Comment and Enter key press
-  const handlePostComment = () => {
-    if (!shareMessage.trim()) return; // Don't post empty comments
+  const getDefaultProfileImage = (commentUser) => {
+    if (!commentUser) return DEFAULT_PROFILE_IMAGE;
+    const name = commentUser.profile_name || commentUser.email || "User";
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
+  };
 
-    // Simulate adding the comment to the state (it could be sent to a backend here)
-    const newComment = {
-      id: comments.length + 1, // Just generate an ID for new comment (backend will return the real ID)
-      user: {
-        username: "Current User", // Replace with logged-in user info
-        avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", // Replace with logged-in user avatar
-      },
-      content: shareMessage,
-      timestamp: "Just now",
-      likes: 0,
-      isLiked: false,
+  const handleUserClick = (userId) => {
+    if (userId) {
+      if (user && userId === user.id) {
+        navigate('/profile');
+      } else {
+        navigate(`/profile/${userId}`);
+      }
+      onClose(); // Close modal when navigating
     }
+  };
 
-    // Update the state with the new comment
-    setComments([newComment, ...comments])
+  // Fetch comments when modal opens
+  useEffect(() => {
+    if (isOpen && postId) {
+      fetchComments();
+    }
+  }, [isOpen, postId]);
 
-    // Clear the textarea after posting
-    setShareMessage("")
-  }
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      const response = await apiMethods.get(ENDPOINTS.POSTS.COMMENTS(postId));
+      
+      // Handle paginated response or plain array
+      const commentsData = response.data.results || response.data;
+      setComments(Array.isArray(commentsData) ? commentsData : []);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      toast.error('Failed to load comments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Handle Enter key press
+  const handlePostComment = async () => {
+    if (!shareMessage.trim()) return;
+
+    setPosting(true);
+    try {
+      const response = await apiMethods.post(ENDPOINTS.POSTS.COMMENTS(postId), {
+        content: shareMessage
+      });
+      
+      // Add the new comment to the beginning of the list
+      setComments([response.data, ...comments]);
+      setShareMessage("");
+      toast.success("Comment posted!");
+      
+      // Notify parent component to update comment count
+      if (onCommentAdded) {
+        onCommentAdded(postId);
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      toast.error('Failed to post comment');
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleLikeComment = async (commentId) => {
+    try {
+      const response = await apiMethods.post(ENDPOINTS.COMMENTS.LIKE(commentId));
+      
+      // Update the comment in the list
+      setComments(prevComments => 
+        prevComments.map(comment => 
+          comment.id === commentId 
+            ? { 
+                ...comment, 
+                is_liked: response.data.liked,
+                like_count: response.data.liked 
+                  ? (comment.like_count || 0) + 1 
+                  : (comment.like_count || 0) - 1
+              }
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      toast.error('Failed to like comment');
+    }
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // Prevent the default "new line" behavior
+      e.preventDefault();
       handlePostComment();
     }
-  }
+  };
 
   // Close the modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
-        onClose(); // Close the modal if clicked outside
+        onClose();
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside)
-
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside) // Clean up event listener
+      document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [onClose])
-
-  // Initially load comments (this can be replaced by an API call)
-  useEffect(() => {
-    setComments(mockComments); // Set the initial comments from mock data
-  }, [])
 
   if (!isOpen) return null
 
@@ -116,20 +150,49 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
 
         {/* Comments Section */}
         <div className="px-4 py-3 overflow-y-auto max-h-[500px]">
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex items-start space-x-3 mb-4">
-              <img src={comment.user.avatar} alt={comment.user.username} className="w-10 h-10 rounded-full object-cover" />
-              <div className="flex flex-col">
-                <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-gray-900">{comment.user.username}</span>
-                </div>
-                <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
-                  <span className="text-sm text-gray-500">{comment.timestamp}</span>
-                
-                
-              </div>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
-          ))}
+          ) : comments.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No comments yet. Be the first to comment!</p>
+          ) : (
+            comments.map((comment) => (
+              <div key={comment.id} className="flex items-start space-x-3 mb-4">
+                <img 
+                  src={comment.user?.profile_image || getDefaultProfileImage(comment.user)} 
+                  alt={comment.user?.profile_name || comment.user?.username} 
+                  className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80" 
+                  onClick={() => handleUserClick(comment.user?.id)}
+                />
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <span 
+                      className="font-semibold text-gray-900 cursor-pointer hover:underline"
+                      onClick={() => handleUserClick(comment.user?.id)}
+                    >
+                      {comment.user?.profile_name || comment.user?.username}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {comment.created_at ? new Date(comment.created_at).toLocaleString() : comment.timestamp}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
+                  <div className="flex items-center mt-2 space-x-4">
+                    <button
+                      onClick={() => handleLikeComment(comment.id)}
+                      className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-500"
+                    >
+                      <Heart 
+                        className={`w-4 h-4 ${comment.is_liked ? 'fill-red-500 text-red-500' : ''}`} 
+                      />
+                      <span>{comment.like_count || 0}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Comment Input Section */}
@@ -138,16 +201,18 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
             value={shareMessage}
             onChange={(e) => setShareMessage(e.target.value)}
             placeholder="Write a comment..."
-            onKeyDown={handleKeyPress} // Add key press listener for Enter
-            className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onKeyDown={handleKeyPress}
+            disabled={posting}
+            className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
             rows="4"
           />
           <div className="flex justify-end mt-2">
             <button
-              onClick={handlePostComment} // Post comment when clicked
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
+              onClick={handlePostComment}
+              disabled={posting || !shareMessage.trim()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Post Comment
+              {posting ? "Posting..." : "Post Comment"}
             </button>
           </div>
         </div>

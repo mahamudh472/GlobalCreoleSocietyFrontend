@@ -77,6 +77,17 @@ const MySociety = () => {
 
     const closeShareModal = () => setActiveSharePostId(null)
     const closeCommentModal = () => setActiveCommentPostId(null)
+
+    const handleCommentAdded = (postId) => {
+        // Update the comment count for the specific post
+        setPosts((prev) => 
+            prev.map(post => 
+                post.id === postId 
+                    ? { ...post, comment_count: (post.comment_count || post.comments || 0) + 1 }
+                    : post
+            )
+        );
+    };
 // ..................................................................................
 
 
@@ -127,6 +138,7 @@ const MySociety = () => {
                 isOpen={!!activeCommentPostId}
                 onClose={closeCommentModal}
                 postId={activeCommentPostId}
+                onCommentAdded={handleCommentAdded}
             />
 
         </div>

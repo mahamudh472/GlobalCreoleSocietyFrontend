@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import Navbar from '../Components/Navbar'
 import ProfileHeader from './ProfileHeader'
 import AboutMe from './AboutMe'
@@ -8,64 +9,20 @@ import PostCard from '../Components/Feed/PostCard'
 import EditAboutModal from './EditAboutModal'
 import ShareModal from '../Components/Feed/ShareModal'
 import CommentsModal from '../Components/Feed/CommentsModal'
-
-const mockPosts = [
-    {
-        id: 1,
-        user: {
-            username: "Jubayer Ahmad",
-            avatar: "https://st3.depositphotos.com/15648834/17930/v/450/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg",
-            timestamp: "2h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: null,
-        likes: 12,
-        comments: 7,
-        isLiked: false,
-    },
-    {
-        id: 2,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?cs=srgb&dl=pexels-sulimansallehi-1704488.jpg&fm=jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-    {
-        id: 3,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://i.pinimg.com/564x/39/33/f6/3933f64de1724bb67264818810e3f2cb.jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-    {
-        id: 4,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://i.pinimg.com/236x/61/c7/7a/61c77ac5085d548b40e7ac2020143453.jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-]
+import { apiMethods } from '../utils/api'
+import { ENDPOINTS } from '../config/apiConfig'
+import { useAuth } from '../context/AuthContext'
 
 const Profile = () => {
-    const [posts, setPosts] = useState(mockPosts)
+    const { userId } = useParams() // Get user ID from URL if viewing another user's profile
+    const { user: currentUser, updateUser } = useAuth()
+    const [profile, setProfile] = useState(null)
+    const [posts, setPosts] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [loadingMore, setLoadingMore] = useState(false)
+    const [hasMore, setHasMore] = useState(true)
+    const [nextPage, setNextPage] = useState(1)
+    const [error, setError] = useState(null)
 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const editAboutmodal = useRef(null)
@@ -73,6 +30,9 @@ const Profile = () => {
     // Modals: comment & share
     const [activeSharePostId, setActiveSharePostId] = useState(null)
     const [activeCommentPostId, setActiveCommentPostId] = useState(null)
+    
+    const observerRef = useRef(null)
+    const loadMoreRef = useRef(null)
 
     const handleOpenShareModal = (postId) => setActiveSharePostId(postId)
     const handleOpenCommentModal = (postId) => setActiveCommentPostId(postId)
@@ -80,7 +40,127 @@ const Profile = () => {
     const closeShareModal = () => setActiveSharePostId(null)
     const closeCommentModal = () => setActiveCommentPostId(null)
 
+    const handleCommentAdded = (postId) => {
+        // Update the comment count for the specific post
+        setPosts((prev) => 
+            prev.map(post => 
+                post.id === postId 
+                    ? { ...post, comment_count: (post.comment_count || 0) + 1 }
+                    : post
+            )
+        );
+    };
 
+    // Fetch profile data
+    useEffect(() => {
+        fetchProfile()
+        fetchProfilePosts(1)
+    }, [userId])
+
+    // Infinite scroll observer
+    useEffect(() => {
+        if (loading || loadingMore || !hasMore) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore) {
+                    fetchProfilePosts(nextPage);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (loadMoreRef.current) {
+            observer.observe(loadMoreRef.current);
+        }
+
+        observerRef.current = observer;
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, [loading, loadingMore, hasMore, nextPage])
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true)
+            
+            // Check if viewing other user's profile or own profile
+            if (userId && userId !== currentUser?.id) {
+                // Fetch other user's profile
+                const response = await apiMethods.get(ENDPOINTS.AUTH.OTHER_USER_PROFILE(userId))
+                setProfile(response.data)
+                setError(null)
+            } else {
+                // Fetch current user's own profile
+                const response = await apiMethods.get(ENDPOINTS.AUTH.PROFILE)
+                setProfile(response.data)
+                setError(null)
+            }
+        } catch (err) {
+            console.error("Failed to fetch profile:", err)
+            if (err.response?.status === 403) {
+                setError("This profile is private")
+            } else if (err.response?.status === 404) {
+                setError("User not found")
+            } else {
+                setError("Failed to load profile")
+            }
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const fetchProfilePosts = async (page = 1) => {
+        try {
+            if (page === 1) {
+                setLoading(true);
+            } else {
+                setLoadingMore(true);
+            }
+
+            // Fetch user's posts with pagination
+            const response = await apiMethods.get(`${ENDPOINTS.POSTS.LIST}?page=${page}`)
+            
+            // Handle paginated response
+            const allPosts = response.data.results || response.data;
+            const next = response.data.next;
+            
+            // Filter posts by current user or profile user
+            const targetUserId = userId || currentUser?.id
+            const userPosts = allPosts.filter(post => post.user?.id === targetUserId)
+            
+            if (page === 1) {
+                setPosts(userPosts);
+            } else {
+                setPosts((prev) => [...prev, ...userPosts]);
+            }
+            
+            setHasMore(!!next);
+            if (next) {
+                setNextPage(page + 1);
+            }
+        } catch (err) {
+            console.error("Failed to fetch profile posts:", err)
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    }
+
+    const updateProfile = async (updatedData) => {
+        try {
+            const response = await apiMethods.patch(ENDPOINTS.AUTH.PROFILE, updatedData)
+            setProfile(response.data)
+            return { success: true }
+        } catch (err) {
+            console.error("Failed to update profile:", err)
+            return { success: false, error: err.response?.data || "Update failed" }
+        }
+    }
+    
     
     const handleEditAboutPopup = () => {
         setIsModalOpen(prev => !prev)
@@ -98,6 +178,34 @@ const Profile = () => {
             document.removeEventListener("mousedown", handleClickOutside)
         }
     }, [])
+
+    const isOwnProfile = !userId || userId === currentUser?.id
+
+    if (loading && !profile) {
+        return (
+            <div className="relative bg-[#F0F0F0] min-h-screen pb-20 my-7">
+                <nav>
+                    <Navbar />
+                </nav>
+                <div className="flex items-center justify-center h-96">
+                    <div className="text-xl text-gray-600">Loading profile...</div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="relative bg-[#F0F0F0] min-h-screen pb-20 my-7">
+                <nav>
+                    <Navbar />
+                </nav>
+                <div className="flex items-center justify-center h-96">
+                    <div className="text-xl text-red-600">{error}</div>
+                </div>
+            </div>
+        )
+    }
 
     const mockProfile = {
         id: "user_12345",
@@ -163,35 +271,81 @@ const Profile = () => {
             {/* Profile Body */}
             <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-5">
                 <section className="pb-5 rounded-lg transform transition-transform duration-700 ease-out hover:scale-101">
-                    <ProfileHeader data={mockProfile} />
+                    <ProfileHeader 
+                        data={profile} 
+                        posts={posts} 
+                        isOwnProfile={isOwnProfile}
+                        onProfileUpdate={(updatedProfile) => {
+                            setProfile(updatedProfile);
+                            // Update AuthContext - this updates Navbar and everywhere
+                            if (isOwnProfile) {
+                                updateUser(updatedProfile);
+                            }
+                        }}
+                    />
                 </section>
 
                 <section className="md:grid grid-cols-12 gap-5">
                     <section className="col-span-4">
                         <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-103">
-                            <AboutMe handleEditAboutPopup={handleEditAboutPopup} />
+                            <AboutMe 
+                                profile={profile} 
+                                handleEditAboutPopup={handleEditAboutPopup} 
+                                isOwnProfile={isOwnProfile}
+                            />
                         </div>
                         <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-103">
-                            <FriendsGrid />
+                            <FriendsGrid userId={profile?.id} />
                         </div>
                     </section>
 
                     <section className="col-span-8">
                         <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-102">
-                            <Description />
+                            <Description 
+                                profile={profile} 
+                                onUpdate={updateProfile}
+                                isOwnProfile={isOwnProfile}
+                            />
                         </div>
 
                         {/* Posts Section */}
-                        <div className="space-y-4">
-                            {posts.map((post) => (
-                                <PostCard
-                                    key={post.id}
-                                    post={post}
-                                    onComment={() => handleOpenCommentModal(post.id)}
-                                    onShare={() => handleOpenShareModal(post.id)}
-                                />
-                            ))}
-                        </div>
+                        {loading && posts.length === 0 ? (
+                            <div className="bg-white rounded-lg p-8 text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                            </div>
+                        ) : posts.length === 0 ? (
+                            <div className="bg-white rounded-lg p-8 text-center text-gray-500">
+                                No posts yet
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-4">
+                                    {posts.map((post) => (
+                                        <PostCard
+                                            key={post.id}
+                                            post={post}
+                                            onComment={() => handleOpenCommentModal(post.id)}
+                                            onShare={() => handleOpenShareModal(post.id)}
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* Infinite scroll trigger */}
+                                {hasMore && (
+                                    <div ref={loadMoreRef} className="flex justify-center items-center py-8">
+                                        {loadingMore && (
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {!hasMore && posts.length > 0 && (
+                                    <div className="text-center py-8 text-gray-500">
+                                        No more posts to load
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </section>
                 </section>
             </div>
@@ -206,6 +360,7 @@ const Profile = () => {
                 isOpen={!!activeCommentPostId}
                 onClose={closeCommentModal}
                 postId={activeCommentPostId}
+                onCommentAdded={handleCommentAdded}
             />
         </div>
     )

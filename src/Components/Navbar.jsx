@@ -1,19 +1,38 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { BiStore } from "react-icons/bi";
 import { FaHome, FaUsers, FaComment, FaBell, FaUserFriends } from "react-icons/fa";
 import { IoMdSearch, IoMdSettings } from "react-icons/io";
-import { MdExpandLess } from "react-icons/md";
+import { MdExpandLess, MdLogout } from "react-icons/md";
 import SettingPopup from "./Settings/SettingPopup";
 import websitelogo from "../assets/websitelogo.png"
+import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 const Navbar = () => {
+  const { user, logout } = useAuth();
+  const DEFAULT_PROFILE_IMAGE = user 
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
+    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate()
-  // Handle the popup.............................
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const modalRef = useRef(null);
+  const modalContentRef = useRef(null);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully!");
+      navigate('/signin');
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Error logging out");
+    }
+  };
 
   const handleOpenModal = () => {
     setIsModalOpen(true); // Open modal
@@ -51,7 +70,7 @@ const Navbar = () => {
 
   const navItems = [
     { name: "feed", icon: <FaHome className="w-7 h-7" /> },
-    { name: "frient_requests", icon: <FaUserFriends className="w-7 h-7" /> },
+    { name: "friends", icon: <FaUserFriends className="w-7 h-7" /> },
     { name: "marketplace", icon: <BiStore className="w-7 h-7" /> },
     { name: "society", icon: <FaUsers className="w-7 h-7" /> },
     { name: "chat", icon: <FaComment className="w-7 h-7" /> },
@@ -121,7 +140,9 @@ const Navbar = () => {
 
               <img
                 className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center object-cover"
-                src="https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cHJvZmlsZXxlbnwwfHwwfHx8MA%3D%3D" alt="" />
+                src={user?.profile_image || DEFAULT_PROFILE_IMAGE} 
+                alt={user?.profile_name || "User"} 
+              />
 
 
               <MdExpandLess
@@ -138,12 +159,15 @@ const Navbar = () => {
 
                     onClick={() => {
                       navigate('/profile')
+                      setIsProfileOpen(false)
                     }}
                     className="flex gap-3 items-center font-semibold hover:bg-[#E2E8F0] p-2 rounded-xl transform transition-all duration-500 ease-in-out cursor-pointer">
                     <img
                       className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center object-cover"
-                      src="https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cHJvZmlsZXxlbnwwfHwwfHx8MA%3D%3D" alt="" />
-                    <p className="text-lg " >Profile name</p>
+                      src={user?.profile_image || DEFAULT_PROFILE_IMAGE} 
+                      alt={user?.profile_name || "User"} 
+                    />
+                    <p className="text-lg truncate" >{user?.profile_name || user?.email || "Profile"}</p>
 
                   </div>
 
@@ -154,6 +178,13 @@ const Navbar = () => {
                     <IoMdSettings size={30} color="#3B82F6" />
                     <p className="text-lg " >Settting & Support</p>
 
+                  </div>
+
+                  <div
+                    onClick={handleLogout}
+                    className="flex gap-3 items-center font-semibold hover:bg-red-50 p-2 rounded-xl transform transition-all duration-500 ease-in-out cursor-pointer">
+                    <MdLogout size={30} color="#EF4444" />
+                    <p className="text-lg text-red-500">Log Out</p>
                   </div>
 
                 </div>
@@ -184,19 +215,54 @@ const Navbar = () => {
               className="w-full px-4 py-2 rounded-full bg-white text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-300"
             />
           </form>
-          {navItems.concat(profileItems).map((item) => (
+          
+          {/* Navigation Items */}
+          {navItems.map((item) => (
             <NavLink
-              key={item.name || item}
-              to={`/${item.name || item}`}
+              key={item.name}
+              to={`/${item.name}`}
               className={({ isActive }) =>
-                `cursor-pointer text-left px-4 py-2 rounded-lg hover:bg-yellow-400 text-gray-800 ${isActive ? "font-semibold" : ""
-                }`
+                `cursor-pointer text-left px-4 py-2 rounded-lg hover:bg-yellow-400 text-gray-800 flex items-center gap-2 ${isActive ? "font-semibold" : ""}`
               }
               onClick={() => setIsMenuOpen(false)}
             >
-              {/* {item.charAt(0).toUpperCase() + item.slice(1)} */}
+              {item.icon}
+              <span>{item.name.charAt(0).toUpperCase() + item.name.slice(1).replace('_', ' ')}</span>
             </NavLink>
           ))}
+          
+          {/* Profile Link */}
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `cursor-pointer text-left px-4 py-2 rounded-lg hover:bg-yellow-400 text-gray-800 ${isActive ? "font-semibold" : ""}`
+            }
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Profile
+          </NavLink>
+          
+          {/* Settings Link */}
+          <button
+            onClick={() => {
+              handleOpenModal();
+              setIsMenuOpen(false);
+            }}
+            className="cursor-pointer text-left px-4 py-2 rounded-lg hover:bg-yellow-400 text-gray-800"
+          >
+            Settings
+          </button>
+          
+          {/* Logout Button */}
+          <button
+            onClick={() => {
+              handleLogout();
+              setIsMenuOpen(false);
+            }}
+            className="cursor-pointer text-left px-4 py-2 rounded-lg hover:bg-red-400 text-red-700 font-semibold"
+          >
+            Log Out
+          </button>
         </div>
       )}
 

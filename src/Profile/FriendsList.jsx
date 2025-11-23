@@ -1,89 +1,55 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FiSearch, FiMenu } from "react-icons/fi"
 import Navbar from "../Components/Navbar"
 import { RiMenuAddLine } from "react-icons/ri"
+import { apiMethods } from '../utils/api';
+import { ENDPOINTS } from '../config/apiConfig';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function FriendsList() {
+  const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("")
   const [showMenu, setShowMenu] = useState(false)
+  const [friends, setFriends] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Mock data - replace with API call
-  const [friends, setFriends] = useState([
-    {
-      id: 1,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=12",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 2,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=13",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 3,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=14",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 4,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=15",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 5,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=16",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 6,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=17",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 7,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=18",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 8,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=19",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 9,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=20",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 10,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=21",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 11,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=22",
-      timestamp: "12 April at 09:28 PM",
-    },
-    {
-      id: 12,
-      name: "Ahmad Nur Fawaid",
-      avatar: "https://i.pravatar.cc/150?img=23",
-      timestamp: "12 April at 09:28 PM",
-    },
-  ])
+  useEffect(() => {
+    fetchFriends();
+  }, []);
+
+  const fetchFriends = async () => {
+    try {
+      setLoading(true);
+      const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST);
+      
+      // Handle paginated response or plain array
+      const friendshipsData = response.data.results || response.data;
+      const friendships = Array.isArray(friendshipsData) ? friendshipsData : [];
+      
+      // Transform the friendship data to get friend details
+      const friendsList = friendships.map(friendship => {
+        // Determine which user is the friend (not the current user)
+        const friend = friendship.requester.id === currentUser?.id 
+          ? friendship.receiver 
+          : friendship.requester;
+        return {
+          ...friend,
+          friendshipId: friendship.id
+        };
+      });
+      setFriends(friendsList);
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+      toast.error('Failed to load friends');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle search
   const handleSearch = (e) => {
@@ -99,15 +65,30 @@ function FriendsList() {
   }
 
   // Handle unfriend
-  const handleUnfriend = (friendId, friendName) => {
-    console.log("Unfriend clicked for:", friendName, "ID:", friendId)
-    // Remove friend from list
-    setFriends(friends.filter((friend) => friend.id !== friendId))
-    console.log("Friend removed. Remaining friends:", friends.length - 1)
-  }
+  const handleUnfriend = async (friendId, friendName) => {
+    try {
+      await apiMethods.delete(ENDPOINTS.FRIENDS.UNFRIEND(friendId));
+      toast.success(`Unfriended ${friendName}`);
+      // Remove friend from list
+      setFriends(friends.filter((friend) => friend.id !== friendId));
+    } catch (error) {
+      console.error('Error unfriending:', error);
+      toast.error('Failed to unfriend');
+    }
+  };
 
   // Filter friends based on search
-  const filteredFriends = friends.filter((friend) => friend.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredFriends = friends.filter((friend) => {
+    const profileName = (friend.profile_name || '').toLowerCase();
+    const email = (friend.email || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return profileName.includes(query) || email.includes(query);
+  });
+
+  const getDefaultProfileImage = (friend) => {
+    const name = friend.profile_name || friend.email || "User";
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
+  };
 
   return (
     <div>
@@ -133,48 +114,61 @@ function FriendsList() {
           </div>
           <h3 className="my-5 text-3xl font-bold">Friends</h3>
 
-          {/* Friends Grid - Two Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredFriends.map((friend) => (
-              <div
-                key={friend.id}
-                className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <img
-                    src={friend.avatar || "/placeholder.svg"}
-                    alt={friend.name}
-                    className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 text-sm truncate">{friend.name}</h3>
-                    <p className="text-xs text-gray-500 truncate">{friend.timestamp}</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleUnfriend(friend.id, friend.name)}
-                  className="ml-3 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
-                >
-                  Unfriend
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* No Results Message */}
-          {filteredFriends.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-sm">No friends found</p>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
-          )}
+          ) : (
+            <>
+              {/* Friends Grid - Two Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredFriends.map((friend) => (
+                  <div
+                    key={friend.id}
+                    className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between"
+                  >
+                    <div 
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => navigate(`/profile/${friend.id}`)}
+                    >
+                      <img
+                        src={friend.profile_image || getDefaultProfileImage(friend)}
+                        alt={friend.profile_name || friend.email}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 text-sm truncate">
+                          {friend.profile_name || friend.email}
+                        </h3>
+                        <p className="text-xs text-gray-500 truncate">{friend.email}</p>
+                      </div>
+                    </div>
 
-          {/* Results Count */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Showing {filteredFriends.length} of {friends.length} friends
-            </p>
-          </div>
+                    <button
+                      onClick={() => handleUnfriend(friend.id, friend.profile_name || friend.email)}
+                      className="ml-3 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      Unfriend
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* No Results Message */}
+              {filteredFriends.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-sm">No friends found</p>
+                </div>
+              )}
+
+              {/* Results Count */}
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-500">
+                  Showing {filteredFriends.length} of {friends.length} friends
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
