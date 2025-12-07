@@ -1,62 +1,154 @@
-import React, { use } from "react"
+import React, { useState, useEffect } from "react"
 import { Plus } from "lucide-react"
 import { useNavigate } from "react-router-dom";
+import CreateStoryModal from "./CreateStoryModal";
+import StoryViewer from "./StoryViewer";
+import { getStories, createStory } from "../../services/storyService";
 
-const StoriesSection = ({ stories, onStoryClick }) => {
+const StoriesSection = () => {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeStories, setActiveStories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
 
-  const handleStoryClick = (story) => {
-    console.log("[v0] Story clicked:", story)
-    navigate(`/feed/${story.id}`);
+  const handleStoryClick = (story, index) => {
+    setSelectedStoryIndex(index);
+    setIsViewerOpen(true);
   }
 
 
-  const handleCreateStoryClick = (story) => {
-    console.log("[v0] Story clicked:", story)
-
+  const handleCreateStoryClick = () => {
+    setIsModalOpen(true);
   }
+
+  const handleStoryCreated = async (formData) => {
+    try {
+      await createStory(formData);
+      // Refresh stories list
+      await fetchStories();
+    } catch (error) {
+      console.error('Failed to create story:', error);
+      throw error;
+    }
+  }
+
+  const handleStoryDeleted = (storyId) => {
+    // Remove deleted story from list
+    setActiveStories(activeStories.filter(story => story.id !== storyId));
+    setIsViewerOpen(false);
+  }
+
+  const handleNavigate = (newIndex) => {
+    setSelectedStoryIndex(newIndex);
+  }
+
+  const fetchStories = async () => {
+    try {
+      setLoading(true);
+      const data = await getStories();
+      setActiveStories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch stories:', error);
+      setActiveStories([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchStories();
+  }, [])
 
 
 
   return (
-    <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+    <>
+      <CreateStoryModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onStoryCreated={handleStoryCreated}
+      />
 
-      <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
-        {stories.map((story) => (
-          <div key={story.id} className="flex-shrink-0 cursor-pointer" >
-            {story.type === "add" ? (
+      <StoryViewer 
+        storyId={activeStories[selectedStoryIndex]?.id}
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        onStoryDeleted={handleStoryDeleted}
+        stories={activeStories}
+        currentIndex={selectedStoryIndex}
+        onNavigate={handleNavigate}
+      />
+      
+      <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
+            {/* Create Story Button */}
+            <div className="flex-shrink-0 cursor-pointer">
               <div
-                onClick={() => handleCreateStoryClick(story)}
+                onClick={handleCreateStoryClick}
                 className="flex flex-col items-center">
-
-                <div className="w-32 h-38 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-blue-400 transition-colors">
+                <div className="w-32 h-40 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-blue-400 transition-colors">
                   <Plus className="w-6 h-6 text-gray-400" />
                 </div>
-                <span className="text-xs text-gray-600 mt-2 text-center max-w-16 truncate">{story.title}</span>
-
+                <span className="text-xs text-gray-600 mt-2 text-center max-w-16 truncate">Create Story</span>
               </div>
-            ) : (
-              <div className="flex flex-col items-center">
+            </div>
 
-                <div
-                  onClick={() => handleStoryClick(story)}
-                  className={`w-32 h-38 rounded-xl p-0.5 ${story.hasStory ? "bg-red-500 to-orange-500" : "bg-gray-300"}`}
-                >
-                  <img
-                    src={story.avatar || "/placeholder.svg"}
-                    alt={story.username}
-                    className="w-full h-full rounded-full object-cover border-2 border-white"
-                  />
+            {/* Stories from API */}
+            {Array.isArray(activeStories) && activeStories.length > 0 ? (
+              activeStories.map((story, index) => (
+                <div key={story.id} className="flex-shrink-0 cursor-pointer">
+                  <div className="flex flex-col items-center">
+                    <div
+                      onClick={() => handleStoryClick(story, index)}
+                      className="w-32 h-40 rounded-xl p-0.5 bg-gradient-to-tr from-yellow-400 via-red-500 to-pink-500"
+                    >
+                      <div className="w-full h-full rounded-xl overflow-hidden border-2 border-white bg-white">
+                        {story.media && story.media.length > 0 ? (
+                          story.media[0].media_type === 'image' ? (
+                            <img
+                              src={story.media[0].file}
+                              alt={story.user?.profile_name || 'Story'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <video
+                              src={story.media[0].file}
+                              className="w-full h-full object-cover"
+                            />
+                          )
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-2xl">
+                            {story.user?.profile_name?.charAt(0)?.toUpperCase() || '?'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-600 mt-2 text-center max-w-16 truncate">
+                      {story.user?.profile_name || 'Unknown'}
+                    </span>
+                  </div>
                 </div>
-
-                <span className="text-xs text-gray-600 mt-2 text-center max-w-16 truncate">{story.username}</span>
-              </div>
+              ))
+            ) : (
+              /* No stories message */
+              !loading && (
+                <div className="flex-1 text-center py-4 text-gray-500">
+                  No active stories. Be the first to share!
+                </div>
+              )
             )}
           </div>
-        ))}
+        )}
       </div>
-    </div>
+    </>
   )
 }
 

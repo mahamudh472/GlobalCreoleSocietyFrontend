@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom"
 import { apiMethods } from "../utils/api"
 import { ENDPOINTS } from "../config/apiConfig"
 import { toast } from "react-toastify"
+import { useCall } from "../context/CallContext"
 
 
 function ChatWindow({ chat, messages, onSendMessage, onDeleteConversation, onLoadMoreMessages, hasMoreMessages, loadingMore }) {
@@ -20,6 +21,7 @@ function ChatWindow({ chat, messages, onSendMessage, onDeleteConversation, onLoa
   const previousScrollHeightRef = useRef(0)
   const isLoadingRef = useRef(false)
   const hasScrolledToBottomRef = useRef(false) // Track if we've scrolled to bottom initially
+  const { initiateCall } = useCall()
 
   const getDefaultProfileImage = () => {
     const name = chat?.name || "User";
@@ -42,7 +44,6 @@ function ChatWindow({ chat, messages, onSendMessage, onDeleteConversation, onLoa
         if (messagesEndRef.current) {
           messagesEndRef.current.scrollIntoView({ behavior: "instant" })
           hasScrolledToBottomRef.current = true
-          console.log("📍 Initial scroll to bottom completed")
         }
       }, 100)
     }
@@ -59,18 +60,14 @@ function ChatWindow({ chat, messages, onSendMessage, onDeleteConversation, onLoa
     if (!container) return
 
     const { scrollTop, scrollHeight, clientHeight } = container
-    
-    console.log(`📊 Scroll stats - scrollTop: ${scrollTop}, scrollHeight: ${scrollHeight}, clientHeight: ${clientHeight}`)
 
     // Prevent multiple simultaneous loads
     if (isLoadingRef.current || loadingMore) {
-      console.log("⏸️ Already loading, skipping...")
       return
     }
 
     // Check if scrolled near top (within 150px) and has more messages
     if (scrollTop < 150 && hasMoreMessages) {
-      console.log("📜 Near top - loading more messages")
       isLoadingRef.current = true
       previousScrollHeightRef.current = scrollHeight
       
@@ -90,7 +87,6 @@ function ChatWindow({ chat, messages, onSendMessage, onDeleteConversation, onLoa
           const newScrollHeight = container.scrollHeight
           const scrollDifference = newScrollHeight - previousScrollHeightRef.current
           container.scrollTop = scrollDifference + 50 // Add small offset to prevent immediate retrigger
-          console.log(`📍 Restored scroll position: ${scrollDifference}px (new scrollTop: ${container.scrollTop})`)
           
           // Reset the loading flag after a short delay
           setTimeout(() => {
@@ -193,21 +189,38 @@ function ChatWindow({ chat, messages, onSendMessage, onDeleteConversation, onLoa
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
+            onClick={async () => {
               console.log("Voice call to:", chat.name)
+              const token = localStorage.getItem('access_token')
+              if (!token) {
+                toast.error('Authentication token not found. Please login again.')
+                return
+              }
+              // Pass userId instead of conversation id for receiver_id
+              const otherUser = { id: chat.userId, name: chat.name }
+              await initiateCall(chat.id, otherUser, 'audio', token)
               navigate('/chat/audiocall')
-
             }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Start audio call"
           >
             <FaPhone className="text-gray-600" />
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               console.log("Video call to:", chat.name)
+              const token = localStorage.getItem('access_token')
+              if (!token) {
+                toast.error('Authentication token not found. Please login again.')
+                return
+              }
+              // Pass userId instead of conversation id for receiver_id
+              const otherUser = { id: chat.userId, name: chat.name }
+              await initiateCall(chat.id, otherUser, 'video', token)
               navigate('/chat/videocall')
             }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Start video call"
           >
             <FaVideo className="text-gray-600" />
           </button>
@@ -316,7 +329,7 @@ function ChatWindow({ chat, messages, onSendMessage, onDeleteConversation, onLoa
             </button>
             <button
               type="button"
-              onClick={() => console.log("Emoji picker clicked")}
+              onClick={() => {}}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <FaSmile className="text-lg" />

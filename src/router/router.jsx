@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
 import ProtectedRoute from "../components/ProtectedRoute";
+import RootLayout from "../components/RootLayout";
 
 // Landing Page components
 import LandingPage from "../Components/LandingPage/LandingPage";
@@ -48,26 +49,29 @@ import PendingMembers from "../Components/MySociety/PendingMembers";
 
 const router = createBrowserRouter([
     {
-        path: "/",
-        element: <LandingPage></LandingPage>
-    },
-    {
-        path: "/advertisement-request",
-        element: <LandingPageAdsRequest></LandingPageAdsRequest>
-    },
-    {
-        path: "/signin",
-        element: <LoginPage></LoginPage>
-    },
-    {
-        path: "/signup",
-        element: <SignUpPage></SignUpPage>
-    },
-    // Feed routes..........
-    {
-        path: "/feed",
-        element: <ProtectedRoute><Feed /></ProtectedRoute>
-    },
+        element: <RootLayout />,
+        children: [
+            {
+                path: "/",
+                element: <LandingPage></LandingPage>
+            },
+            {
+                path: "/advertisement-request",
+                element: <LandingPageAdsRequest></LandingPageAdsRequest>
+            },
+            {
+                path: "/signin",
+                element: <LoginPage></LoginPage>
+            },
+            {
+                path: "/signup",
+                element: <SignUpPage></SignUpPage>
+            },
+            // Feed routes..........
+            {
+                path: "/feed",
+                element: <ProtectedRoute><Feed /></ProtectedRoute>
+            },
     {
         path: "/feed/livestream",
         element: <ProtectedRoute><LiveStream /></ProtectedRoute>
@@ -202,6 +206,8 @@ const router = createBrowserRouter([
     {
         path: "notifications",
         element: <ProtectedRoute><Notifications /></ProtectedRoute>
+    }
+        ]
     }
 
 

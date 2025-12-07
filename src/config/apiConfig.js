@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://10.10.13.99/api';
 
 // API Endpoints
 export const ENDPOINTS = {
@@ -105,6 +105,10 @@ export const ENDPOINTS = {
     UNREAD_COUNT: '/chat/conversations/unread_count/',
     GLOBAL_CHAT: '/chat/global-chat/',
     SEND_GLOBAL_MESSAGE: '/chat/global-chat/send_message/',
+    // Call endpoints
+    CALLS: '/chat/calls/',
+    CONVERSATION_CALLS: '/chat/calls/conversation_calls/',
+    END_CALL: (callId) => `/chat/calls/${callId}/end_call/`,
   },
 
   // Shop
@@ -134,8 +138,9 @@ export const ENDPOINTS = {
 };
 
 // WebSocket URLs
-export const WS_BASE_URL = 'ws://localhost:8000';
+export const WS_BASE_URL = import.meta.env.VITE_WEBSOCKET_URL || 'ws://10.10.13.99';
 export const WS_ENDPOINTS = {
   PRIVATE_CHAT: (conversationId) => `${WS_BASE_URL}/ws/chat/${conversationId}/`,
   GLOBAL_CHAT: `${WS_BASE_URL}/ws/global-chat/`,
+  CALL: (conversationId) => `${WS_BASE_URL}/ws/call/${conversationId}/`,
 };

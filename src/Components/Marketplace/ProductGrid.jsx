@@ -38,11 +38,23 @@ const ProductGrid = ({ products = [] }) => {
                                 Your Product
                             </div>
                         )}
-                        <img
-                            src={product?.primary_image?.image_url || "https://via.placeholder.com/300"}
-                            alt={product?.name}
-                            className="w-full h-48 object-cover"
-                        />
+                        {product?.primary_image?.image ? (
+                            <img
+                                src={product.primary_image.image}
+                                alt={product?.name}
+                                className="w-full h-48 object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null; // Prevent infinite loop
+                                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect fill='%23f3f4f6' width='300' height='200'/%3E%3Ctext fill='%239ca3af' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                }}
+                            />
+                        ) : (
+                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        )}
                         <div className="">
                             <p className="text-sm text-gray-500 mb-1 bg-[#DBEAFE] p-3 rounded-br-[100px]">{product.category_name}</p>
                             <div className='px-4 py-1'>

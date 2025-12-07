@@ -9,15 +9,6 @@ import ShareModal from "./ShareModal"
 import { useCurrentUser } from "../../hooks/queries"
 import { usePostsInfinite } from "../../hooks/queries"
 
-const mockStories = [
-    { id: "add", type: "add", title: "Add your reels" },
-    { id: 1, username: "Morgan", avatar: "https://st3.depositphotos.com/15648834/17930/v/450/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg", hasStory: true },
-    { id: 2, username: "Stanley", avatar: "/man-professional.jpg", hasStory: true },
-    { id: 3, username: "Allen", avatar: "/young-man.jpg", hasStory: true },
-    { id: 4, username: "Lucas", avatar: "/man-casual.jpg", hasStory: true },
-    { id: 5, username: "Danny", avatar: "/woman-outdoor.jpg", hasStory: true },
-]
-
 const SocialFeed = () => {
     const { data: user } = useCurrentUser();
     const [activeSharePostId, setActiveSharePostId] = useState(null)
@@ -78,7 +69,7 @@ const SocialFeed = () => {
 
     return (
         <div className="min-h-screen">
-            <StoriesSection stories={mockStories} />
+            <StoriesSection />
             <CreatePostSection currentUser={user} />
 
             {isLoading && posts.length === 0 ? (
