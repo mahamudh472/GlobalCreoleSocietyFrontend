@@ -89,11 +89,12 @@ const MyProductList = () => {
                             <div key={product.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                     <img
-                                        src={product.primary_image?.image_url || "https://via.placeholder.com/150"}
+                                        src={product.primary_image?.image || product.primary_image?.image_url || "https://via.placeholder.com/150"}
                                         alt={product.name}
                                         className="w-16 h-16 object-cover rounded-lg bg-gray-100"
                                     />
                                     <div>
+                                        <p className="text-xs text-gray-400 mb-1 capitalize">{product.status}</p>
                                         <h3 className="font-semibold text-gray-900">{product.name}</h3>
                                         <p className="text-lg font-bold text-gray-900">${product.price}</p>
                                         {product.stock !== undefined && (

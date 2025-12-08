@@ -1,3 +1,5 @@
+import { FaFile, FaDownload, FaImage, FaVideo, FaMusic } from 'react-icons/fa'
+
 function Message({ message }) {
   const getDefaultProfileImage = () => {
     const name = message.senderName || "User";
@@ -32,40 +34,78 @@ function Message({ message }) {
   const renderFileContent = () => {
     if (!message.file_url) return null
 
-    switch (message.file_type) {
+    const fileUrl = message.file_url
+    const fileType = message.file_type || 'file'
+
+    switch (fileType) {
       case 'image':
         return (
-          <img 
-            src={message.file_url} 
-            alt="Attachment" 
-            className="max-w-xs rounded-lg mb-2"
-          />
+          <div className="mb-2">
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+              <img 
+                src={fileUrl} 
+                alt="Attachment" 
+                className="max-w-xs max-h-64 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="150"%3E%3Crect fill="%23f3f4f6" width="200" height="150"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="14" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+                }}
+              />
+            </a>
+          </div>
         )
       case 'video':
         return (
-          <video 
-            src={message.file_url} 
-            controls 
-            className="max-w-xs rounded-lg mb-2"
-          />
+          <div className="mb-2">
+            <video 
+              src={fileUrl} 
+              controls 
+              className="max-w-xs max-h-64 rounded-lg"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
         )
       case 'audio':
         return (
-          <audio 
-            src={message.file_url} 
-            controls 
-            className="mb-2"
-          />
+          <div className="mb-2">
+            <audio 
+              src={fileUrl} 
+              controls 
+              className="w-full max-w-xs"
+            >
+              Your browser does not support the audio tag.
+            </audio>
+          </div>
         )
       default:
+        // Generic file download
+        const fileName = fileUrl.split('/').pop() || 'file'
         return (
           <a 
-            href={message.file_url} 
+            href={fileUrl} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-blue-500 underline mb-2 block"
+            className={`flex items-center gap-2 p-3 rounded-lg mb-2 transition-colors ${
+              message.isOwn 
+                ? 'bg-blue-600 hover:bg-blue-700' 
+                : 'bg-gray-200 hover:bg-gray-300'
+            }`}
           >
-            Download File
+            <FaFile className={message.isOwn ? 'text-white' : 'text-gray-700'} />
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium truncate ${
+                message.isOwn ? 'text-white' : 'text-gray-900'
+              }`}>
+                {fileName}
+              </p>
+              <p className={`text-xs ${
+                message.isOwn ? 'text-blue-100' : 'text-gray-500'
+              }`}>
+                Click to download
+              </p>
+            </div>
+            <FaDownload className={message.isOwn ? 'text-white' : 'text-gray-700'} />
           </a>
         )
     }
@@ -90,7 +130,7 @@ function Message({ message }) {
           }`}
         >
           {renderFileContent()}
-          {message.text && <p className="text-sm leading-relaxed">{message.text}</p>}
+          {message.text && <p className="text-sm leading-relaxed break-words">{message.text}</p>}
         </div>
         <p className={`text-xs text-gray-500 mt-1 ${message.isOwn ? "text-right mr-1" : "ml-1"}`}>
           {formatTimestamp(message.timestamp)}

@@ -90,7 +90,7 @@ function OrderCart() {
                                         <div className="flex items-center gap-4">
                                             <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                 <img
-                                                    src={item.product_image?.image_url || "https://via.placeholder.com/150"}
+                                                    src={item.product_image?.image || item.product_image?.image_url || "https://via.placeholder.com/150"}
                                                     alt={item.product_name}
                                                     className="w-full h-full object-cover"
                                                 />

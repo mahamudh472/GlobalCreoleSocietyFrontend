@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useUserSocieties } from '../../hooks/queries/useSocieties';
 import { useLeaveSocietyMutation } from '../../hooks/mutations/useSocieties';
+import { useCurrentUser } from '../../hooks/queries/useUser';
 
 const MySocietyList = () => {
   const navigate = useNavigate();
   const { data: yourSocieties = [], isLoading: loading } = useUserSocieties();
+  const { data: currentUser } = useCurrentUser();
   const leaveSocietyMutation = useLeaveSocietyMutation();
 
   const handleLeave = (e, societyId, societyName) => {
@@ -76,12 +78,15 @@ const MySocietyList = () => {
                   {society.members_count || society.member_count || 0} members
                 </p>
                 <div className="flex justify-between space-x-2 mt-2">
-                  <button 
-                    onClick={(e) => handleLeave(e, society.id, society.name)}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm sm:text-base"
-                  >
-                    Leave
-                  </button>
+                  {/* Only show Leave button if user is not the creator */}
+                  {currentUser && society.creator && currentUser.id !== society.creator.id && (
+                    <button 
+                      onClick={(e) => handleLeave(e, society.id, society.name)}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm sm:text-base"
+                    >
+                      Leave
+                    </button>
+                  )}
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();

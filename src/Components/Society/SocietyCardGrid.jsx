@@ -6,13 +6,15 @@ import CreateSocietyForm from './CreateSocietyForm';
 import { toast } from 'react-toastify';
 import { useSocieties } from '../../hooks/queries/useSocieties';
 import { useJoinSocietyMutation, useLeaveSocietyMutation } from '../../hooks/mutations/useSocieties';
+import { useCurrentUser } from '../../hooks/queries/useUser';
 
 const SocietyCardGrid = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Use TanStack Query for fetching societies
+  // Use TanStack Query for fetching societies and current user
   const { data: societiesData = [], isLoading: loading } = useSocieties();
+  const { data: currentUser } = useCurrentUser();
   
   // Use mutations
   const joinMutation = useJoinSocietyMutation();
@@ -119,12 +121,15 @@ const SocietyCardGrid = () => {
                     <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
                     <p className="text-gray-600 text-sm sm:text-base">{society.members_count} members</p>
                     <div className="flex justify-between space-x-2 mt-2">
-                      <button
-                        onClick={(e) => handleLeave(e, society.id, society.name)}
-                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm sm:text-base"
-                      >
-                        Leave
-                      </button>
+                      {/* Only show Leave button if user is not the creator */}
+                      {currentUser && society.creator && currentUser.id !== society.creator.id && (
+                        <button
+                          onClick={(e) => handleLeave(e, society.id, society.name)}
+                          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm sm:text-base"
+                        >
+                          Leave
+                        </button>
+                      )}
                       <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
                         View
                       </button>

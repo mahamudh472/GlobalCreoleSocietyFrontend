@@ -88,8 +88,8 @@ function ChatApp() {
     }, [conversationsData, selectedChat, searchParams, setSearchParams])
 
     const handleLoadMoreMessages = () => {
-        if (selectedChat && hasNextPage && !isFetchingNextPage) {
-            console.log("� Loading more messages...")
+        if (selectedChat && hasNextPage && !loadingMore) {
+            console.log("📜 Loading more messages...")
             fetchNextPage()
         }
     }

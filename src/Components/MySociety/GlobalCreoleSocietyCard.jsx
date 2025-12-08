@@ -2,10 +2,16 @@ import React from 'react';
 import { FaPencilAlt } from 'react-icons/fa';
 import SocietyImgUpload from './SocietyImgUpload';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCurrentUser } from '../../hooks/queries/useUser';
+import { useJoinSocietyMutation, useLeaveSocietyMutation } from '../../hooks/mutations/useSocieties';
+import { toast } from 'react-toastify';
 
 const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const navigate = useNavigate();
-  const {id}=useParams()
+  const {id}=useParams();
+  const { data: currentUser } = useCurrentUser();
+  const joinMutation = useJoinSocietyMutation();
+  const leaveMutation = useLeaveSocietyMutation();
 
   if (!society) {
     return (
@@ -21,6 +27,34 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
 
   const members = society.members_count || society.member_count || 0;
   const media = 0; // TODO: Add media count when available
+  
+  // Check if current user is the creator
+  const isCreator = currentUser && society.creator && currentUser.id === society.creator.id;
+  const isMember = society.is_member;
+
+  const handleJoin = () => {
+    joinMutation.mutate(id, {
+      onSuccess: () => {
+        if (society.privacy === 'private') {
+          toast.success('Join request sent');
+        } else {
+          toast.success('Joined society successfully');
+        }
+      },
+    });
+  };
+
+  const handleLeave = () => {
+    if (!window.confirm(`Are you sure you want to leave ${society.name}?`)) {
+      return;
+    }
+    
+    leaveMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success('Left society successfully');
+      },
+    });
+  };
 
   return (
     <div className=" rounded-xl mx-auto flex flex-col items-center text-center">
@@ -47,6 +81,27 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
         <button className="mt-6 w-full bg-blue-600 text-white py-2 rounded-xl font-medium hover:bg-blue-700 transition duration-200">
           Invite
         </button>
+        
+        {/* Join/Leave Button - Don't show for creator */}
+        {!isCreator && (
+          isMember ? (
+            <button 
+              onClick={handleLeave}
+              disabled={leaveMutation.isPending}
+              className="mt-3 w-full bg-red-500 text-white py-2 rounded-xl font-medium hover:bg-red-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {leaveMutation.isPending ? 'Leaving...' : 'Leave Society'}
+            </button>
+          ) : (
+            <button 
+              onClick={handleJoin}
+              disabled={joinMutation.isPending}
+              className="mt-3 w-full bg-green-500 text-white py-2 rounded-xl font-medium hover:bg-green-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {joinMutation.isPending ? 'Joining...' : (society.privacy === 'private' ? 'Request to Join' : 'Join Society')}
+            </button>
+          )
+        )}
 
         <section className="absolute -top-15 lg:-top-36 left-1/2 -translate-x-1/2 ">
           <SocietyImgUpload societyImage={society.cover_picture || society.cover_image} />

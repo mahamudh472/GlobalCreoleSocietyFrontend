@@ -15,7 +15,7 @@ export const useSendFriendRequestMutation = () => {
   return useMutation({
     mutationFn: async (userId) => {
       const response = await apiMethods.post(ENDPOINTS.FRIENDS.SEND_REQUEST, {
-        receiver: userId
+        receiver_id: userId
       })
       return response.data
     },
@@ -99,7 +99,7 @@ export const useUnfriendMutation = () => {
 
   return useMutation({
     mutationFn: async (userId) => {
-      await apiMethods.post(ENDPOINTS.FRIENDS.UNFRIEND(userId))
+      await apiMethods.delete(ENDPOINTS.FRIENDS.UNFRIEND(userId))
       return userId
     },
     onMutate: async (userId) => {

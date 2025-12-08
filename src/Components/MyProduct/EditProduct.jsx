@@ -253,7 +253,7 @@ const EditProduct = () => {
                                         {existingImages.map((img, index) => (
                                             <div key={index} className="relative">
                                                 <img
-                                                    src={img.image_url}
+                                                    src={img.image || img.image_url}
                                                     alt={`Product ${index + 1}`}
                                                     className="w-full h-32 object-cover rounded-lg"
                                                 />

@@ -24,21 +24,7 @@ const ProductCard = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Check if current user is the seller (with type-safe comparison)
-  const isOwnProduct = product && user && (
-    product.seller === user.id || 
-    String(product.seller) === String(user.id)
-  );
-  
-  // Debug logging
-  useEffect(() => {
-    if (product && user) {
-      console.log('Product seller:', product.seller, typeof product.seller);
-      console.log('Current user ID:', user.id, typeof user.id);
-      console.log('Is own product?', isOwnProduct);
-    }
-  }, [product, user, isOwnProduct]);
-
+  // Fetch product first, then check ownership
   useEffect(() => {
     if (id) {
       // Reset states when navigating to a new product
@@ -47,6 +33,28 @@ const ProductCard = () => {
       fetchProduct();
     }
   }, [id]);
+
+  // Check if current user is the seller (with type-safe comparison)
+  // Compare as strings since backend returns UUID as string
+  const isOwnProduct = product && user && (
+    String(product.seller) === String(user.id)
+  );
+  
+  // Debug logging
+  useEffect(() => {
+    if (product && user) {
+      console.log('=== Product Ownership Debug ===');
+      console.log('Product data:', product);
+      console.log('Product seller:', product.seller, typeof product.seller);
+      console.log('Current user:', user);
+      console.log('Current user ID:', user.id, typeof user.id);
+      console.log('Seller string:', String(product.seller));
+      console.log('User ID string:', String(user.id));
+      console.log('Are they equal?:', String(product.seller) === String(user.id));
+      console.log('Is own product?:', isOwnProduct);
+      console.log('==============================');
+    }
+  }, [product, user]);
 
   // Delay Swiper mount until product is loaded
   useEffect(() => {
@@ -63,8 +71,11 @@ const ProductCard = () => {
     try {
       setLoading(true);
       const response = await apiMethods.get(ENDPOINTS.SHOP.PRODUCT_DETAIL(id));
-      console.log('Product data received:', response.data);
-      console.log('Seller name:', response.data.seller_name);
+      console.log('=== Raw Product Response ===');
+      console.log('Full response:', response.data);
+      console.log('Seller field:', response.data.seller);
+      console.log('Seller type:', typeof response.data.seller);
+      console.log('===========================');
       setProduct(response.data);
       
       // Fetch suggested products using the new endpoint
@@ -160,8 +171,8 @@ const ProductCard = () => {
   const unitPrice = parseFloat(product.price);
   const totalPrice = (unitPrice * quantity).toFixed(2);
   const productImages = product.images?.length > 0 
-    ? product.images.map(img => img.image_url || img.image)
-    : (product.primary_image ? [product.primary_image.image_url || product.primary_image.image] : []);
+    ? product.images.map(img => img.image || img.image_url)
+    : (product.primary_image ? [product.primary_image.image || product.primary_image.image_url] : []);
 
   const hasImages = productImages.length > 0;
 

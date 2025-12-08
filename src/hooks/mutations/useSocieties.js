@@ -153,15 +153,13 @@ export const useJoinSocietyMutation = () => {
       return { previousSociety }
     },
     onSuccess: ({ societyId, data }) => {
-      // Update with server response
-      queryClient.setQueryData(queryKeys.societies.detail(societyId), (old) => ({
-        ...old,
-        ...data,
-      }))
+      // Invalidate and refetch society detail to get fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.societies.detail(societyId) })
       
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.societies.members(societyId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.societies.mySocieties() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.societies.lists() })
       
       toast.success('Successfully joined society!')
     },
@@ -187,7 +185,7 @@ export const useLeaveSocietyMutation = () => {
 
   return useMutation({
     mutationFn: async (societyId) => {
-      const response = await apiMethods.post(ENDPOINTS.SOCIETIES.LEAVE(societyId))
+      const response = await apiMethods.delete(ENDPOINTS.SOCIETIES.LEAVE(societyId))
       return { societyId, data: response.data }
     },
     onMutate: async (societyId) => {
@@ -209,15 +207,13 @@ export const useLeaveSocietyMutation = () => {
       return { previousSociety }
     },
     onSuccess: ({ societyId, data }) => {
-      // Update with server response
-      queryClient.setQueryData(queryKeys.societies.detail(societyId), (old) => ({
-        ...old,
-        ...data,
-      }))
+      // Invalidate and refetch society detail to get fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.societies.detail(societyId) })
       
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.societies.members(societyId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.societies.mySocieties() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.societies.lists() })
       
       toast.success('Successfully left society')
     },
