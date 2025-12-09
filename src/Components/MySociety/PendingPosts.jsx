@@ -80,7 +80,7 @@ const PendingPosts = () => {
                     <div className="space-y-4">
                         {posts.map((post) => (
                             <PendingPostCard
-                                key={post.id}
+                            key={post.id}
                                 post={post}
                                 onComment={() => handleOpenCommentModal(post.id)}
                                 onShare={() => handleOpenShareModal(post.id)}

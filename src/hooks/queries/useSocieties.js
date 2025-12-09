@@ -21,6 +21,32 @@ export const useSocieties = (filters = {}) => {
   })
 }
 
+export const usePendingPosts = (societyId, options = {}) => {
+  return useQuery({
+    queryKey: queryKeys.societies.pendingPosts(societyId),
+    queryFn: async () => {
+      const response = await apiMethods.get(ENDPOINTS.SOCIETIES.PENDING_POSTS(societyId))
+      return response.data.results || response.data
+    },
+    enabled: !!societyId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...options,
+  })
+}
+
+export const usePendingMembers = (societyId, options = {}) => {
+  return useQuery({
+    queryKey: queryKeys.societies.pending(societyId),
+    queryFn: async () => {
+      const response = await apiMethods.get(ENDPOINTS.SOCIETIES.MEMBERS(societyId) + '?is_pending=true')
+      return response.data.results || response.data
+    },
+    enabled: !!societyId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...options,
+  })
+}
+
 /**
  * Fetch a single society by ID
  * @param {string|number} societyId - Society ID
