@@ -58,6 +58,7 @@ export const ENDPOINTS = {
     UPDATE: (commentId) => `/social/comments/${commentId}/`,
     DELETE: (commentId) => `/social/comments/${commentId}/`,
     LIKE: (commentId) => `/social/comments/${commentId}/like/`,
+    
   },
 
   // Social - Societies
@@ -86,11 +87,13 @@ export const ENDPOINTS = {
   },
 
   // Social - Notifications
+  // Social - Notifications
   NOTIFICATIONS: {
     LIST: "/social/notifications/",
+    MARK_READ: "/social/notifications/mark-read/",
+    SINGLE_NOTIFICATION: (notificationId) =>
+      `/social/notifications/mark-read/${notificationId}/`,
   },
-  SINGLE_NOTIFICATION: (notificationId) =>
-    `/social/notifications/mark-read/${notificationId}/`,
 
   // Social - User Blocking
   USERS: {
@@ -120,6 +123,7 @@ export const ENDPOINTS = {
     CALLS: "/chat/calls/",
     CONVERSATION_CALLS: "/chat/calls/conversation_calls/",
     END_CALL: (callId) => `/chat/calls/${callId}/end_call/`,
+    SHARE_LINK: () => `/api/chat/conversations/`,
   },
 
   // Shop

@@ -20,7 +20,7 @@ const ShareModal = ({ isOpen, onClose, postData }) => {
     { id: 5, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
     { id: 6, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
   ]
-
+// grp
   const mockSocieties = [
     { id: 1, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: true },
     { id: 2, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
