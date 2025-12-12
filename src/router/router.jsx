@@ -12,7 +12,6 @@ import LoginPage from "../Components/Authentication/LoginPage";
 import SignUpPage from "../Components/Authentication/SignUpPage";
 import Feed from "../Components/Feed/Feed";
 import Reels from "../Components/Feed/Reels";
-import { mockReels } from "../Components/Feed/mockReels";
 import ShareModal from "../Components/Feed/ShareModal";
 import Profile from "../Profile/Profile";
 import MarketPlace from "../Components/Marketplace/MarketPlace";
@@ -46,171 +45,290 @@ import MyProductDetails from "../Components/MyProduct/MyProductDetails";
 import Payment from "../Components/Marketplace/Payment";
 import PendingMembers from "../Components/MySociety/PendingMembers";
 
-
 const router = createBrowserRouter([
-    {
-        element: <RootLayout />,
-        children: [
-            {
-                path: "/",
-                element: <LandingPage></LandingPage>
-            },
-            {
-                path: "/advertisement-request",
-                element: <LandingPageAdsRequest></LandingPageAdsRequest>
-            },
-            {
-                path: "/signin",
-                element: <LoginPage></LoginPage>
-            },
-            {
-                path: "/signup",
-                element: <SignUpPage></SignUpPage>
-            },
-            // Feed routes..........
-            {
-                path: "/feed",
-                element: <ProtectedRoute><Feed /></ProtectedRoute>
-            },
-    {
+  {
+    element: <RootLayout />,
+    children: [
+      {
+        path: "/",
+        element: <LandingPage></LandingPage>,
+      },
+      {
+        path: "/advertisement-request",
+        element: <LandingPageAdsRequest></LandingPageAdsRequest>,
+      },
+      {
+        path: "/signin",
+        element: <LoginPage></LoginPage>,
+      },
+      {
+        path: "/signup",
+        element: <SignUpPage></SignUpPage>,
+      },
+      // Feed routes..........
+      {
+        path: "/feed",
+        element: (
+          <ProtectedRoute>
+            <Feed />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/feed/livestream",
-        element: <ProtectedRoute><LiveStream /></ProtectedRoute>
-    },
+        element: (
+          <ProtectedRoute>
+            <LiveStream />
+          </ProtectedRoute>
+        ),
+      },
 
-    {
+      {
         path: "/feed/:id",
-        element: <ProtectedRoute><Reels /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <Reels />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/profile",
-        element: <ProtectedRoute><Profile /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/profile/:userId",
-        element: <ProtectedRoute><Profile /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/profile/friendslist",
-        element: <ProtectedRoute><FriendsList /></ProtectedRoute>
-    },
+        element: (
+          <ProtectedRoute>
+            <FriendsList />
+          </ProtectedRoute>
+        ),
+      },
 
-
-    // Markets places routing.................
-    {
+      // Markets places routing.................
+      {
         path: "/marketplace",
-        element: <ProtectedRoute><MarketPlace /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <MarketPlace />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/marketplace/orderlist",
-        element: <ProtectedRoute><OrderCart /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <OrderCart />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/marketplace/product/:id",
-        element: <ProtectedRoute><ProductCard /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <ProductCard />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/marketplace/:id/payment",
-        element: <ProtectedRoute><Payment /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <Payment />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/marketplace/myproduct",
-        element: <ProtectedRoute><ProductManagement /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <ProductManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/marketplace/myproduct/list",
-        element: <ProtectedRoute><MyProductList /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <MyProductList />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/marketplace/myproduct/addproduct",
-        element: <ProtectedRoute><CreateProduct /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <CreateProduct />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/marketplace/myproduct/edit/:id",
-        element: <ProtectedRoute><EditProduct /></ProtectedRoute>
-    },
+        element: (
+          <ProtectedRoute>
+            <EditProduct />
+          </ProtectedRoute>
+        ),
+      },
 
-
-    //Society grid.......................
-    {
+      //Society grid.......................
+      {
         path: "/society",
-        element: <ProtectedRoute><SocietyCardGrid /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <SocietyCardGrid />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/society/my_society_list",
-        element: <ProtectedRoute><MySocietyList /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <MySocietyList />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/society/join_society_list",
-        element: <ProtectedRoute><JoinSocietyList /></ProtectedRoute>
-    },
-    // Friend Request
+        element: (
+          <ProtectedRoute>
+            <JoinSocietyList />
+          </ProtectedRoute>
+        ),
+      },
+      // Friend Request
 
-    {
+      {
         path: "/friends",
-        element: <ProtectedRoute><FriendCardGrid /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <FriendCardGrid />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/friends/requests",
-        element: <ProtectedRoute><FriendRequestList /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <FriendRequestList />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/friends/suggestions/all",
-        element: <ProtectedRoute><AddFriendList /></ProtectedRoute>
-    },
-    // My society..................................
-    {
+        element: (
+          <ProtectedRoute>
+            <AddFriendList />
+          </ProtectedRoute>
+        ),
+      },
+      // My society..................................
+      {
         path: "/society/:id",
-        element: <ProtectedRoute><MySociety /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <MySociety />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/society/:id/pending_members",
-        element: <ProtectedRoute><PendingMembers /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <PendingMembers />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/society/:id/pending_posts",
-        element: <ProtectedRoute><PendingPosts /></ProtectedRoute>
-    },
-    // Setting..................................................
-    {
+        element: (
+          <ProtectedRoute>
+            <PendingPosts />
+          </ProtectedRoute>
+        ),
+      },
+      // Setting..................................................
+      {
         path: "/settings/help_center",
-        element: <ProtectedRoute><HelpSection /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <HelpSection />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/settings/profile_settings",
-        element: <ProtectedRoute><ProfileSettings /></ProtectedRoute>
-    },
+        element: (
+          <ProtectedRoute>
+            <ProfileSettings />
+          </ProtectedRoute>
+        ),
+      },
 
-    // Authentication............................
-    {
+      // Authentication............................
+      {
         path: "/settings/profile_settings/chnage_password",
-        element: <ProtectedRoute><ChangePassword /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <ChangePassword />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/settings/profile_settings/chnage_email",
-        element: <ProtectedRoute><ChangeEmail /></ProtectedRoute>
-    },
-    // Chat app, messesing......................................
-    {
+        element: (
+          <ProtectedRoute>
+            <ChangeEmail />
+          </ProtectedRoute>
+        ),
+      },
+      // Chat app, messesing......................................
+      {
         path: "/chat",
-        element: <ProtectedRoute><ChatApp /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <ChatApp />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/chat/videocall",
-        element: <ProtectedRoute><VideoCall /></ProtectedRoute>
-    },
-    {
+        element: (
+          <ProtectedRoute>
+            <VideoCall />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/chat/audiocall",
-        element: <ProtectedRoute><AudioCall /></ProtectedRoute>
-    },
-    // Notification..............................
-    {
+        element: (
+          <ProtectedRoute>
+            <AudioCall />
+          </ProtectedRoute>
+        ),
+      },
+      // Notification..............................
+      {
         path: "notifications",
-        element: <ProtectedRoute><Notifications /></ProtectedRoute>
-    }
-        ]
-    }
-
-
+        element: (
+          <ProtectedRoute>
+            <Notifications />
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
 ]);
 
 export default router;

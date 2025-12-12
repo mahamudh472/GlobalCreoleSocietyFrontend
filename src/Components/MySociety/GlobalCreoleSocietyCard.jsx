@@ -8,7 +8,10 @@ import {
   useLeaveSocietyMutation,
 } from "../../hooks/mutations/useSocieties";
 import { toast } from "react-toastify";
-import { usePendingMembers, usePendingPosts } from "../../hooks/queries/useSocieties";
+import {
+  usePendingMembers,
+  usePendingPosts,
+} from "../../hooks/queries/useSocieties";
 
 const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const navigate = useNavigate();
@@ -17,7 +20,8 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const joinMutation = useJoinSocietyMutation();
   const leaveMutation = useLeaveSocietyMutation();
   const { data: pending = [], isLoading: loadingPending } = usePendingPosts(id);
-  const { data: pendingMembers = [], isLoading: loadingPendingMembers } = usePendingMembers(id);  
+  const { data: pendingMembers = [], isLoading: loadingPendingMembers } =
+    usePendingMembers(id);
 
   if (!society) {
     return (
@@ -113,7 +117,7 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
 
         <section className="absolute -top-15 lg:-top-36 left-1/2 -translate-x-1/2 ">
           <SocietyImgUpload
-            societyImage={society.cover_picture || society.cover_image}
+            societyImage={society.cover_image || society.cover_image}
           />
         </section>
       </div>
@@ -155,10 +159,11 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
         >
           <p className="text-gray-600 font-semibold">Pending Posts</p>
           <p className="text-lg font-bold">
-            {loadingPending
-              ? "…"
-              // : Array.isArray(pending)
-              : pending.length
+            {
+              loadingPending
+                ? "…"
+                : // : Array.isArray(pending)
+                  pending.length
               // : pending?.results?.length ?? 80}
             }
           </p>
@@ -171,7 +176,9 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
           className="mb-4 flex justify-between bg-white rounded-lg p-2 px-4 cursor-pointer transform transition-transform duration-700 ease-in-out hover:scale-101"
         >
           <p className="text-gray-600 font-semibold">Pending Members</p>
-          <p className="text-lg font-bold">{loadingPendingMembers ? "…" : pendingMembers.length}</p>
+          <p className="text-lg font-bold">
+            {loadingPendingMembers ? "…" : pendingMembers.length}
+          </p>
         </div>
         <div className="mb-4 bg-white rounded-lg p-2 px-4">
           <div className="flex justify-between items-center mb-2">

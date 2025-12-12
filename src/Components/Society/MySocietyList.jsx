@@ -1,10 +1,10 @@
-import React from 'react';
-import Navbar from '../Navbar';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { useUserSocieties } from '../../hooks/queries/useSocieties';
-import { useLeaveSocietyMutation } from '../../hooks/mutations/useSocieties';
-import { useCurrentUser } from '../../hooks/queries/useUser';
+import React from "react";
+import Navbar from "../Navbar";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useUserSocieties } from "../../hooks/queries/useSocieties";
+import { useLeaveSocietyMutation } from "../../hooks/mutations/useSocieties";
+import { useCurrentUser } from "../../hooks/queries/useUser";
 
 const MySocietyList = () => {
   const navigate = useNavigate();
@@ -17,11 +17,11 @@ const MySocietyList = () => {
     if (!window.confirm(`Are you sure you want to leave ${societyName}?`)) {
       return;
     }
-    
+
     leaveSocietyMutation.mutate(societyId, {
       onSuccess: () => {
         toast.success(`Left ${societyName}`);
-      }
+      },
     });
   };
 
@@ -30,19 +30,19 @@ const MySocietyList = () => {
   };
 
   return (
-    <div className='bg-gray-100 min-h-screen'>
-      <section className='py-7'>
+    <div className="bg-gray-100 min-h-screen">
+      <section className="py-7">
         <Navbar />
       </section>
 
-      <section className='2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8'>
+      <section className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold">Society</h1>
         </div>
 
         {/* Your Societies */}
-        <div className='flex items-center justify-between mt-5'>
+        <div className="flex items-center justify-between mt-5">
           <h2 className="text-xl sm:text-2xl font-bold mb-2">Your Societies</h2>
         </div>
 
@@ -52,9 +52,11 @@ const MySocietyList = () => {
           </div>
         ) : yourSocieties.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">You haven't joined any societies yet</p>
-            <button 
-              onClick={() => navigate('/society')}
+            <p className="text-gray-500">
+              You haven't joined any societies yet
+            </p>
+            <button
+              onClick={() => navigate("/society")}
               className="mt-4 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
             >
               Discover Societies
@@ -69,25 +71,35 @@ const MySocietyList = () => {
                 onClick={() => handleView(society.id)}
               >
                 <img
-                  src={society.cover_picture || society.cover_image || "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"}
+                  src={
+                    society.cover_image ||
+                    society.cover_image ||
+                    "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"
+                  }
                   alt={society.name}
                   className="w-24 h-24 mb-2 object-cover rounded-full"
                 />
-                <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
+                <h3 className="text-lg sm:text-xl font-semibold">
+                  {society.name}
+                </h3>
                 <p className="text-gray-600 text-sm sm:text-base">
                   {society.members_count || society.member_count || 0} members
                 </p>
                 <div className="flex justify-between space-x-2 mt-2">
                   {/* Only show Leave button if user is not the creator */}
-                  {currentUser && society.creator && currentUser.id !== society.creator.id && (
-                    <button 
-                      onClick={(e) => handleLeave(e, society.id, society.name)}
-                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm sm:text-base"
-                    >
-                      Leave
-                    </button>
-                  )}
-                  <button 
+                  {currentUser &&
+                    society.creator &&
+                    currentUser.id !== society.creator.id && (
+                      <button
+                        onClick={(e) =>
+                          handleLeave(e, society.id, society.name)
+                        }
+                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm sm:text-base"
+                      >
+                        Leave
+                      </button>
+                    )}
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleView(society.id);
