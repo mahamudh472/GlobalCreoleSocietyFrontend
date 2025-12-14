@@ -1,75 +1,81 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { FiSearch } from "react-icons/fi"
-import { RiMenuAddLine } from "react-icons/ri"
-import Navbar from "../Navbar"
-import { motion, AnimatePresence } from "framer-motion"
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { apiMethods } from "../../utils/api";
+import { ENDPOINTS } from "../../config/apiConfig";
+import { FiSearch } from "react-icons/fi";
+import { RiMenuAddLine } from "react-icons/ri";
+import Navbar from "../Navbar";
+import { motion, AnimatePresence } from "framer-motion";
 
 function PendingMembers() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showMenu, setShowMenu] = useState(false)
-  const [friends, setFriends] = useState([])
+  const { id } = useParams();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [approvingId, setApprovingId] = useState(null);
 
-  // Simulated API call
+  // Real API call
   useEffect(() => {
-    const fetchPendingMembers = async () => {
-      // Simulate API delay
-      await new Promise((res) => setTimeout(res, 500))
-
-      setFriends([
-        {
-          id: 1,
-          name: "Ahmad Nur Fawaid",
-          avatar: "https://i.pravatar.cc/150?img=12",
-          timestamp: "12 April at 09:28 PM",
-        },
-        {
-          id: 2,
-          name: "Siti Rahmawati",
-          avatar: "https://i.pravatar.cc/150?img=13",
-          timestamp: "12 April at 10:05 PM",
-        },
-        {
-          id: 3,
-          name: "Muhammad Irfan",
-          avatar: "https://i.pravatar.cc/150?img=14",
-          timestamp: "13 April at 08:20 AM",
-        },
-        {
-          id: 4,
-          name: "Nur Aisyah",
-          avatar: "https://i.pravatar.cc/150?img=15",
-          timestamp: "13 April at 09:45 AM",
-        },
-        {
-          id: 5,
-          name: "Dewi Anggraini",
-          avatar: "https://i.pravatar.cc/150?img=16",
-          timestamp: "13 April at 01:10 PM",
-        },
-      ])
-    }
-
-    fetchPendingMembers()
-  }, [])
+    const fetchMembers = async () => {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await apiMethods.get(ENDPOINTS.SOCIETIES.MEMBERS(id));
+        const list = Array.isArray(data) ? data : data?.results || [];
+        const normalized = list.map((m) => ({
+          id: m.id,
+          name:
+            m.user?.profile_name ||
+            m.user?.email ||
+            m.user?.username ||
+            "Unknown",
+          avatar: m.user?.profile_image || undefined,
+          timestamp: m.created_at || "",
+        }));
+        setFriends(normalized);
+      } catch (err) {
+        console.error("Failed to fetch pending members", err);
+        setError("Failed to load pending members");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMembers();
+  }, [id]);
 
   // Search handling
-  const handleSearch = (e) => setSearchQuery(e.target.value)
+  const handleSearch = (e) => setSearchQuery(e.target.value);
 
   // Menu toggle
-  const handleMenuToggle = () => setShowMenu((prev) => !prev)
+  const handleMenuToggle = () => setShowMenu((prev) => !prev);
 
   // Add Society handler
-  const handleAddSociety = (friendId, friendName) => {
-    console.log("Approved member:", friendName)
-    setFriends((prev) => prev.filter((f) => f.id !== friendId))
-  }
+  const handleAddSociety = async (friendId, friendName) => {
+    if (!id || !friendId) return;
+    try {
+      setApprovingId(friendId);
+      await apiMethods.post(
+        ENDPOINTS.SOCIETIES.APPROVE_MEMBERSHIP(id, friendId),
+        {}
+      );
+      setFriends((prev) => prev.filter((f) => f.id !== friendId));
+    } catch (err) {
+      console.error("Failed to approve membership", err);
+      setError("Failed to approve membership");
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   // Filtered list
   const filteredFriends = friends.filter((friend) =>
     friend.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  );
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -79,7 +85,10 @@ function PendingMembers() {
         {/* Search bar */}
         <div className="bg-white shadow-sm px-4 py-3 rounded-xl flex items-center justify-between gap-3">
           <div className="relative flex-1">
-            <FiSearch className="absolute top-3 left-3 text-gray-400" size={20} />
+            <FiSearch
+              className="absolute top-3 left-3 text-gray-400"
+              size={20}
+            />
             <input
               type="search"
               placeholder="Search members..."
@@ -109,7 +118,8 @@ function PendingMembers() {
               className="bg-white mt-2 rounded-lg shadow-md p-4"
             >
               <p className="text-gray-600 text-sm">
-                ⚙️ Future menu actions (e.g. filter by date, sort, bulk approve, etc.)
+                ⚙️ Future menu actions (e.g. filter by date, sort, bulk approve,
+                etc.)
               </p>
             </motion.div>
           )}
@@ -121,6 +131,8 @@ function PendingMembers() {
         </h3>
 
         {/* Members Grid */}
+        {loading && <p className="text-gray-600">Loading pending members...</p>}
+        {error && <p className="text-red-500">{error}</p>}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence>
             {filteredFriends.map((friend) => (
@@ -151,9 +163,14 @@ function PendingMembers() {
 
                 <button
                   onClick={() => handleAddSociety(friend.id, friend.name)}
-                  className="ml-3 px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition"
+                  disabled={approvingId === friend.id}
+                  className={`ml-3 px-4 py-2 text-sm font-medium text-white rounded-lg transition ${
+                    approvingId === friend.id
+                      ? "bg-blue-300 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-600"
+                  }`}
                 >
-                  Add Society
+                  {approvingId === friend.id ? "Approving..." : "Approve"}
                 </button>
               </motion.div>
             ))}
@@ -173,7 +190,7 @@ function PendingMembers() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default PendingMembers
+export default PendingMembers;

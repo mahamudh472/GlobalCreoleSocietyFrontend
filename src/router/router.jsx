@@ -44,6 +44,8 @@ import ProductCard from "../Components/Marketplace/ProductCard";
 import MyProductDetails from "../Components/MyProduct/MyProductDetails";
 import Payment from "../Components/Marketplace/Payment";
 import PendingMembers from "../Components/MySociety/PendingMembers";
+import Blocking from "../Components/Settings/Blocking";
+import AddBlocking from "../Components/Settings/AddBlocking";
 
 const router = createBrowserRouter([
   {
@@ -272,6 +274,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ProfileSettings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/settings/blocking",
+        element: (
+          <ProtectedRoute>
+            <Blocking />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/settings/add_blocking",
+        element: (
+          <ProtectedRoute>
+            <AddBlocking />
           </ProtectedRoute>
         ),
       },

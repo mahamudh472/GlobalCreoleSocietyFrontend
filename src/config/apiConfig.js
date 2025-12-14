@@ -50,6 +50,7 @@ export const ENDPOINTS = {
     DELETE: (postId) => `/social/posts/${postId}/`,
     LIKE: (postId) => `/social/posts/${postId}/like/`,
     COMMENTS: (postId) => `/social/posts/${postId}/comments/`,
+    APPROVE: (postId) => `/social/posts/${postId}/approve/`,
   },
 
   // Social - Comments
@@ -58,7 +59,6 @@ export const ENDPOINTS = {
     UPDATE: (commentId) => `/social/comments/${commentId}/`,
     DELETE: (commentId) => `/social/comments/${commentId}/`,
     LIKE: (commentId) => `/social/comments/${commentId}/like/`,
-    
   },
 
   // Social - Societies
@@ -70,12 +70,15 @@ export const ENDPOINTS = {
     DELETE: (societyId) => `/social/societies/${societyId}/`,
     JOIN: (societyId) => `/social/societies/${societyId}/join/`,
     LEAVE: (societyId) => `/social/societies/${societyId}/leave/`,
-    MEMBERS: (societyId) => `/social/societies/${societyId}/members/`,
+    MEMBERS: (societyId) =>
+      `/social/societies/${societyId}/pending-membership-requests/`,
     POSTS: (societyId) => `/social/societies/${societyId}/posts/`,
     PENDING_POSTS: (societyId) =>
       `/social/societies/${societyId}/pending-posts/`,
-    PENDING_MEMBERS: (societyId) =>
-      `/social/societies/${societyId}/pending-membership-requests/`,
+    REJECT_POSTS: (postId) => `/social/posts/${postId}/reject/`,
+    // PENDING_MEMBERS: (societyId) => `/social/societies/${societyId}/members`,
+    APPROVE_MEMBERSHIP: (societyId, membershipId) =>
+      `/social/societies/${societyId}/memberships/${membershipId}/approve/`,
   },
 
   // Social - Stories

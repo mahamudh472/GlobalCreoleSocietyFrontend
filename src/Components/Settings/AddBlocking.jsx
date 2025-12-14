@@ -1,0 +1,95 @@
+import React, { useState } from "react";
+import Navbar from "../Navbar";
+
+const initialBlocked = [
+  { id: 1, name: "Ahmad Nur ", avatarUrl: null },
+  { id: 2, name: "Ahmad Nusgerr Fawaid", avatarUrl: null },
+  { id: 3, name: "Ahmaderger Nur argrwaid", avatarUrl: null },
+  { id: 4, name: "Ahmergerad Nur Fawaid", avatarUrl: null },
+  { id: 5, name: "Ahmageergad Nur Fawaid", avatarUrl: null },
+];
+
+function AddBlocking() {
+  const [query, setQuery] = useState("");
+  const [blockedUsers, setBlockedUsers] = useState(initialBlocked);
+
+  const addBlocked = () => {
+    const name = query.trim();
+    if (!name) return;
+    const newUser = { id: Date.now(), name, avatarUrl: null };
+    setBlockedUsers((prev) => [newUser, ...prev]);
+    setQuery("");
+  };
+
+  const unblock = (id) => {
+    setBlockedUsers((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  return (
+    <div className="bg-gray-100 min-h-screen">
+      <div className="py-7">
+        <Navbar />
+      </div>
+      <div className="py-6 px-4 sm:px-6 lg:px-8">
+        <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                All • {blockedUsers.length}
+              </h2>
+            </div>
+
+            {/* Add Someone row */}
+            <div className="flex items-center border-2 border-dashed border-purple-300 rounded-md p-2 mb-4">
+              <button
+                onClick={addBlocked}
+                className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-50 border border-blue-200 text-blue-600 text-xl mr-2"
+                title="Add"
+              >
+                +
+              </button>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Add Someone"
+                className="flex-1 outline-none px-2 py-1 text-sm border border-transparent focus:border-purple-300 rounded"
+              />
+            </div>
+
+            {/* Blocked list */}
+            <div className="space-y-3">
+              {blockedUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-300">
+                      {user.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <span className="text-sm text-gray-800">{user.name}</span>
+                  </div>
+                  <button
+                    onClick={() => unblock(user.id)}
+                    className="px-4 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
+                  >
+                    block
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AddBlocking;

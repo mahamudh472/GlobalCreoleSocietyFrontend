@@ -22,7 +22,7 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const { data: pending = [], isLoading: loadingPending } = usePendingPosts(id);
   const { data: pendingMembers = [], isLoading: loadingPendingMembers } =
     usePendingMembers(id);
-
+  console.log("alu", pendingMembers);
   if (!society) {
     return (
       <div className="bg-white rounded-xl p-4">
@@ -177,7 +177,12 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
         >
           <p className="text-gray-600 font-semibold">Pending Members</p>
           <p className="text-lg font-bold">
-            {loadingPendingMembers ? "…" : pendingMembers.length}
+            {loadingPendingMembers
+              ? "…"
+              : pendingMembers?.count ??
+                (Array.isArray(pendingMembers)
+                  ? pendingMembers.length
+                  : pendingMembers?.results?.length ?? 0)}
           </p>
         </div>
         <div className="mb-4 bg-white rounded-lg p-2 px-4">

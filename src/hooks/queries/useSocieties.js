@@ -40,12 +40,14 @@ export const usePendingPosts = (societyId, options = {}) => {
 
 export const usePendingMembers = (societyId, options = {}) => {
   return useQuery({
-    queryKey: queryKeys.societies.pending(societyId),
+    queryKey: queryKeys.societies.pendingMembers(societyId),
     queryFn: async () => {
+      // Use the real API for pending membership requests
       const response = await apiMethods.get(
-        ENDPOINTS.SOCIETIES.MEMBERS(societyId) + "?is_pending=true"
+        ENDPOINTS.SOCIETIES.MEMBERS(societyId)
       );
-      return response.data.results || response.data;
+      // API returns a paginated object: { count, next, previous, results: [...] }
+      return response.data?.results ?? response.data;
     },
     enabled: !!societyId,
     staleTime: 1000 * 60 * 5, // 5 minutes
