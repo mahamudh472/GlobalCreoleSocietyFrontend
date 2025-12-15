@@ -7,7 +7,7 @@ import { ENDPOINTS } from "../../config/apiConfig";
 import { FiSearch } from "react-icons/fi";
 import { RiMenuAddLine } from "react-icons/ri";
 import Navbar from "../Navbar";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 
 function PendingMembers() {
   const { id } = useParams();
@@ -55,7 +55,7 @@ function PendingMembers() {
   const handleMenuToggle = () => setShowMenu((prev) => !prev);
 
   // Add Society handler
-  const handleAddSociety = async (friendId, friendName) => {
+  const handleAddSociety = async (friendId) => {
     if (!id || !friendId) return;
     try {
       setApprovingId(friendId);

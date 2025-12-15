@@ -58,10 +58,13 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
 
       // Ensure content is never empty
       const effectivePostId = postData?.id || postId;
-      // Use a relative SPA path so it doesn't include http://127.0.0.1:3000
-      const postLink = effectivePostId ? `/feed/${effectivePostId}` : "";
+      // Share a link that routes to the specific post in the Feed by hash
+      const postLink = effectivePostId ? `/feed#post-${effectivePostId}` : "";
 
-      const contentToSend = shareMessage?.trim() || postLink;
+      // Always include the post link to ensure navigation from inbox
+      const contentToSend = `${
+        shareMessage?.trim() ? shareMessage.trim() + "\n" : ""
+      }${postLink}`.trim();
       // console.log("Content to send:", contentToSend ,postLink);
       console.log("share message", shareMessage, "\n", postData);
 
@@ -95,24 +98,34 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
         })
       );
 
-      // Share to selected societies
-      await Promise.all(
-        selectedSocieties.map(async (societyId) => {
-          const payload = {
-            content: contentToSend,
-            post_id: effectivePostId,
-            society_id: societyId,
-          };
-          await apiMethods.post(
-            ENDPOINTS.CHAT.SEND_MESSAGE(societyId),
-            payload
-          );
-        })
-      );
+      // Share to selected societies by creating a post in each society (no link, only text/content)
+      let createdSocietyPosts = [];
+      if (selectedSocieties.length > 0) {
+        const groupContent =
+          (shareMessage || "").trim() || postData?.content || "Shared a post";
+        createdSocietyPosts = await Promise.all(
+          selectedSocieties.map(async (societyId) => {
+            const payload = { content: groupContent, society: societyId };
+            const resp = await apiMethods.post(ENDPOINTS.POSTS.CREATE, payload);
+            return { societyId, post: resp.data };
+          })
+        );
+      }
 
       toast.success("Shared successfully!");
       onClose();
-      navigate("/chat");
+      // Navigate based on what was shared: go to first society's post if any societies selected; otherwise to chat
+      if (createdSocietyPosts.length > 0) {
+        const first = createdSocietyPosts[0];
+        const newPostId = first?.post?.id;
+        if (newPostId) {
+          navigate(`/society/${first.societyId}#post-${newPostId}`);
+        } else {
+          navigate(`/society/${first.societyId}`);
+        }
+      } else {
+        navigate("/chat");
+      }
     } catch (err) {
       console.error("Share error:", err);
       toast.error("Failed to share. Please try again.");

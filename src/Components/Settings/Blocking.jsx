@@ -3,8 +3,8 @@ import Navbar from "../Navbar";
 import { Link } from "react-router-dom";
 
 const initialBlocked = [
-  { id: 1, name: "Ahmad Nur Fawaid", avatarUrl: null },
-  { id: 2, name: "Ahmad Nur Fawaid", avatarUrl: null },
+  { id: 1, name: "Ahmad Nur Fawasdfsid", avatarUrl: null },
+  { id: 2, name: "Ahmad Nur Fatfhtwaid", avatarUrl: null },
   { id: 3, name: "Ahmad Nur Fawaid", avatarUrl: null },
   { id: 4, name: "Ahmad Nur Fawaid", avatarUrl: null },
   { id: 5, name: "Ahmad Nur Fawaid", avatarUrl: null },

@@ -1,124 +1,142 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import StoriesSection from "./StoriesSection"
-import CreatePostSection from "./CreatePostSection"
-import PostCard from "./PostCard"
-import CommentsModal from "./CommentsModal"
-import ShareModal from "./ShareModal"
-import { useCurrentUser } from "../../hooks/queries"
-import { usePostsInfinite } from "../../hooks/queries"
+import { useState, useRef, useEffect } from "react";
+import StoriesSection from "./StoriesSection";
+import CreatePostSection from "./CreatePostSection";
+import PostCard from "./PostCard";
+import CommentsModal from "./CommentsModal";
+import ShareModal from "./ShareModal";
+import { useCurrentUser } from "../../hooks/queries";
+import { usePostsInfinite } from "../../hooks/queries";
 
 const SocialFeed = () => {
-    const { data: user } = useCurrentUser();
-    const [activeSharePostId, setActiveSharePostId] = useState(null)
-    const [activeCommentPostId, setActiveCommentPostId] = useState(null)
-    const loadMoreRef = useRef(null)
+  const { data: user } = useCurrentUser();
+  const [activeSharePostId, setActiveSharePostId] = useState(null);
+  const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+  const loadMoreRef = useRef(null);
 
-    // Use infinite query for posts
-    const {
-        data,
-        isLoading,
-        isFetchingNextPage,
-        fetchNextPage,
-        hasNextPage,
-    } = usePostsInfinite({});
+  // Use infinite query for posts
+  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } =
+    usePostsInfinite({});
 
-    // Flatten pages into single posts array
-    const posts = data?.pages.flatMap(page => page.results) ?? [];
+  // Flatten pages into single posts array
+  const posts = data?.pages.flatMap((page) => page.results) ?? [];
 
-    // Infinite scroll observer
-    useEffect(() => {
-        if (isLoading || isFetchingNextPage || !hasNextPage) return;
+  // Scroll to a specific post if hash is present (e.g., #post-123)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith("#post-")) return;
+    // Delay to ensure posts rendered in DOM
+    const t = setTimeout(() => {
+      const el = document.querySelector(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [posts.length]);
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-                    fetchNextPage();
-                }
-            },
-            { threshold: 0.1 }
-        );
+  // Infinite scroll observer
+  useEffect(() => {
+    if (isLoading || isFetchingNextPage || !hasNextPage) return;
 
-        if (loadMoreRef.current) {
-            observer.observe(loadMoreRef.current);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
+      },
+      { threshold: 0.1 }
+    );
 
-        return () => {
-            if (loadMoreRef.current) {
-                observer.disconnect();
-            }
-        };
-    }, [isLoading, isFetchingNextPage, hasNextPage, fetchNextPage]);
-
-    const handleOpenShareModal = (postId) => {
-        setActiveSharePostId(postId)
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
     }
 
-    const handleOpenCommentModal = (postId) => {
-        setActiveCommentPostId(postId)
-    }
+    return () => {
+      if (loadMoreRef.current) {
+        observer.disconnect();
+      }
+    };
+  }, [isLoading, isFetchingNextPage, hasNextPage, fetchNextPage]);
 
-    const closeShareModal = () => {
-        setActiveSharePostId(null)
-    }
+  const handleOpenShareModal = (postId) => {
+    setActiveSharePostId(postId);
+  };
 
-    const closeCommentModal = () => {
-        setActiveCommentPostId(null)
-    }
+  const handleOpenCommentModal = (postId) => {
+    setActiveCommentPostId(postId);
+  };
 
-    return (
-        <div className="min-h-screen">
-            <StoriesSection />
-            <CreatePostSection currentUser={user} />
+  const closeShareModal = () => {
+    setActiveSharePostId(null);
+  };
 
-            {isLoading && posts.length === 0 ? (
-                <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-                </div>
-            ) : posts.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 text-center">
-                    <p className="text-gray-500">No posts yet. Be the first to share something!</p>
-                </div>
-            ) : (
-                <>
-                    <div className="space-y-4">
-                        {posts.map((post) => (
-                            <PostCard
-                                key={post.id}
-                                post={post}
-                                onComment={() => handleOpenCommentModal(post.id)}
-                                onShare={() => handleOpenShareModal(post.id)}
-                            />
-                        ))}
-                    </div>
+  const closeCommentModal = () => {
+    setActiveCommentPostId(null);
+  };
 
-                    {/* Infinite scroll trigger */}
-                    {hasNextPage && (
-                        <div ref={loadMoreRef} className="flex justify-center items-center py-8">
-                            {isFetchingNextPage && (
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                            )}
-                        </div>
-                    )}
+  return (
+    <div className="min-h-screen">
+      <StoriesSection />
+      <CreatePostSection currentUser={user} />
 
-                    {!hasNextPage && posts.length > 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                            No more posts to load
-                        </div>
-                    )}
-                </>
-            )}
-
-            {/* Modals */}
-            <ShareModal isOpen={!!activeSharePostId} onClose={closeShareModal} postId={activeSharePostId} />
-            <CommentsModal 
-                isOpen={!!activeCommentPostId} 
-                onClose={closeCommentModal} 
-                postId={activeCommentPostId}
-            />
+      {isLoading && posts.length === 0 ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
-    )
-}
+      ) : posts.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 text-center">
+          <p className="text-gray-500">
+            No posts yet. Be the first to share something!
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                onComment={() => handleOpenCommentModal(post.id)}
+                onShare={() => handleOpenShareModal(post.id)}
+              />
+            ))}
+          </div>
 
-export default SocialFeed
+          {/* Infinite scroll trigger */}
+          {hasNextPage && (
+            <div
+              ref={loadMoreRef}
+              className="flex justify-center items-center py-8"
+            >
+              {isFetchingNextPage && (
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              )}
+            </div>
+          )}
+
+          {!hasNextPage && posts.length > 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No more posts to load
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Modals */}
+      <ShareModal
+        isOpen={!!activeSharePostId}
+        onClose={closeShareModal}
+        postId={activeSharePostId}
+      />
+      <CommentsModal
+        isOpen={!!activeCommentPostId}
+        onClose={closeCommentModal}
+        postId={activeCommentPostId}
+      />
+    </div>
+  );
+};
+
+export default SocialFeed;

@@ -88,7 +88,7 @@ const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
               placeholder="Write your story today..."
               className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent
                placeholder-gray-500 dark:placeholder-gray-400
-               text-gray-900 dark:text-gray-100"
+               text-gray-900 dark:text-gray-900"
               rows="3"
             />
             

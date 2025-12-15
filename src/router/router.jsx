@@ -46,6 +46,7 @@ import Payment from "../Components/Marketplace/Payment";
 import PendingMembers from "../Components/MySociety/PendingMembers";
 import Blocking from "../Components/Settings/Blocking";
 import AddBlocking from "../Components/Settings/AddBlocking";
+import OrderDetail from "../Components/Marketplace/OrderDetail";
 
 const router = createBrowserRouter([
   {
@@ -132,6 +133,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <OrderCart />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/marketplace/orderdetails",
+        element: (
+          <ProtectedRoute>
+            <OrderDetail />
           </ProtectedRoute>
         ),
       },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Heart, MessageCircle, MoreVertical, Trash2, Edit } from "lucide-react";
 import { FaShareFromSquare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
@@ -108,7 +108,10 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
   const isOwnPost = user && post.user && user.id === post.user.id;
 
   return (
-    <div className="bg-white rounded-xl p-4 mb-4 shadow-sm transform transition-transform duration-700 ease-out hover:scale-102">
+    <div
+      id={`post-${post.id}`}
+      className="bg-white rounded-xl p-4 mb-4 shadow-sm transform transition-transform duration-700 ease-out hover:scale-102"
+    >
       {/* Society Header - Show if post belongs to a society */}
       {post.society && (
         <div

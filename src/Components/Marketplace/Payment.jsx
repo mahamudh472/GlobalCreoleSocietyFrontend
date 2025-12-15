@@ -1,25 +1,24 @@
-
-
 import { useState } from "react";
 import Navbar from "../Navbar";
 import Swal from "sweetalert2";
+import { Link } from "react-router-dom";
 
 const Payment = () => {
   const [formData, setFormData] = useState({
-    product: 'Jacket Trucker Denim',
+    product: "Jacket Trucker Denim",
     quantity: 1,
     subtotal: 44.11,
-    deliveryFees: 4.00,
+    deliveryFees: 4.0,
     tax: 9.99,
-    deliveryShipping: 0.00,
+    deliveryShipping: 0.0,
     total: 58.01,
-    deliveryType: 'toAddress',
-    paymentMethod: 'cashOnDelivery',
+    deliveryType: "toAddress",
+    paymentMethod: "cashOnDelivery",
     address: {
-      receiverName: 'Icin Caroline',
-      phoneNumber: '+1 245-534-8',
-      city: 'California',
-      addressLine: '88 Jenna Lane, Petrolia, California, 95558, United States',
+      receiverName: "Icin Caroline",
+      phoneNumber: "+1 245-534-8",
+      city: "California",
+      addressLine: "88 Jenna Lane, Petrolia, California, 95558, United States",
     },
     isPopupOpen: false,
   });
@@ -39,7 +38,7 @@ const Payment = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form Data:', formData);
+    console.log("Form Data:", formData);
     if (formData?.paymentMethod === "cashOnDelivery") {
       Swal.fire({
         title: "Are you sure?",
@@ -61,10 +60,7 @@ const Payment = () => {
     } else if (formData?.paymentMethod === "creditCard") {
       console.log("Credit card selected");
     }
-
-  }
-
-
+  };
 
   const togglePopup = () => {
     setFormData((prev) => ({ ...prev, isPopupOpen: !prev.isPopupOpen }));
@@ -72,7 +68,7 @@ const Payment = () => {
 
   const saveAddress = () => {
     setFormData((prev) => ({ ...prev, isPopupOpen: false }));
-    console.log('Updated Address:', formData.address);
+    console.log("Updated Address:", formData.address);
   };
 
   return (
@@ -93,7 +89,9 @@ const Payment = () => {
 
             <h3 className="text-lg font-semibold mt-4 mb-2">Delivery Detail</h3>
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-blue-700">Please complete your address information first.</p>
+              <p className="text-blue-700">
+                Please complete your address information first.
+              </p>
               <button
                 onClick={togglePopup}
                 className="mt-2 text-blue-500 hover:underline"
@@ -110,7 +108,7 @@ const Payment = () => {
                     type="radio"
                     name="deliveryType"
                     value="toAddress"
-                    checked={formData.deliveryType === 'toAddress'}
+                    checked={formData.deliveryType === "toAddress"}
                     onChange={handleChange}
                     className="text-green-500 focus:ring-green-500"
                   />
@@ -121,7 +119,7 @@ const Payment = () => {
                     type="radio"
                     name="deliveryType"
                     value="pickUp"
-                    checked={formData.deliveryType === 'pickUp'}
+                    checked={formData.deliveryType === "pickUp"}
                     onChange={handleChange}
                     className="text-green-500 focus:ring-green-500"
                   />
@@ -135,21 +133,46 @@ const Payment = () => {
           <div className="shadow-xl p-6 rounded-2xl">
             <h3 className="text-lg font-semibold mb-2">Order Detail</h3>
             <div className="space-y-2">
-              <p>Subtotal <span className="float-right">${formData.subtotal.toFixed(2)}</span></p>
-              <p>Delivery Fees <span className="float-right">${formData.deliveryFees.toFixed(2)}</span></p>
-              <p>Tax <span className="float-right">${formData.tax.toFixed(2)}</span></p>
-              <p>Delivery & Shipping <span className="float-right">${formData.deliveryShipping.toFixed(2)}</span></p>
-              <p className="font-bold">Total <span className="float-right">${formData.total.toFixed(2)}</span></p>
+              <p>
+                Subtotal{" "}
+                <span className="float-right">
+                  ${formData.subtotal.toFixed(2)}
+                </span>
+              </p>
+              <p>
+                Delivery Fees{" "}
+                <span className="float-right">
+                  ${formData.deliveryFees.toFixed(2)}
+                </span>
+              </p>
+              <p>
+                Tax{" "}
+                <span className="float-right">${formData.tax.toFixed(2)}</span>
+              </p>
+              <p>
+                Delivery & Shipping{" "}
+                <span className="float-right">
+                  ${formData.deliveryShipping.toFixed(2)}
+                </span>
+              </p>
+              <p className="font-bold">
+                Total{" "}
+                <span className="float-right">
+                  ${formData.total.toFixed(2)}
+                </span>
+              </p>
             </div>
 
-            <h3 className="text-lg font-semibold mt-4 mb-2">Payments Methods</h3>
+            <h3 className="text-lg font-semibold mt-4 mb-2">
+              Payments Methods
+            </h3>
             <p className="mb-2">Choose your payments methods.</p>
             <label className="flex items-center space-x-2 mb-2">
               <input
                 type="radio"
                 name="paymentMethod"
                 value="cashOnDelivery"
-                checked={formData.paymentMethod === 'cashOnDelivery'}
+                checked={formData.paymentMethod === "cashOnDelivery"}
                 onChange={handleChange}
                 className="text-green-500 focus:ring-green-500"
               />
@@ -160,7 +183,7 @@ const Payment = () => {
                 type="radio"
                 name="paymentMethod"
                 value="creditCard"
-                checked={formData.paymentMethod === 'creditCard'}
+                checked={formData.paymentMethod === "creditCard"}
                 onChange={handleChange}
                 className="text-green-500 focus:ring-green-500"
               />
@@ -171,13 +194,12 @@ const Payment = () => {
                 type="radio"
                 name="paymentMethod"
                 value="bankTransfer"
-                checked={formData.paymentMethod === 'bankTransfer'}
+                checked={formData.paymentMethod === "bankTransfer"}
                 onChange={handleChange}
                 className="text-green-500 focus:ring-green-500"
               />
               <span>Bank Transfer</span>
             </label>
-
             <button
               type="submit"
               onClick={handleSubmit}
@@ -185,6 +207,11 @@ const Payment = () => {
             >
               Proceed
             </button>
+            <Link to="/marketplace/orderdetails">
+              <button className="w-full mt-4 bg-gray-300 text-gray-700 py-2 rounded-md ">
+               existing Proceed
+              </button>
+            </Link>
           </div>
         </div>
 
@@ -193,7 +220,10 @@ const Payment = () => {
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
               <h3 className="text-lg font-semibold mb-4">Add Address</h3>
-              <p className="text-gray-600 mb-4">Receiver Name. Please fill form below and make sure the address is correct.</p>
+              <p className="text-gray-600 mb-4">
+                Receiver Name. Please fill form below and make sure the address
+                is correct.
+              </p>
               <div className="space-y-4">
                 <input
                   type="text"

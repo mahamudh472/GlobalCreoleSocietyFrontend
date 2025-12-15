@@ -177,7 +177,7 @@ export const useUnblockUserMutation = () => {
 
   return useMutation({
     mutationFn: async (userId) => {
-      const response = await apiMethods.post(ENDPOINTS.USERS.UNBLOCK(userId))
+      const response = await apiMethods.delete(ENDPOINTS.USERS.UNBLOCK(userId))
       return { userId, data: response.data }
     },
     onSuccess: ({ userId }) => {
