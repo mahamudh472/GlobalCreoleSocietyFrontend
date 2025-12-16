@@ -240,6 +240,7 @@ function ChatWindow({
               // Pass userId instead of conversation id for receiver_id
               const otherUser = { id: chat.userId, name: chat.name };
               await initiateCall(chat.id, otherUser, "audio", token);
+              // Navigate to call page immediately
               navigate("/chat/audiocall");
             }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -260,6 +261,7 @@ function ChatWindow({
               // Pass userId instead of conversation id for receiver_id
               const otherUser = { id: chat.userId, name: chat.name };
               await initiateCall(chat.id, otherUser, "video", token);
+              // Navigate to call page immediately
               navigate("/chat/videocall");
             }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"

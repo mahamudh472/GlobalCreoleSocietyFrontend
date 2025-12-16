@@ -3,6 +3,8 @@
  * Manages peer connections, media streams, and signaling
  */
 
+import { WS_ENDPOINTS } from '../config/apiConfig';
+
 // STUN servers for NAT traversal
 const ICE_SERVERS = {
   iceServers: [
@@ -29,7 +31,8 @@ class WebRTCService {
    */
   initializeCallSocket(conversationId, token) {
     return new Promise((resolve, reject) => {
-      const wsUrl = `ws/call/${conversationId}/?token=${token}`;
+      const wsUrl = `${WS_ENDPOINTS.CALL(conversationId)}?token=${token}`;
+      console.log('[WebRTC] Connecting to WebSocket:', wsUrl);
       this.callSocket = new WebSocket(wsUrl);
 
       this.callSocket.onopen = () => {

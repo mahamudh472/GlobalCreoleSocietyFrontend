@@ -41,14 +41,9 @@ export const CallProvider = ({ children }) => {
     
     socket.onmessage = async (event) => {
       const data = JSON.parse(event.data);
-      console.log('[CallContext] Global listener received:', data.type, data);
+      console.log('[CallContext] Global listener received:', data.type);
       
       if (data.type === 'incoming_call') {
-        // Show incoming call notification
-        console.log('[CallContext] Incoming call data:', data);
-        console.log('[CallContext] conversation_id:', data.conversation_id);
-        console.log('[CallContext] call_data:', data.call_data);
-        
         const callData = {
           ...data.call_data,
           conversation_id: data.conversation_id,
@@ -59,7 +54,6 @@ export const CallProvider = ({ children }) => {
           call_type: data.call_type,
           is_caller: false
         };
-        console.log('[CallContext] Processed callData:', callData);
         setIncomingCall(callData);
         setCallStatus('incoming');
       }
