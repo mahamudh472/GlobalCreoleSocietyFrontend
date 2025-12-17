@@ -87,7 +87,7 @@ export const useSocietyMembers = (societyId, options = {}) => {
     queryKey: queryKeys.societies.members(societyId),
     queryFn: async () => {
       const response = await apiMethods.get(
-        ENDPOINTS.SOCIETIES.MEMBERS(societyId)
+        ENDPOINTS.SOCIETIES.MEMBERS_LIST(societyId)
       );
       return response.data.results || response.data;
     },

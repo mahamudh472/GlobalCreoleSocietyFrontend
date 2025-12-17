@@ -125,7 +125,7 @@ const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
         <div className="flex justify-between items-center mt-3">
           <div className="flex space-x-4 items-center">
             <button
-              onClick={() => navigate("/feed/livestream")}
+              onClick={() => navigate("/feed/GoLive")}
               type="button"
               className="flex items-center space-x-2 cursor-pointer px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >

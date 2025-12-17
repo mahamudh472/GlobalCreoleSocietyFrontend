@@ -1,55 +1,64 @@
-import { FaPencilAlt, FaTimes } from 'react-icons/fa'
-import React, { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { FaPencilAlt, FaTimes } from "react-icons/fa";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
-const SocietyImgUpload = () => {
+const SocietyImgUpload = ({ societyImage, onChangeImage, isUploading }) => {
+  console.log("societyImage", societyImage);
   const [imagePreview, setImagePreview] = useState(
-    'https://cdn.pixabay.com/photo/2025/05/23/08/54/girl-9617241_1280.png'
-  )
-  const [imageFile, setImageFile] = useState(null)
-  const fileInputRef = useRef(null)
-
+    societyImage ||
+      "https://cdn.pixabay.com/photo/2025/05/23/08/54/girl-9617241_1280.png"
+  );
+  const [imageFile, setImageFile] = useState(null);
+  const fileInputRef = useRef(null);
   // Fullscreen preview state
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Sync preview when prop changes
+  useEffect(() => {
+    if (societyImage) setImagePreview(societyImage);
+  }, [societyImage]);
 
   // Handle image selection from file input
   const handleImageChange = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload a valid image.')
-      return
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image.");
+      return;
     }
     if (file.size > 15 * 1024 * 1024) {
-      alert('File size should not exceed 15MB.')
-      return
+      alert("File size should not exceed 15MB.");
+      return;
     }
 
-    const reader = new FileReader()
-    reader.onloadend = () => setImagePreview(reader.result)
-    reader.readAsDataURL(file)
-    setImageFile(file)
-  }
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+    setImageFile(file);
+    if (typeof onChangeImage === "function") {
+      onChangeImage(file);
+    }
+  };
 
-  const handleFromGallery = () => fileInputRef.current?.click()
-  const openPreview = () => imagePreview && setIsPreviewOpen(true)
-  const closePreview = () => setIsPreviewOpen(false)
+  const handleFromGallery = () => fileInputRef.current?.click();
+  const openPreview = () => imagePreview && setIsPreviewOpen(true);
+  const closePreview = () => setIsPreviewOpen(false);
 
   // ESC to close + scroll lock while open
   useEffect(() => {
-    if (!isPreviewOpen) return
+    if (!isPreviewOpen) return;
 
-    const onKeyDown = (e) => e.key === 'Escape' && closePreview()
-    window.addEventListener('keydown', onKeyDown)
+    const onKeyDown = (e) => e.key === "Escape" && closePreview();
+    window.addEventListener("keydown", onKeyDown);
 
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden' // lock scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden"; // lock scroll
     return () => {
-      window.removeEventListener('keydown', onKeyDown)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [isPreviewOpen])
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isPreviewOpen]);
 
   // The overlay rendered into a portal
   const PreviewOverlay = (
@@ -61,8 +70,8 @@ const SocietyImgUpload = () => {
     >
       <button
         onClick={(e) => {
-          e.stopPropagation()
-          closePreview()
+          e.stopPropagation();
+          closePreview();
         }}
         className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition cursor-pointer"
         aria-label="Close preview"
@@ -82,7 +91,7 @@ const SocietyImgUpload = () => {
         />
       </div>
     </div>
-  )
+  );
 
   return (
     <div>
@@ -105,10 +114,11 @@ const SocietyImgUpload = () => {
           <button
             type="button"
             onClick={(e) => {
-              e.stopPropagation()
-              handleFromGallery()
+              e.stopPropagation();
+              handleFromGallery();
             }}
-            className="absolute bottom-1 right-1 p-2 rounded-full bg-black/60 hover:bg-black/70 transition"
+            className="absolute bottom-1 right-1 p-2 rounded-full bg-black/60 hover:bg-black/70 transition disabled:opacity-60"
+            disabled={isUploading}
             aria-label="Change image"
             title="Change image"
           >
@@ -131,7 +141,7 @@ const SocietyImgUpload = () => {
       {/* Fullscreen Preview via Portal (escapes any parent stacking/overflow) */}
       {isPreviewOpen && createPortal(PreviewOverlay, document.body)}
     </div>
-  )
-}
+  );
+};
 
-export default SocietyImgUpload
+export default SocietyImgUpload;

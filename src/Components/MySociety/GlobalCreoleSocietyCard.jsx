@@ -12,6 +12,7 @@ import {
   usePendingMembers,
   usePendingPosts,
 } from "../../hooks/queries/useSocieties";
+import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
 
 const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const navigate = useNavigate();
@@ -19,10 +20,10 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const { data: currentUser } = useCurrentUser();
   const joinMutation = useJoinSocietyMutation();
   const leaveMutation = useLeaveSocietyMutation();
+  const updateMutation = useUpdateSocietyMutation();
   const { data: pending = [], isLoading: loadingPending } = usePendingPosts(id);
   const { data: pendingMembers = [], isLoading: loadingPendingMembers } =
     usePendingMembers(id);
-  console.log("alu", pendingMembers);
   if (!society) {
     return (
       <div className="bg-white rounded-xl p-4">
@@ -65,6 +66,52 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
         toast.success("Left society successfully");
       },
     });
+  };
+
+  const handleEditAbout = () => {
+    if (!id) return;
+    // Use simple prompts to avoid changing layout/design
+    const nameInput = window.prompt("Update group name:", society.name || "");
+    const descInput = window.prompt(
+      "Update about group:",
+      society.description || ""
+    );
+    if (nameInput === null && descInput === null) return; // cancelled
+
+    const formData = new FormData();
+    if (nameInput !== null && nameInput !== society.name) {
+      formData.append("name", nameInput);
+    }
+    if (descInput !== null && descInput !== (society.description || "")) {
+      formData.append("description", descInput);
+    }
+    if ([...formData.keys()].length === 0) return; // nothing changed
+
+    updateMutation.mutate(
+      { societyId: id, societyData: formData },
+      {
+        onSuccess: () => toast.success("Group details updated"),
+        onError: () => toast.error("Failed to update group details"),
+      }
+    );
+  };
+
+  const handleAvatarImageChange = (file) => {
+    if (!file || !id) return;
+    const formData = new FormData();
+    formData.append("profile_image", file);
+console.log(formData)
+    updateMutation.mutate(
+      { societyId: id, societyData: formData },
+      {
+        onSuccess: () => {
+          toast.success("Group picture updated");
+        },
+        onError: () => {
+          toast.error("Failed to update group picture");
+        },
+      }
+    );
   };
 
   return (
@@ -117,7 +164,9 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
 
         <section className="absolute -top-15 lg:-top-36 left-1/2 -translate-x-1/2 ">
           <SocietyImgUpload
-            societyImage={society.cover_image || society.cover_image}
+            societyImage={society.profile_image || society.avatar}
+            onChangeImage={handleAvatarImageChange}
+            isUploading={updateMutation.isPending}
           />
         </section>
       </div>
@@ -132,8 +181,10 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
             alt="Creator"
             className="w-10 h-10 rounded-full mr-2 object-cover"
           />
-          <div>
-            <p className="text-gray-600 text-sm">Society Created by</p>
+          <div className="text-left pl-2">
+            <p className="text-gray-600 text-sm text-left ">
+              Society Created by{" "}
+            </p>
             <p className="font-semibold">
               {society.creator?.profile_name ||
                 society.creator?.email ||
@@ -188,9 +239,14 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
         <div className="mb-4 bg-white rounded-lg p-2 px-4">
           <div className="flex justify-between items-center mb-2">
             <p className="text-gray-600 font-semibold">About Group</p>
-            <button className=" text-sm hover:underline border border-[#E2E8F0]  p-1 px-6 rounded-lg cursor-pointer">
-              Edit
-            </button>
+            {isCreator && (
+              <button
+                onClick={handleEditAbout}
+                className=" text-sm hover:underline border border-[#E2E8F0]  p-1 px-6 rounded-lg cursor-pointer"
+              >
+                Edit
+              </button>
+            )}
           </div>
           <hr className=" border border-[#F0F0F0] my-3" />
           <p className="text-gray-800">UI/UX Designers group</p>

@@ -70,8 +70,11 @@ export const ENDPOINTS = {
     DELETE: (societyId) => `/social/societies/${societyId}/`,
     JOIN: (societyId) => `/social/societies/${societyId}/join/`,
     LEAVE: (societyId) => `/social/societies/${societyId}/leave/`,
+    // Pending membership requests (kept for existing usage)
     MEMBERS: (societyId) =>
       `/social/societies/${societyId}/pending-membership-requests/`,
+    // Approved/actual members list
+    MEMBERS_LIST: (societyId) => `/social/societies/${societyId}/members/`,
     POSTS: (societyId) => `/social/societies/${societyId}/posts/`,
     PENDING_POSTS: (societyId) =>
       `/social/societies/${societyId}/pending-posts/`,
@@ -96,12 +99,14 @@ export const ENDPOINTS = {
     MARK_READ: "/social/notifications/mark-read/",
     SINGLE_NOTIFICATION: (notificationId) =>
       `/social/notifications/mark-read/${notificationId}/`,
+    DELETE: (notificationId) => `/social/notifications/delete/${notificationId}/`,
   },
 
   // Social - User Blocking
   USERS: {
     BLOCK: (userId) => `/social/users/${userId}/block/`,
     UNBLOCK: (userId) => `/social/users/${userId}/unblock/`,
+    BLOCKED_USERS: "/social/users/blocked/",
   },
 
   // Chat

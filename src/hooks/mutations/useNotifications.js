@@ -121,8 +121,8 @@ export const useDeleteNotificationMutation = () => {
 
   return useMutation({
     mutationFn: async (notificationId) => {
-      const response = await apiMethods.post(
-        ENDPOINTS.SINGLE_NOTIFICATION(notificationId)
+      const response = await apiMethods.delete(
+        ENDPOINTS.NOTIFICATIONS.DELETE(notificationId)
       );
       // return notificationId
       return { data: response.data, notificationId };

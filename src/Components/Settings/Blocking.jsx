@@ -1,30 +1,15 @@
 import React, { useState } from "react";
 import Navbar from "../Navbar";
 import { Link } from "react-router-dom";
-
-const initialBlocked = [
-  { id: 1, name: "Ahmad Nur Fawasdfsid", avatarUrl: null },
-  { id: 2, name: "Ahmad Nur Fatfhtwaid", avatarUrl: null },
-  { id: 3, name: "Ahmad Nur Fawaid", avatarUrl: null },
-  { id: 4, name: "Ahmad Nur Fawaid", avatarUrl: null },
-  { id: 5, name: "Ahmad Nur Fawaid", avatarUrl: null },
-];
+import { useBlockedUsersQuery } from "../../hooks/queries/useBlock";
+import { useUnblockUserMutation } from "../../hooks/mutations/useFriends";
 
 function Blocking() {
   const [query, setQuery] = useState("");
-  const [blockedUsers, setBlockedUsers] = useState(initialBlocked);
-
-  const addBlocked = () => {
-    const name = query.trim();
-    if (!name) return;
-    const newUser = { id: Date.now(), name, avatarUrl: null };
-    setBlockedUsers((prev) => [newUser, ...prev]);
-    setQuery("");
-  };
-
-  const unblock = (id) => {
-    setBlockedUsers((prev) => prev.filter((u) => u.id !== id));
-  };
+  const { data, isLoading, isError, refetch } = useBlockedUsersQuery();
+  const { mutate: unblockUser, isPending: isUnblocking } =
+    useUnblockUserMutation();
+  const blockedUsers = Array.isArray(data) ? data : data?.results || [];
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -42,16 +27,14 @@ function Blocking() {
 
             {/* Add Someone row */}
             <div className="flex items-center border-2 border-dashed border-purple-300 rounded-md p-2 mb-4">
-             <Link to="/settings/add_blocking">
-              <button
-                onClick={addBlocked}
-                className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-50 border border-blue-200 text-blue-600 text-xl mr-2"
-                title="Add"
-              >
-                +
-              </button>
-             
-             </Link>
+              <Link to="/settings/add_blocking">
+                <button
+                  className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-50 border border-blue-200 text-blue-600 text-xl mr-2"
+                  title="Add"
+                >
+                  +
+                </button>
+              </Link>
               <input
                 type="text"
                 value={query}
@@ -63,31 +46,54 @@ function Blocking() {
 
             {/* Blocked list */}
             <div className="space-y-3">
-              {blockedUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-300">
-                      {user.avatarUrl ? (
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : null}
-                    </div>
-                    <span className="text-sm text-gray-800">{user.name}</span>
-                  </div>
-                  <button
-                    onClick={() => unblock(user.id)}
-                    className="px-4 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
-                  >
-                    unblock
-                  </button>
+              {isLoading && (
+                <div className="text-sm text-gray-600">
+                  Loading blocked users…
                 </div>
-              ))}
+              )}
+              {isError && (
+                <div className="text-sm text-red-600">
+                  Failed to load blocked users
+                </div>
+              )}
+              {!isLoading && !isError && blockedUsers.length === 0 && (
+                <div className="text-sm text-gray-600">No blocked users</div>
+              )}
+              {blockedUsers.map((user) => {
+                const name =
+                  user.profile_name || user.name || user.email || "Unknown";
+                const avatar = user.profile_image || user.avatarUrl || null;
+                return (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-300">
+                        {avatar ? (
+                          <img
+                            src={avatar}
+                            alt={name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : null}
+                      </div>
+                      <span className="text-sm text-gray-800">{name}</span>
+                    </div>
+                    <button
+                      disabled={isUnblocking}
+                      onClick={() =>
+                        unblockUser(user.id, {
+                          onSuccess: () => refetch(),
+                        })
+                      }
+                      className="px-4 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm disabled:opacity-50"
+                    >
+                      {isUnblocking ? "Unblocking…" : "Unblock"}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
