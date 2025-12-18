@@ -127,6 +127,12 @@ export const queryKeys = {
     count: () => [...queryKeys.notifications.all, "count"],
   },
 
+  // Users
+  users: {
+    all: ["users"],
+    blockedUsers: () => [...queryKeys.users.all, "blocked"],
+  },
+
   // User Profile
   profile: {
     all: ["profile"],

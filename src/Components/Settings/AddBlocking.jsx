@@ -42,12 +42,21 @@ function AddBlocking() {
 
   const handleBlock = (userId) => {
     if (!userId) return;
-    blockUser(userId);
+    blockUser(userId, {
+      onSuccess: () => {
+        // Remove the user from local search results immediately
+        setSearchResults((prev) => prev.filter((u) => u.id !== userId));
+      },
+    });
   };
 
   const handleUnblock = (userId) => {
     if (!userId) return;
-    unblockUser(userId);
+    unblockUser(userId, {
+      onSuccess: () => {
+        // Optionally re-add to search results or leave as-is
+      },
+    });
   };
 
   return (

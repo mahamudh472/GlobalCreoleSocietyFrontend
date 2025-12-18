@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useSociety } from "../../hooks/queries/useSocieties";
+import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
 
 const GroupInfo = () => {
   const societyId = useMemo(() => {
@@ -8,6 +9,33 @@ const GroupInfo = () => {
   }, []);
 
   const { data: society, isLoading, isError } = useSociety(societyId);
+  const updateMutation = useUpdateSocietyMutation();
+
+  const handleEditAbout = () => {
+    if (!societyId || !society) return;
+
+    const newName = window.prompt("Update group name:", society.name || "");
+    const newDescription = window.prompt(
+      "Update group description:",
+      society.description || ""
+    );
+
+    // If both prompts were cancelled
+    if (newName === null && newDescription === null) return;
+
+    const formData = new FormData();
+    if (newName !== null && newName !== society.name) {
+      formData.append("name", newName);
+    }
+    if (newDescription !== null && newDescription !== society.description) {
+      formData.append("description", newDescription);
+    }
+
+    // No changes to submit
+    if ([...formData.keys()].length === 0) return;
+
+    updateMutation.mutate({ societyId, societyData: formData });
+  };
 
   return (
     <div className="rounded-lg  p-4 max-w-md mx-auto">
@@ -31,7 +59,7 @@ const GroupInfo = () => {
               className="w-10 h-10 rounded-full mr-2"
             />
             <div>
-              <p className="text-gray-600 text-sm">Society Created by</p>
+              <p className="text-gray-600 text-sm ">Society Created by</p>
               <p className="font-semibold">
                 {society.creator?.profile_name ||
                   society.creator_name ||
@@ -59,7 +87,10 @@ const GroupInfo = () => {
           <div className="mb-4 bg-white rounded-lg p-2 px-4">
             <div className="flex justify-between items-center mb-2">
               <p className="text-gray-600 font-semibold">About Group</p>
-              <button className=" text-sm hover:underline border border-[#E2E8F0]  p-1 px-6 rounded-lg cursor-pointer">
+              <button
+                onClick={handleEditAbout}
+                className=" text-sm hover:underline border border-[#E2E8F0]  p-1 px-6 rounded-lg cursor-pointer"
+              >
                 Edit
               </button>
             </div>

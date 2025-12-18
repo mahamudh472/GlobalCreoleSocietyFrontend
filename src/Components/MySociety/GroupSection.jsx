@@ -1,15 +1,23 @@
 import React from "react";
 import { FaUserCircle } from "react-icons/fa";
 import MySocietyCoverpicUpload from "./MySocietyCoverpicUpload";
+import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
 import { useParams } from "react-router-dom";
 import { useSocietyMembers } from "../../hooks/queries/useSocieties";
 
 const GroupSection = ({ society }) => {
   const { id: societyId } = useParams();
+  const updateMutation = useUpdateSocietyMutation();
 
   // Use TanStack Query for fetching members
   const { data: membersData = [], isLoading: loading } =
     useSocietyMembers(societyId);
+  const handleCoverChange = (file) => {
+    if (!file || !societyId) return;
+    const formData = new FormData();
+    formData.append("cover_image", file);
+    updateMutation.mutate({ societyId, societyData: formData });
+  };
 
   // Show first 8 members
   const members = membersData.slice(0, 8);
@@ -19,12 +27,12 @@ const GroupSection = ({ society }) => {
     <div className="bg-white rounded-xl shadow-lg overflow-hidden mx-auto ">
       {/* Cover Image Section */}
       <div className="relative">
-        <button className="absolute top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-full font-medium hover:bg-gray-700 transition duration-200 z-10">
-          Edit Cover
-        </button>
+        
 
         <MySocietyCoverpicUpload
           coverImage={society?.cover_image || society?.cover_image}
+          onChangeImage={handleCoverChange}
+          isUploading={updateMutation.isPending}
         />
       </div>
 

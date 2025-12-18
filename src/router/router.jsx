@@ -47,6 +47,7 @@ import PendingMembers from "../Components/MySociety/PendingMembers";
 import Blocking from "../Components/Settings/Blocking";
 import AddBlocking from "../Components/Settings/AddBlocking";
 import OrderDetail from "../Components/Marketplace/OrderDetail";
+import GoLivePage from "../Components/Feed/GoLivePage";
 
 const router = createBrowserRouter([
   {
@@ -74,6 +75,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Feed />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/feed/GoLive",
+        element: (
+          <ProtectedRoute>
+          <GoLivePage />
           </ProtectedRoute>
         ),
       },

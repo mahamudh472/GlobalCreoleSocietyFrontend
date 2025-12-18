@@ -58,8 +58,12 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
 
       // Ensure content is never empty
       const effectivePostId = postData?.id || postId;
-      // Share a link that routes to the specific post in the Feed by hash
-      const postLink = effectivePostId ? `/feed#post-${effectivePostId}` : "";
+      // Build an ABSOLUTE link to the specific post in the Feed by hash
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const postLink = effectivePostId
+        ? `${origin}/feed#post-${effectivePostId}`
+        : "";
 
       // Always include the post link to ensure navigation from inbox
       const contentToSend = `${
@@ -277,7 +281,7 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
                         src={
                           society.avatar ||
                           society.profile_image ||
-                          "/placeholder.svg"
+                          "https://cdn.pixabay.com/photo/2025/05/23/08/54/girl-9617241_1280.png"
                         }
                         alt={society.name || society.title}
                         className="w-full h-full object-cover"

@@ -7,7 +7,7 @@ import { ENDPOINTS } from "../../config/apiConfig";
 import { FiSearch } from "react-icons/fi";
 import { RiMenuAddLine } from "react-icons/ri";
 import Navbar from "../Navbar";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 function PendingMembers() {
   const { id } = useParams();
