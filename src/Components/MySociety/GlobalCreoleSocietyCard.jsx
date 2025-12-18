@@ -13,7 +13,7 @@ import {
   usePendingPosts,
 } from "../../hooks/queries/useSocieties";
 import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
-
+import { API_BASE_URL } from "../../config/apiConfig";
 const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -35,6 +35,8 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
       </div>
     );
   }
+
+  const societyImage = society?.profile_image ?? society?.avatar ?? null;
 
   const members = society.members_count || society.member_count || 0;
   const media = 0; // TODO: Add media count when available
@@ -100,7 +102,6 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
     if (!file || !id) return;
     const formData = new FormData();
     formData.append("profile_image", file);
-console.log(formData)
     updateMutation.mutate(
       { societyId: id, societyData: formData },
       {
@@ -163,11 +164,32 @@ console.log(formData)
           ))}
 
         <section className="absolute -top-15 lg:-top-36 left-1/2 -translate-x-1/2 ">
-          <SocietyImgUpload
-            societyImage={society.profile_image || society.avatar}
-            onChangeImage={handleAvatarImageChange}
-            isUploading={updateMutation.isPending}
-          />
+          {(() => {
+            const baseHost = API_BASE_URL.replace(/\/?api\/?$/, "");
+            const toAbsolute = (u) => {
+              if (!u || typeof u !== "string") return undefined;
+              if (/^https?:\/\//i.test(u)) return u;
+              if (u.startsWith("/")) return `${baseHost}${u}`;
+              return `${baseHost}/${u}`;
+            };
+
+            const rawImage =
+              society.profile_image ||
+              society.profile_image_url ||
+              society.avatar ||
+              society.image_url ||
+              society.image;
+            const societyImage = toAbsolute(rawImage);
+
+            return (
+              <SocietyImgUpload
+                societyId={id}
+                societyImage={societyImage}
+                onChangeImage={handleAvatarImageChange}
+                isUploading={updateMutation.isPending}
+              />
+            );
+          })()}
         </section>
       </div>
 
@@ -249,19 +271,13 @@ console.log(formData)
             )}
           </div>
           <hr className=" border border-[#F0F0F0] my-3" />
-          <p className="text-gray-800">UI/UX Designers group</p>
-          <p className="text-gray-600 text-sm mt-1">
-            This group is meant for designers - a place to learn and share - to
-            ask questions, network, and improve.
-          </p>
-          <p className="text-gray-600 text-sm mt-1">
-            Hashtag your posts to help others easily navigate. Avoid using more
-            than a single hashtag per post.
-          </p>
-          <p className="text-gray-600 text-sm mt-1">
-            Suggested tags include: #job #blog #dribbble #learn #discuss
-            #contest #portfolio
-          </p>
+          {society.description && society.description.trim().length ? (
+            <p className="text-gray-800 whitespace-pre-line">
+              {society.description}
+            </p>
+          ) : (
+            <p className="text-gray-500 text-sm">No description yet.</p>
+          )}
         </div>
       </div>
     </div>

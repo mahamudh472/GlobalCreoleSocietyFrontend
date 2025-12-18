@@ -2,144 +2,139 @@ import { FaPencilAlt, FaTimes } from "react-icons/fa";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-const SocietyImgUpload = ({ societyImage, onChangeImage, isUploading }) => {
-  console.log("societyImage", societyImage);
+const DEFAULT_IMAGE =
+  "https://cdn.pixabay.com/photo/2025/05/23/08/54/girl-9617241_1280.png";
+
+const SocietyImgUpload = ({
+  societyId,
+  societyImage,
+  onChangeImage,
+  isUploading,
+}) => {
+  const getStoredImage = () => {
+    try {
+      if (!societyId || typeof window === "undefined") return null;
+      const raw = window.localStorage.getItem(
+        `society:profile_image:${societyId}`
+      );
+      if (!raw) return null;
+      const { url, ts } = JSON.parse(raw);
+      const ttlMs = 24 * 60 * 60 * 1000;
+      if (!url || (ts && Date.now() - ts > ttlMs)) return null;
+      return typeof url === "string" && url.trim().length ? url : null;
+    } catch {
+      return null;
+    }
+  };
+
   const [imagePreview, setImagePreview] = useState(
-    societyImage ||
-      "https://cdn.pixabay.com/photo/2025/05/23/08/54/girl-9617241_1280.png"
+    societyImage || getStoredImage() || DEFAULT_IMAGE
   );
-  const [imageFile, setImageFile] = useState(null);
+
   const fileInputRef = useRef(null);
-  // Fullscreen preview state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // Sync preview when prop changes
+  /* 🔁 Sync preview from backend image; clear stored fallback when backend provides */
   useEffect(() => {
-    if (societyImage) setImagePreview(societyImage);
-  }, [societyImage]);
+    if (societyImage && societyImage !== imagePreview) {
+      setImagePreview(societyImage);
+      try {
+        if (societyId && typeof window !== "undefined") {
+          window.localStorage.removeItem(`society:profile_image:${societyId}`);
+        }
+      } catch {}
+    }
+  }, [societyImage, imagePreview, societyId]);
 
-  // Handle image selection from file input
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image.");
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      alert("File size should not exceed 15MB.");
+      alert("Please upload a valid image");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result);
-    reader.readAsDataURL(file);
-    setImageFile(file);
-    if (typeof onChangeImage === "function") {
-      onChangeImage(file);
+    if (file.size > 15 * 1024 * 1024) {
+      alert("Image must be under 15MB");
+      return;
     }
+
+    /* Local preview (instant UI feedback) */
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result;
+      setImagePreview(result);
+      // Persist fallback so it survives refresh until backend sends final URL
+      try {
+        if (societyId && typeof window !== "undefined") {
+          window.localStorage.setItem(
+            `society:profile_image:${societyId}`,
+            JSON.stringify({ url: result, ts: Date.now() })
+          );
+        }
+      } catch {}
+    };
+    reader.readAsDataURL(file);
+
+    /* Send to parent (API upload) */
+    onChangeImage?.(file);
   };
 
-  const handleFromGallery = () => fileInputRef.current?.click();
-  const openPreview = () => imagePreview && setIsPreviewOpen(true);
-  const closePreview = () => setIsPreviewOpen(false);
-
-  // ESC to close + scroll lock while open
-  useEffect(() => {
-    if (!isPreviewOpen) return;
-
-    const onKeyDown = (e) => e.key === "Escape" && closePreview();
-    window.addEventListener("keydown", onKeyDown);
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden"; // lock scroll
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [isPreviewOpen]);
-
-  // The overlay rendered into a portal
-  const PreviewOverlay = (
-    <div
-      className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={closePreview}
-      aria-modal="true"
-      role="dialog"
-    >
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          closePreview();
-        }}
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition cursor-pointer"
-        aria-label="Close preview"
-        title="Close"
-      >
-        <FaTimes className="text-white" size={18} />
-      </button>
-
+  return (
+    <div className="flex flex-col items-center">
       <div
-        className="max-w-[95vw] max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+        onClick={() => setIsPreviewOpen(true)}
+        className="relative w-28 h-28 lg:w-48 lg:h-48 rounded-2xl overflow-hidden cursor-pointer border-4 border-white shadow-xl"
       >
         <img
           src={imagePreview}
-          alt="Full preview"
-          className="max-w-[95vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+          alt="Society"
+          className="w-full h-full object-cover"
         />
-      </div>
-    </div>
-  );
 
-  return (
-    <div>
-      <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
-        {/* Image box */}
-        <div
-          className="relative w-28 h-28 lg:w-48 lg:h-48 rounded-2xl border-4 border-white bg-gray-200 shadow-2xl overflow-hidden flex items-center justify-center mb-2 cursor-pointer"
-          onClick={openPreview}
-          role="button"
-          aria-label="Open image preview"
-          title="Click to preview"
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            fileInputRef.current?.click();
+          }}
+          disabled={isUploading}
+          className="absolute bottom-2 right-2 p-2 bg-black/60 rounded-full"
         >
-          <img
-            src={imagePreview}
-            alt="Profile"
-            className="object-cover w-full h-full"
-          />
-
-          {/* Edit icon */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleFromGallery();
-            }}
-            className="absolute bottom-1 right-1 p-2 rounded-full bg-black/60 hover:bg-black/70 transition disabled:opacity-60"
-            disabled={isUploading}
-            aria-label="Change image"
-            title="Change image"
-          >
-            <FaPencilAlt className="text-white" size={12} />
-          </button>
-        </div>
-
-        {/* Hidden File Input */}
-        <input
-          type="file"
-          accept="image/*"
-          // Uncomment the next line for mobile camera capture by default:
-          // capture="environment"
-          ref={fileInputRef}
-          className="hidden"
-          onChange={handleImageChange}
-        />
+          <FaPencilAlt className="text-white" size={12} />
+        </button>
       </div>
 
-      {/* Fullscreen Preview via Portal (escapes any parent stacking/overflow) */}
-      {isPreviewOpen && createPortal(PreviewOverlay, document.body)}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={handleImageChange}
+      />
+
+      {/* Fullscreen Preview */}
+      {isPreviewOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center"
+            onClick={() => setIsPreviewOpen(false)}
+          >
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="max-w-[90vw] max-h-[90vh] rounded-lg"
+            />
+            <button
+              onClick={() => setIsPreviewOpen(false)}
+              className="absolute top-4 right-4 text-white"
+            >
+              <FaTimes size={20} />
+            </button>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

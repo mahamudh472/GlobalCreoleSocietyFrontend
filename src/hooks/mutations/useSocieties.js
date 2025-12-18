@@ -95,6 +95,10 @@ export const useUpdateSocietyMutation = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.societies.mySocieties(),
       });
+      // Force a refetch of this society detail so the new image persists
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.societies.detail(societyId),
+      });
 
       toast.success("Society updated successfully!");
     },
