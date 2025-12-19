@@ -1,6 +1,6 @@
 // API Configuration
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://10.10.13.99/api";
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8001/api";
 
 // API Endpoints
 export const ENDPOINTS = {
@@ -39,6 +39,7 @@ export const ENDPOINTS = {
     LIST: "/social/friends/",
     UNFRIEND: (userId) => `/social/friends/${userId}/unfriend/`,
     SUGGESTIONS: "/social/friends/suggestions/",
+    STATUS: (userId) => `/social/friends/status/${userId}/`,
   },
 
   // Social - Posts
@@ -163,7 +164,10 @@ export const ENDPOINTS = {
 
 // WebSocket URLs
 export const WS_BASE_URL =
-  import.meta.env.VITE_WEBSOCKET_URL || "ws://10.10.13.99";
+  import.meta.env.VITE_WEBSOCKET_URL || "ws://127.0.0.1:8001";
+
+// Livestream WebSocket
+export const LIVESTREAM_WS_BASE_URL = import.meta.env.VITE_WS_URL || WS_BASE_URL;
 export const WS_ENDPOINTS = {
   PRIVATE_CHAT: (conversationId) => `${WS_BASE_URL}/ws/chat/${conversationId}/`,
   GLOBAL_CHAT: `${WS_BASE_URL}/ws/global-chat/`,

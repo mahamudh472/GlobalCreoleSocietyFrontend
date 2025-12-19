@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://127.0.0.1:8001';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -38,8 +38,14 @@ export const livestreamAPI = {
 
   // Get all active livestreams
   getActiveLivestreams: async () => {
-    const response = await api.get('/api/livestream/streams/active/');
-    return response.data;
+    try {
+      const response = await api.get('/api/livestream/streams/active/');
+      return response.data;
+    } catch (error) {
+      // Return empty array on error to prevent app crash
+      console.error('Failed to fetch active livestreams:', error?.response?.status || error.message);
+      return [];
+    }
   },
 
   // Get user's livestreams
