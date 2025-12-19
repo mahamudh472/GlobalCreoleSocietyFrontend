@@ -87,7 +87,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/feed/livestream",
+        path: "/feed/livestream/:id",
         element: (
           <ProtectedRoute>
             <LiveStream />
