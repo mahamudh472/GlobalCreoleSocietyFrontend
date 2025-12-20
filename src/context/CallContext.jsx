@@ -16,10 +16,38 @@ export const CallProvider = ({ children }) => {
   const [incomingCall, setIncomingCall] = useState(null);
   const [activeCall, setActiveCall] = useState(null);
   const [callStatus, setCallStatus] = useState(null); // 'calling', 'ringing', 'connected', 'ended'
+  const [callError, setCallError] = useState(null); // Error message for UI display
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const callSocketRef = useRef(null);
   const globalCallSocketRef = useRef(null);
+  
+  /**
+   * Check if media devices are supported before initiating/accepting calls
+   */
+  const checkMediaSupport = () => {
+    if (!webrtcService.isMediaDevicesSupported()) {
+      const errorMessage = !window.isSecureContext && 
+        window.location.protocol !== 'https:' && 
+        window.location.hostname !== 'localhost'
+          ? 'Calls require a secure connection (HTTPS). Please access the application over HTTPS.'
+          : 'Your browser does not support audio/video calls. Please use a modern browser like Chrome, Firefox, Safari, or Edge.';
+      
+      const error = new Error(errorMessage);
+      error.userMessage = errorMessage;
+      setCallError(errorMessage);
+      setCallStatus('failed');
+      throw error;
+    }
+    return true;
+  };
+
+  /**
+   * Clear call error
+   */
+  const clearCallError = () => {
+    setCallError(null);
+  };
   
   /**
    * Initialize global call listener for receiving calls anywhere in the app
@@ -75,6 +103,12 @@ export const CallProvider = ({ children }) => {
   const initiateCall = async (conversationId, otherUser, callType = 'audio', token) => {
     try {
       console.log('[CallContext] Initiating call:', { conversationId, otherUser, callType });
+      
+      // Clear any previous errors
+      setCallError(null);
+      
+      // Check if media devices are supported (throws if not supported)
+      checkMediaSupport();
       
       setCallStatus('initiating');
       
@@ -166,7 +200,9 @@ export const CallProvider = ({ children }) => {
     } catch (error) {
       console.error('[CallContext] Error initiating call:', error);
       setCallStatus('failed');
+      setCallError(error.userMessage || error.message || 'Failed to initiate call');
       cleanupCall();
+      throw error; // Re-throw to allow callers to handle navigation
     }
   };
 
@@ -181,6 +217,18 @@ export const CallProvider = ({ children }) => {
       }
 
       console.log('[CallContext] Accepting call:', incomingCall.id);
+      
+      // Clear any previous errors
+      setCallError(null);
+      
+      // Check if media devices are supported (throws if not supported)
+      try {
+        checkMediaSupport();
+      } catch (error) {
+        rejectCall();
+        throw error;
+      }
+      
       setCallStatus('accepting');
       
       // Get local media stream
@@ -250,6 +298,8 @@ export const CallProvider = ({ children }) => {
       
     } catch (error) {
       console.error('[CallContext] Error accepting call:', error);
+      setCallError(error.userMessage || error.message || 'Failed to accept call');
+      setCallStatus('failed');
       rejectCall();
     }
   };
@@ -371,6 +421,7 @@ export const CallProvider = ({ children }) => {
     incomingCall,
     activeCall,
     callStatus,
+    callError,
     localStream,
     remoteStream,
     initiateCall,
@@ -381,6 +432,8 @@ export const CallProvider = ({ children }) => {
     toggleCamera,
     handleIncomingCall,
     initializeGlobalCallListener,
+    clearCallError,
+    checkMediaSupport,
   };
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;

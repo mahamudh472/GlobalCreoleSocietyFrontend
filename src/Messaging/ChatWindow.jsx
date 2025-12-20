@@ -35,7 +35,7 @@ function ChatWindow({
   const previousScrollHeightRef = useRef(0);
   const isLoadingRef = useRef(false);
   const hasScrolledToBottomRef = useRef(false); // Track if we've scrolled to bottom initially
-  const { initiateCall } = useCall();
+  const { initiateCall, callError, clearCallError } = useCall();
 
   const getDefaultProfileImage = () => {
     const name = chat?.name || "User";
@@ -47,6 +47,17 @@ function ChatWindow({
   // Filter out system messages
   const userMessages = messages.filter((msg) => msg.file_type !== "system");
   const hasUserMessages = userMessages.length > 0;
+
+  // Show toast when call error occurs
+  useEffect(() => {
+    if (callError) {
+      toast.error(callError, {
+        autoClose: 5000,
+        closeOnClick: true,
+      });
+      clearCallError();
+    }
+  }, [callError, clearCallError]);
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current;
@@ -237,11 +248,18 @@ function ChatWindow({
                 );
                 return;
               }
+              // Clear any previous errors
+              clearCallError();
               // Pass userId instead of conversation id for receiver_id
               const otherUser = { id: chat.userId, name: chat.name };
-              await initiateCall(chat.id, otherUser, "audio", token);
-              // Navigate to call page immediately
-              navigate("/chat/audiocall");
+              try {
+                await initiateCall(chat.id, otherUser, "audio", token);
+                // Navigate to call page (errors will be shown via toast from useEffect)
+                navigate("/chat/audiocall");
+              } catch (error) {
+                // Error will be handled by CallContext and shown via toast
+                console.log("Call initiation failed, not navigating");
+              }
             }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             title="Start audio call"
@@ -258,11 +276,18 @@ function ChatWindow({
                 );
                 return;
               }
+              // Clear any previous errors
+              clearCallError();
               // Pass userId instead of conversation id for receiver_id
               const otherUser = { id: chat.userId, name: chat.name };
-              await initiateCall(chat.id, otherUser, "video", token);
-              // Navigate to call page immediately
-              navigate("/chat/videocall");
+              try {
+                await initiateCall(chat.id, otherUser, "video", token);
+                // Navigate to call page (errors will be shown via toast from useEffect)
+                navigate("/chat/videocall");
+              } catch (error) {
+                // Error will be handled by CallContext and shown via toast
+                console.log("Call initiation failed, not navigating");
+              }
             }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             title="Start video call"

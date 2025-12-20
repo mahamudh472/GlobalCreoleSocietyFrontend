@@ -86,10 +86,78 @@ class WebRTCService {
   }
 
   /**
+   * Check if media devices are available
+   */
+  isMediaDevicesSupported() {
+    // Check if we're in a secure context (HTTPS or localhost)
+    const isSecureContext = window.isSecureContext || 
+      window.location.protocol === 'https:' || 
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+    
+    // Check if mediaDevices API is available
+    const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    
+    console.log('[WebRTC] Secure context:', isSecureContext);
+    console.log('[WebRTC] MediaDevices available:', hasMediaDevices);
+    
+    return hasMediaDevices;
+  }
+
+  /**
+   * Get getUserMedia function with fallback for older browsers
+   */
+  getGetUserMedia() {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      return (constraints) => navigator.mediaDevices.getUserMedia(constraints);
+    }
+    
+    // Fallback for older browsers
+    const getUserMedia = navigator.getUserMedia || 
+                         navigator.webkitGetUserMedia || 
+                         navigator.mozGetUserMedia ||
+                         navigator.msGetUserMedia;
+    
+    if (getUserMedia) {
+      return (constraints) => new Promise((resolve, reject) => {
+        getUserMedia.call(navigator, constraints, resolve, reject);
+      });
+    }
+    
+    return null;
+  }
+
+  /**
    * Initialize local media stream (audio/video)
    */
   async getLocalStream(isVideo = false) {
     try {
+      // Check if we're in a secure context
+      if (!window.isSecureContext && 
+          window.location.protocol !== 'https:' && 
+          window.location.hostname !== 'localhost' &&
+          window.location.hostname !== '127.0.0.1') {
+        const error = new Error(
+          'Media devices require a secure context (HTTPS). ' +
+          'Please access the application over HTTPS or use localhost.'
+        );
+        error.name = 'InsecureContextError';
+        throw error;
+      }
+
+      // Get the getUserMedia function
+      const getUserMedia = this.getGetUserMedia();
+      
+      if (!getUserMedia) {
+        const error = new Error(
+          'Your browser does not support media devices. ' +
+          'Please try using a modern browser like Chrome, Firefox, Safari, or Edge. ' +
+          'If you are in incognito/private mode, some browsers may restrict camera and microphone access.'
+        );
+        error.name = 'MediaDevicesNotSupportedError';
+        throw error;
+      }
+
       const constraints = {
         audio: {
           echoCancellation: true,
@@ -103,11 +171,28 @@ class WebRTCService {
         } : false
       };
 
-      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[WebRTC] Requesting media with constraints:', constraints);
+      this.localStream = await getUserMedia(constraints);
       console.log('[WebRTC] Local stream obtained:', this.localStream.id);
       return this.localStream;
     } catch (error) {
       console.error('[WebRTC] Error getting local stream:', error);
+      
+      // Provide more helpful error messages
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        error.userMessage = 'Camera/microphone access was denied. Please allow access in your browser settings and try again.';
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        error.userMessage = 'No camera or microphone found. Please connect a device and try again.';
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        error.userMessage = 'Your camera or microphone is already in use by another application.';
+      } else if (error.name === 'OverconstrainedError') {
+        error.userMessage = 'The requested media settings are not supported by your device.';
+      } else if (error.name === 'InsecureContextError' || error.name === 'MediaDevicesNotSupportedError') {
+        error.userMessage = error.message;
+      } else {
+        error.userMessage = 'Unable to access camera/microphone. Please check your browser permissions and try again.';
+      }
+      
       throw error;
     }
   }
