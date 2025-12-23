@@ -340,7 +340,7 @@ const Payment = () => {
                   <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
-                  <span className="font-medium">Credit/Debit Card</span>
+                  <span className="font-medium">Stripe</span>
                 </div>
               </label>
               
@@ -377,7 +377,7 @@ const Payment = () => {
                   Processing...
                 </span>
               ) : formData.paymentMethod === "creditCard" ? (
-                "Pay with Card"
+                "Pay with Stripe"
               ) : (
                 "Place Order"
               )}
