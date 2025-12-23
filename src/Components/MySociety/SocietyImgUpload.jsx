@@ -44,8 +44,14 @@ const SocietyImgUpload = ({
           window.localStorage.removeItem(`society:profile_image:${societyId}`);
         }
       } catch {}
+    } else if (!societyImage) {
+      // If no image from backend, use default or stored
+      const stored = getStoredImage();
+      if (!stored) {
+        setImagePreview(DEFAULT_IMAGE);
+      }
     }
-  }, [societyImage, imagePreview, societyId]);
+  }, [societyImage, societyId]);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];

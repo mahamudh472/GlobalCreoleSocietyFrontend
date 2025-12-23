@@ -61,10 +61,6 @@ const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
         if (onCreatePost) {
           onCreatePost(data)
         }
-      },
-      onError: (error) => {
-        console.error('Error creating post:', error)
-        toast.error(error.response?.data?.error || "Failed to create post")
       }
     })
   }

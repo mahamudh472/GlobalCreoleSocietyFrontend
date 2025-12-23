@@ -40,12 +40,8 @@ const GroupInfo = ({ societyId }) => {
       { societyId, societyData: formData },
       {
         onSuccess: () => {
-          toast.success("Society updated successfully");
           setIsEditing(false);
-        },
-        onError: (error) => {
-          toast.error("Failed to update society");
-        },
+        }
       }
     );
   };

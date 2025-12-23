@@ -131,7 +131,7 @@ const SocietyCardGrid = () => {
                   >
                     <img
                       src={
-                        society.cover_image ||
+                        society.profile_image ||
                         "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"
                       }
                       alt={society.name}
@@ -197,7 +197,7 @@ const SocietyCardGrid = () => {
                   >
                     <img
                       src={
-                        society.cover_image ||
+                        society.profile_image ||
                         "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"
                       }
                       alt={society.name}

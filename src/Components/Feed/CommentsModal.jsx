@@ -55,16 +55,11 @@ const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
       {
         onSuccess: () => {
           setShareMessage("");
-          toast.success("Comment posted!");
           
           // Notify parent component to update comment count
           if (onCommentAdded) {
             onCommentAdded(postId);
           }
-        },
-        onError: (error) => {
-          console.error('Error posting comment:', error);
-          toast.error('Failed to post comment');
         }
       }
     );

@@ -98,12 +98,8 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
       { societyId: id, societyData: formData },
       {
         onSuccess: () => {
-          toast.success("Group description updated");
           setIsEditing(false);
-        },
-        onError: () => {
-          toast.error("Failed to update group description");
-        },
+        }
       }
     );
   };
@@ -116,17 +112,7 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
     if (!file || !id) return;
     const formData = new FormData();
     formData.append("profile_image", file);
-    updateMutation.mutate(
-      { societyId: id, societyData: formData },
-      {
-        onSuccess: () => {
-          toast.success("Group picture updated");
-        },
-        onError: () => {
-          toast.error("Failed to update group picture");
-        },
-      }
-    );
+    updateMutation.mutate({ societyId: id, societyData: formData });
   };
 
   return (

@@ -8,7 +8,7 @@ const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
   const modalContentRef = useRef(null);
   const { data: user } = useCurrentUser();
   const createSocietyMutation = useCreateSocietyMutation();
-  const [coverImage, setCoverImage] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -23,7 +23,7 @@ const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setCoverImage(file);
+      setProfileImage(file);
     }
   };
 
@@ -40,15 +40,15 @@ const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
     submitData.append("description", formData.description || "");
     submitData.append("privacy", formData.privacy);
 
-    if (coverImage) {
-      submitData.append("cover_image", coverImage);
+    if (profileImage) {
+      submitData.append("profile_image", profileImage);
     }
 
     createSocietyMutation.mutate(submitData, {
       onSuccess: () => {
         // Reset form
         setFormData({ name: "", description: "", privacy: "public" });
-        setCoverImage(null);
+        setProfileImage(null);
 
         // Refresh societies list
         if (onSuccess) {
@@ -151,19 +151,19 @@ const CreateSocietyForm = ({ isOpen, onClose, onSuccess }) => {
           <div>
             <label
               className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="coverImage"
+              htmlFor="profileImage"
             >
-              Cover Picture
+              Profile Picture
             </label>
             <input
               type="file"
-              id="coverImage"
+              id="profileImage"
               accept="image/*"
               onChange={handleImageChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {coverImage && (
-              <p className="text-sm text-gray-600 mt-1">{coverImage.name}</p>
+            {profileImage && (
+              <p className="text-sm text-gray-600 mt-1">{profileImage.name}</p>
             )}
           </div>
 
