@@ -5,6 +5,7 @@ const MySocietyCoverpicUpload = ({
   coverImage,
   onChangeImage,
   isUploading,
+  isCreator = false,
 }) => {
   const [imagePreview, setImagePreview] = useState(
     coverImage ||
@@ -89,20 +90,22 @@ const MySocietyCoverpicUpload = ({
             className="object-cover w-full h-full"
           />
 
-          {/* Edit icon (opens file picker) */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation(); // prevent triggering preview
-              handleFromGallery();
-            }}
-            className="absolute bottom-1 right-1 p-2 rounded-full bg-black/60 hover:bg-black/70 transition disabled:opacity-60"
-            disabled={isUploading}
-            aria-label="Change image"
-            title="Change image"
-          >
-            <FaPencilAlt className="text-white cursor-pointer" size={12} />
-          </button>
+          {/* Edit icon (opens file picker) - Only show for creators */}
+          {isCreator && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation(); // prevent triggering preview
+                handleFromGallery();
+              }}
+              className="absolute bottom-1 right-1 p-2 rounded-full bg-black/60 hover:bg-black/70 transition disabled:opacity-60"
+              disabled={isUploading}
+              aria-label="Change image"
+              title="Change image"
+            >
+              <FaPencilAlt className="text-white cursor-pointer" size={12} />
+            </button>
+          )}
         </div>
 
         {/* Hidden File Input */}

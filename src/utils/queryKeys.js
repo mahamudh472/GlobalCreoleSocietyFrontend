@@ -56,6 +56,12 @@ export const queryKeys = {
     ],
   },
 
+  // Search
+  search: {
+    all: ["search"],
+    users: (query) => [...queryKeys.search.all, "users", query],
+  },
+
   // Friends
   friends: {
     all: ["friends"],

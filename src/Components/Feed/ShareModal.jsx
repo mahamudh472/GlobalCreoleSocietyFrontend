@@ -58,11 +58,11 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
 
       // Ensure content is never empty
       const effectivePostId = postData?.id || postId;
-      // Build an ABSOLUTE link to the specific post in the Feed by hash
+      // Build an ABSOLUTE link to the specific post in the Feed using query param
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
       const postLink = effectivePostId
-        ? `${origin}/feed#post-${effectivePostId}`
+        ? `${origin}/feed?sharedPost=${effectivePostId}`
         : "";
 
       // Always include the post link to ensure navigation from inbox
@@ -123,7 +123,7 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
         const first = createdSocietyPosts[0];
         const newPostId = first?.post?.id;
         if (newPostId) {
-          navigate(`/society/${first.societyId}#post-${newPostId}`);
+          navigate(`/society/${first.societyId}?sharedPost=${newPostId}`);
         } else {
           navigate(`/society/${first.societyId}`);
         }

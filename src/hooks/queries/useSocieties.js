@@ -106,9 +106,9 @@ export const useUserSocieties = (options = {}) => {
   return useQuery({
     queryKey: queryKeys.societies.mySocieties(),
     queryFn: async () => {
-      // Assuming the API returns user's societies when filtering by is_member=true
+      // Use my_societies=true to get all societies user is a member of
       const response = await apiMethods.get(
-        `${ENDPOINTS.SOCIETIES.LIST}?is_member=true`
+        `${ENDPOINTS.SOCIETIES.LIST}?my_societies=true`
       );
       return response.data.results || response.data;
     },

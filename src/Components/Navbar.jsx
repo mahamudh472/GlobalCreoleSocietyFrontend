@@ -5,9 +5,11 @@ import { FaHome, FaUsers, FaComment, FaBell, FaUserFriends } from "react-icons/f
 import { IoMdSearch, IoMdSettings } from "react-icons/io";
 import { MdExpandLess, MdLogout } from "react-icons/md";
 import SettingPopup from "./Settings/SettingPopup";
+import SearchResults from "./SearchResults";
 import websitelogo from "../assets/websitelogo.png"
-import { useCurrentUser } from "../hooks/queries";
+import { useCurrentUser, useUserSearch } from "../hooks/queries";
 import { useLogoutMutation } from "../hooks/mutations";
+import { useDebounce } from "../hooks/useDebounce";
 
 const Navbar = () => {
   const { data: user } = useCurrentUser();
@@ -18,12 +20,56 @@ const Navbar = () => {
     : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
   
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate()
   const [isModalOpen, setIsModalOpen] = useState(false);
   const modalRef = useRef(null);
   const modalContentRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Debounce search query
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Search query hook
+  const { data: searchResults, isLoading: isSearchLoading } = useUserSearch(
+    debouncedSearchQuery,
+    { enabled: debouncedSearchQuery.length >= 2 }
+  );
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Open search results when user types
+  useEffect(() => {
+    if (debouncedSearchQuery.length >= 2) {
+      setIsSearchOpen(true);
+    }
+  }, [debouncedSearchQuery]);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    if (e.target.value.length >= 2) {
+      setIsSearchOpen(true);
+    } else {
+      setIsSearchOpen(false);
+    }
+  };
+
+  const handleCloseSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  };
 
   const handleLogout = async () => {
     logoutMutation.mutate(undefined, {
@@ -113,18 +159,29 @@ const Navbar = () => {
         </div>
 
         {/* Search */}
-        <form className="flex-1 max-w-md mx-8 hidden lg:block">
+        <div className="flex-1 max-w-md mx-8 hidden lg:block relative" ref={searchRef}>
           <div className="relative">
             <input
               type="text"
               placeholder="Search person"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
+              onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
               className="w-full px-4 py-2 pr-10 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-700 placeholder-gray-500"
             />
             <IoMdSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-7 h-7 cursor-pointer" />
           </div>
-        </form>
+          
+          {/* Search Results Dropdown */}
+          {isSearchOpen && (
+            <SearchResults
+              results={searchResults}
+              isLoading={isSearchLoading}
+              query={debouncedSearchQuery}
+              onClose={handleCloseSearch}
+            />
+          )}
+        </div>
 
         {/* Right Side */}
         <div className="flex items-center space-x-4">
@@ -205,15 +262,26 @@ const Navbar = () => {
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
         <div className="absolute top-22 left-0 w-full bg-yellow-500 shadow-md flex flex-col p-4 space-y-3 md:hidden z-50">
-          <form className="flex-1">
+          <div className="flex-1 relative">
             <input
               type="text"
               placeholder="Search person"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
+              onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
               className="w-full px-4 py-2 rounded-full bg-white text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-300"
             />
-          </form>
+            
+            {/* Mobile Search Results */}
+            {isSearchOpen && searchQuery.length >= 2 && (
+              <SearchResults
+                results={searchResults}
+                isLoading={isSearchLoading}
+                query={debouncedSearchQuery}
+                onClose={handleCloseSearch}
+              />
+            )}
+          </div>
           
           {/* Navigation Items */}
           {navItems.map((item) => (

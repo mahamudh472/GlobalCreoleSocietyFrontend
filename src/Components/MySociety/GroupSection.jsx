@@ -2,16 +2,18 @@ import React from "react";
 import { FaUserCircle } from "react-icons/fa";
 import MySocietyCoverpicUpload from "./MySocietyCoverpicUpload";
 import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSocietyMembers } from "../../hooks/queries/useSocieties";
 
-const GroupSection = ({ society }) => {
+const GroupSection = ({ society, isCreator = false }) => {
   const { id: societyId } = useParams();
+  const navigate = useNavigate();
   const updateMutation = useUpdateSocietyMutation();
 
   // Use TanStack Query for fetching members
   const { data: membersData = [], isLoading: loading } =
     useSocietyMembers(societyId);
+    
   const handleCoverChange = (file) => {
     if (!file || !societyId) return;
     const formData = new FormData();
@@ -20,19 +22,22 @@ const GroupSection = ({ society }) => {
   };
 
   // Show first 8 members
-  const members = membersData.slice(0, 8);
+  const displayMembers = membersData.slice(0, 8);
   const membersCount = society?.members_count || society?.member_count || 0;
+
+  const handleSeeAll = () => {
+    navigate(`/society/${societyId}/members`);
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden mx-auto ">
       {/* Cover Image Section */}
       <div className="relative">
-        
-
         <MySocietyCoverpicUpload
           coverImage={society?.cover_image || society?.cover_image}
           onChangeImage={handleCoverChange}
           isUploading={updateMutation.isPending}
+          isCreator={isCreator}
         />
       </div>
 
@@ -42,35 +47,40 @@ const GroupSection = ({ society }) => {
           <span className="text-gray-600 font-medium">
             Members · {membersCount.toLocaleString()}
           </span>
-          <a
-            href="#"
-            className="text-blue-600 text-sm hover:text-blue-800 hover:underline"
-          >
-            SEE ALL
-          </a>
+          {membersData.length > 0 && (
+            <button
+              onClick={handleSeeAll}
+              className="text-blue-600 text-sm hover:text-blue-800 hover:underline"
+            >
+              SEE ALL
+            </button>
+          )}
         </div>
         {loading ? (
-          <div className="flex space-x-2">
+          <div className="flex -space-x-2">
             {[...Array(8)].map((_, index) => (
               <div
                 key={index}
-                className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"
+                className="w-10 h-10 rounded-full bg-gray-200 animate-pulse border-2 border-white"
               ></div>
             ))}
           </div>
-        ) : members.length > 0 ? (
-          <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
-            {members.map((member, index) => (
-              <img
-                key={index}
-                src={
-                  member.user?.profile_image ||
-                  "https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg"
-                }
-                alt={member.user?.profile_name || "Member"}
-                className="w-10 h-10 rounded-full object-cover transition-transform duration-200 hover:scale-110"
-                title={member.user?.profile_name || member.user?.email}
-              />
+        ) : displayMembers.length > 0 ? (
+          <div className="flex flex-wrap -space-x-2 w-full">
+            {displayMembers.map((member, index) => (
+              <div key={index} className="flex flex-col items-center group relative">
+                <div className="relative">
+                  <img
+                    src={
+                      member.user?.profile_image ||
+                      "https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg"
+                    }
+                    alt={member.user?.profile_name || "Member"}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white transition-all duration-200 group-hover:scale-110 group-hover:border-blue-500 group-hover:z-10 cursor-pointer shadow-sm"
+                    title={member.user?.profile_name || member.user?.email}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         ) : (

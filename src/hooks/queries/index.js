@@ -62,3 +62,10 @@ export {
   useNotifications,
   useUnreadNotificationCount,
 } from './useNotifications';
+
+/**
+ * Search Queries
+ */
+export {
+  useUserSearch,
+} from './useSearch';

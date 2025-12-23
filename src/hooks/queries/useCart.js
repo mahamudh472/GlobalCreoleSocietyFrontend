@@ -20,6 +20,22 @@ export const useCart = (options = {}) => {
 };
 
 /**
+ * Fetch checkout preview (cart summary with totals)
+ * @returns {UseQueryResult}
+ */
+export const useCheckoutPreview = (options = {}) => {
+  return useQuery({
+    queryKey: ['checkoutPreview'],
+    queryFn: async () => {
+      const response = await apiMethods.get(ENDPOINTS.SHOP.CHECKOUT_PREVIEW);
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 1, // 1 minute
+    ...options,
+  });
+};
+
+/**
  * Fetch user's orders
  * @returns {UseQueryResult}
  */

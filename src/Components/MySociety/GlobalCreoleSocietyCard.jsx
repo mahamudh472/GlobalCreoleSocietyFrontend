@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { FaPencilAlt } from "react-icons/fa";
 import SocietyImgUpload from "./SocietyImgUpload";
+import InviteFriendsModal from "./InviteFriendsModal";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/queries/useUser";
 import {
@@ -14,6 +15,7 @@ import {
 } from "../../hooks/queries/useSocieties";
 import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
 import { API_BASE_URL } from "../../config/apiConfig";
+
 const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -24,6 +26,10 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const { data: pending = [], isLoading: loadingPending } = usePendingPosts(id);
   const { data: pendingMembers = [], isLoading: loadingPendingMembers } =
     usePendingMembers(id);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDescription, setEditDescription] = useState("");
+  const [showInviteModal, setShowInviteModal] = useState(false);
   if (!society) {
     return (
       <div className="bg-white rounded-xl p-4">
@@ -71,31 +77,39 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   };
 
   const handleEditAbout = () => {
-    if (!id) return;
-    // Use simple prompts to avoid changing layout/design
-    const nameInput = window.prompt("Update group name:", society.name || "");
-    const descInput = window.prompt(
-      "Update about group:",
-      society.description || ""
-    );
-    if (nameInput === null && descInput === null) return; // cancelled
+    setEditDescription(society.description || "");
+    setIsEditing(true);
+  };
 
+  const handleSaveEdit = () => {
+    if (!id) return;
+    
     const formData = new FormData();
-    if (nameInput !== null && nameInput !== society.name) {
-      formData.append("name", nameInput);
+    if (editDescription !== (society.description || "")) {
+      formData.append("description", editDescription);
     }
-    if (descInput !== null && descInput !== (society.description || "")) {
-      formData.append("description", descInput);
+    
+    if ([...formData.keys()].length === 0) {
+      setIsEditing(false);
+      return;
     }
-    if ([...formData.keys()].length === 0) return; // nothing changed
 
     updateMutation.mutate(
       { societyId: id, societyData: formData },
       {
-        onSuccess: () => toast.success("Group details updated"),
-        onError: () => toast.error("Failed to update group details"),
+        onSuccess: () => {
+          toast.success("Group description updated");
+          setIsEditing(false);
+        },
+        onError: () => {
+          toast.error("Failed to update group description");
+        },
       }
     );
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
   };
 
   const handleAvatarImageChange = (file) => {
@@ -116,8 +130,9 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   };
 
   return (
-    <div className=" rounded-xl mx-auto flex flex-col items-center text-center">
-      <div className=" relative bg-white w-full p rounded-xl p-4 mt-20 lg:mt-36 pt-15">
+    <div className="rounded-xl mx-auto flex flex-col items-center text-center">
+      {/* Main Society Card */}
+      <div className="relative bg-white w-full rounded-xl p-4 mt-20 lg:mt-36 pt-16">
         <h2 className="text-lg font-semibold text-gray-800 mt-4">
           {society.name}
         </h2>
@@ -135,7 +150,10 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
             <p className="text-sm">Media</p>
           </div>
         </div>
-        <button className="mt-6 w-full bg-blue-600 text-white py-2 rounded-xl font-medium hover:bg-blue-700 transition duration-200">
+        <button 
+          onClick={() => setShowInviteModal(true)}
+          className="mt-6 w-full bg-blue-600 text-white py-2 rounded-xl font-medium hover:bg-blue-700 transition duration-200"
+        >
           Invite
         </button>
 
@@ -163,8 +181,8 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
             </button>
           ))}
 
-        <section className="absolute -top-15 lg:-top-36 left-1/2 -translate-x-1/2 ">
-          {(() => {
+        {/* Society Avatar - Positioned absolutely */}
+        <section className="absolute -top-16 lg:-top-36 left-1/2 -translate-x-1/2">{(() => {
             const baseHost = API_BASE_URL.replace(/\/?api\/?$/, "");
             const toAbsolute = (u) => {
               if (!u || typeof u !== "string") return undefined;
@@ -187,28 +205,29 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
                 societyImage={societyImage}
                 onChangeImage={handleAvatarImageChange}
                 isUploading={updateMutation.isPending}
+                isCreator={isCreator}
               />
             );
           })()}
         </section>
       </div>
 
-      <div className="rounded-lg  mt-5  mx-auto">
-        <div className="flex items-center mb-4 bg-white rounded-lg p-2 px-4">
+      {/* Society Creator Info */}
+      <div className="bg-white rounded-xl p-4 w-full mt-4">
+        <div className="flex items-center gap-3">
           <img
             src={
               society.creator?.profile_image ||
-              "https://www.shutterstock.com/image-photo/happy-handsome-young-business-leader-260nw-2375039955.jpg"
+              "https://via.placeholder.com/50"
             }
             alt="Creator"
-            className="w-10 h-10 rounded-full mr-2 object-cover"
+            className="w-10 h-10 rounded-full object-cover border border-gray-300"
           />
-          <div className="text-left pl-2">
-            <p className="text-gray-600 text-sm text-left ">
-              Society Created by{" "}
-            </p>
-            <p className="font-semibold">
+          <div className="text-left flex-1">
+            <p className="text-xs text-gray-600">Society Created by</p>
+            <p className="font-semibold text-gray-800">
               {society.creator?.profile_name ||
+                society.creator?.username ||
                 society.creator?.email ||
                 "Unknown"}
             </p>
@@ -224,62 +243,90 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
             </p>
           </div>
         </div>
-        <div
-          onClick={() => {
-            navigate(`/society/${id}/pending_posts`);
-          }}
-          className="mb-4 bg-white rounded-lg p-2 px-4 flex justify-between cursor-pointer transform transition-transform duration-700 ease-in-out hover:scale-101"
-        >
-          <p className="text-gray-600 font-semibold">Pending Posts</p>
-          <p className="text-lg font-bold">
-            {
-              loadingPending
-                ? "…"
-                : // : Array.isArray(pending)
-                  pending.length
-              // : pending?.results?.length ?? 80}
-            }
-          </p>
-        </div>
+      </div>
 
-        <div
-          onClick={() => {
-            navigate(`/society/${id}/pending_members`);
-          }}
-          className="mb-4 flex justify-between bg-white rounded-lg p-2 px-4 cursor-pointer transform transition-transform duration-700 ease-in-out hover:scale-101"
-        >
-          <p className="text-gray-600 font-semibold">Pending Members</p>
-          <p className="text-lg font-bold">
-            {loadingPendingMembers
-              ? "…"
-              : pendingMembers?.count ??
-                (Array.isArray(pendingMembers)
-                  ? pendingMembers.length
-                  : pendingMembers?.results?.length ?? 0)}
-          </p>
-        </div>
-        <div className="mb-4 bg-white rounded-lg p-2 px-4">
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-gray-600 font-semibold">About Group</p>
-            {isCreator && (
-              <button
-                onClick={handleEditAbout}
-                className=" text-sm hover:underline border border-[#E2E8F0]  p-1 px-6 rounded-lg cursor-pointer"
-              >
-                Edit
-              </button>
-            )}
-          </div>
-          <hr className=" border border-[#F0F0F0] my-3" />
-          {society.description && society.description.trim().length ? (
-            <p className="text-gray-800 whitespace-pre-line">
-              {society.description}
-            </p>
-          ) : (
-            <p className="text-gray-500 text-sm">No description yet.</p>
+      {/* Pending Posts */}
+      <div
+        onClick={() => navigate(`/society/${id}/pending_posts`)}
+        className="bg-white rounded-xl p-4 w-full mt-4 flex justify-between items-center cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all duration-200"
+      >
+        <p className="text-gray-700 font-semibold">Pending Posts</p>
+        <p className="text-lg font-bold text-gray-800">
+          {loadingPending ? "…" : pending.length}
+        </p>
+      </div>
+
+      {/* Pending Members */}
+      <div
+        onClick={() => navigate(`/society/${id}/pending_members`)}
+        className="bg-white rounded-xl p-4 w-full mt-4 flex justify-between items-center cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all duration-200"
+      >
+        <p className="text-gray-700 font-semibold">Pending Members</p>
+        <p className="text-lg font-bold text-gray-800">
+          {loadingPendingMembers
+            ? "…"
+            : pendingMembers?.count ??
+              (Array.isArray(pendingMembers)
+                ? pendingMembers.length
+                : pendingMembers?.results?.length ?? 0)}
+        </p>
+      </div>
+
+      {/* About Group */}
+      <div className="bg-white rounded-xl p-4 w-full mt-4">
+        <div className="flex justify-between items-center mb-3">
+          <p className="text-gray-800 font-semibold">About Group</p>
+          {isCreator && !isEditing && (
+            <button
+              onClick={handleEditAbout}
+              className="text-sm text-gray-700 hover:bg-gray-100 border border-gray-300 px-4 py-1.5 rounded-lg transition-colors duration-200"
+            >
+              Edit
+            </button>
           )}
         </div>
+        
+        {isEditing ? (
+          <div className="space-y-3">
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              rows="5"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-800"
+              placeholder="Enter group description"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancelEdit}
+                className="flex-1 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 py-2 rounded-lg transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={updateMutation.isPending}
+                className="flex-1 text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updateMutation.isPending ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : society.description && society.description.trim().length ? (
+          <p className="text-gray-700 whitespace-pre-line text-sm leading-relaxed text-left">
+            {society.description}
+          </p>
+        ) : (
+          <p className="text-gray-500 text-sm italic text-left">No description yet.</p>
+        )}
       </div>
+
+      {/* Invite Friends Modal */}
+      <InviteFriendsModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        societyId={id}
+        societyName={society?.name}
+      />
     </div>
   );
 };

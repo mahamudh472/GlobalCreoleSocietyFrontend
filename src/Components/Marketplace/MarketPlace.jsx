@@ -2,19 +2,18 @@ import React, { useState, useEffect } from 'react'
 import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
 import Navbar from '../Navbar';
-import { apiMethods } from '../../utils/api';
+import { apiMethods, publicApiMethods } from '../../utils/api';
 import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
 
 const MarketPlace = () => {
+    const { isAuthenticated, loading: authLoading } = useAuth();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
-
-    useEffect(() => {
-        fetchProducts();
-    }, []);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const fetchProducts = async () => {
         try {
@@ -29,7 +28,11 @@ const MarketPlace = () => {
                 url += '?' + params.join('&');
             }
             
-            const response = await apiMethods.get(url);
+            // Use apiMethods for authenticated users, publicApiMethods for guests
+            // Check localStorage directly to avoid race condition with AuthContext
+            const hasToken = !!localStorage.getItem('access_token');
+            const api = hasToken ? apiMethods : publicApiMethods;
+            const response = await api.get(url);
             
             // Handle paginated response or plain array
             const productsData = response.data.results || response.data;
@@ -46,7 +49,16 @@ const MarketPlace = () => {
         setSearchQuery(query);
     };
 
+    // Single useEffect for all product fetching - debounced for search/filter changes
     useEffect(() => {
+        // On initial load, fetch immediately
+        if (isInitialLoad) {
+            fetchProducts();
+            setIsInitialLoad(false);
+            return;
+        }
+        
+        // For subsequent changes (search/filter), debounce the request
         const delayDebounceFn = setTimeout(() => {
             fetchProducts();
         }, 500);

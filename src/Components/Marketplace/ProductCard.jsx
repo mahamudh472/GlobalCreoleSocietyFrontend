@@ -6,7 +6,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { Navigation, Pagination } from 'swiper/modules';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { apiMethods } from '../../utils/api';
+import { apiMethods, publicApiMethods } from '../../utils/api';
 import { ENDPOINTS } from '../../config/apiConfig';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
@@ -14,7 +14,7 @@ import Navbar from '../Navbar';
 import ProductGrid from './ProductGrid';
 
 const ProductCard = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -36,7 +36,8 @@ const ProductCard = () => {
 
   // Check if current user is the seller (with type-safe comparison)
   // Compare as strings since backend returns UUID as string
-  const isOwnProduct = product && user && (
+  // Only check ownership if user is authenticated and auth is done loading
+  const isOwnProduct = !authLoading && isAuthenticated && product && user && (
     String(product.seller) === String(user.id)
   );
   
@@ -70,7 +71,11 @@ const ProductCard = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const response = await apiMethods.get(ENDPOINTS.SHOP.PRODUCT_DETAIL(id));
+      // Use apiMethods for authenticated users, publicApiMethods for guests
+      // Check localStorage directly to avoid race condition with AuthContext
+      const hasToken = !!localStorage.getItem('access_token');
+      const api = hasToken ? apiMethods : publicApiMethods;
+      const response = await api.get(ENDPOINTS.SHOP.PRODUCT_DETAIL(id));
       console.log('=== Raw Product Response ===');
       console.log('Full response:', response.data);
       console.log('Seller field:', response.data.seller);
@@ -90,7 +95,10 @@ const ProductCard = () => {
 
   const fetchSuggestedProducts = async (productId) => {
     try {
-      const response = await apiMethods.get(
+      // Use apiMethods for authenticated users, publicApiMethods for guests
+      const hasToken = !!localStorage.getItem('access_token');
+      const api = hasToken ? apiMethods : publicApiMethods;
+      const response = await api.get(
         ENDPOINTS.SHOP.SUGGESTED_PRODUCTS(productId)
       );
       setSuggestedProducts(response.data);
@@ -100,6 +108,13 @@ const ProductCard = () => {
   };
 
   const handleAddToCart = async () => {
+    // Double-check authentication
+    if (!localStorage.getItem('access_token')) {
+      toast.error('Please sign in to add items to cart');
+      navigate('/signin', { state: { from: `/marketplace/product/${id}` } });
+      return;
+    }
+    
     if (isOwnProduct) {
       toast.error('You cannot add your own product to cart');
       return;
@@ -121,6 +136,13 @@ const ProductCard = () => {
   };
 
   const handleBuyNow = () => {
+    // Double-check authentication
+    if (!localStorage.getItem('access_token')) {
+      toast.error('Please sign in to make a purchase');
+      navigate('/signin', { state: { from: `/marketplace/product/${id}` } });
+      return;
+    }
+    
     if (isOwnProduct) {
       toast.error('You cannot buy your own product');
       return;
@@ -270,7 +292,34 @@ const ProductCard = () => {
           </div>
 
           {/* Action Buttons */}
-          {isOwnProduct ? (
+          {authLoading ? (
+            <div className="mt-7 flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : !isAuthenticated ? (
+            <div className="mt-7 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-gray-700 font-medium text-center">
+                Sign in to purchase
+              </p>
+              <p className="text-gray-500 text-sm text-center mt-2">
+                Create an account or sign in to add items to cart and make purchases
+              </p>
+              <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 mt-4">
+                <button
+                  onClick={() => navigate('/signin', { state: { from: `/marketplace/product/${id}` } })}
+                  className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => navigate('/signup')}
+                  className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </div>
+          ) : isOwnProduct ? (
             <div className="mt-7 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-blue-800 font-medium text-center">
                 This is your product

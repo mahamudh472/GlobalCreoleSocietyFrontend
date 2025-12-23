@@ -21,6 +21,10 @@ const MySociety = () => {
   const { data: society } = useSociety(societyId);
   const { data: posts = [], isLoading: loading } = useSocietyPosts(societyId);
 
+  // Check if current user is the creator
+  const isCreator =
+    currentUser && society?.creator && currentUser.id === society.creator.id;
+
   // Modals: comment & share ...................................................
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
@@ -37,8 +41,7 @@ const MySociety = () => {
   };
 
   const handleCreatePost = (newPost) => {
-    // Query will auto-update via cache invalidation
-    toast.success("Post created successfully!");
+    // Query will auto-update via cache invalidation from usePosts mutation
   };
   // ..................................................................................
 
@@ -64,16 +67,14 @@ const MySociety = () => {
 
       <section className="sm:grid grid-cols-12 gap-5 lg:gap-10 mt-6 container mx-auto">
         <section className="col-span-4">
-          <div>
-            <GlobalCreoleSocietyCard
-              society={society}
-              postsCount={posts.length}
-            />
-          </div>
+          <GlobalCreoleSocietyCard
+            society={society}
+            postsCount={posts.length}
+          />
         </section>
 
         <section className="col-span-8">
-          <GroupSection society={society} />
+          <GroupSection society={society} isCreator={isCreator} />
 
           <div className="mt-5">
             {/* Create Post Section */}

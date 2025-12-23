@@ -10,6 +10,7 @@ const SocietyImgUpload = ({
   societyImage,
   onChangeImage,
   isUploading,
+  isCreator = false,
 }) => {
   const getStoredImage = () => {
     try {
@@ -93,17 +94,19 @@ const SocietyImgUpload = ({
           className="w-full h-full object-cover"
         />
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            fileInputRef.current?.click();
-          }}
-          disabled={isUploading}
-          className="absolute bottom-2 right-2 p-2 bg-black/60 rounded-full"
-        >
-          <FaPencilAlt className="text-white" size={12} />
-        </button>
+        {isCreator && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            disabled={isUploading}
+            className="absolute bottom-2 right-2 p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+          >
+            <FaPencilAlt className="text-white" size={12} />
+          </button>
+        )}
       </div>
 
       <input

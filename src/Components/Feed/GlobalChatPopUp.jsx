@@ -38,12 +38,14 @@ const GlobalChatPopUp = () => {
   } = useGlobalMessages({ enabled: isActive });
 
   // Flatten all pages into single messages array and transform to component format
-  // Backend returns newest first within each page, so reverse each page to show oldest first
-  // Then flatten all reversed pages to maintain chronological order
-  const messages =
-    messagesData?.pages.flatMap((page) =>
-      page.messages
-        .map((msg) => ({
+  // Backend now reverses each page before sending (oldest first in each page)
+  // Pages are ordered newest to oldest, so we reverse the pages array
+  const messages = (
+    messagesData?.pages
+      .slice()
+      .reverse()
+      .flatMap((page) =>
+        page.messages.map((msg) => ({
           id: msg.id,
           user: msg.senderName,
           message: msg.text,
@@ -53,8 +55,8 @@ const GlobalChatPopUp = () => {
           file_url: msg.file_url,
           file_type: msg.file_type,
         }))
-        .reverse()
-    ) || [];
+      ) || []
+  );
 
   const sendMessageMutation = useSendGlobalMessageMutation();
 

@@ -44,9 +44,11 @@ import ProductCard from "../Components/Marketplace/ProductCard";
 import MyProductDetails from "../Components/MyProduct/MyProductDetails";
 import Payment from "../Components/Marketplace/Payment";
 import PendingMembers from "../Components/MySociety/PendingMembers";
+import SocietyMembers from "../Components/MySociety/SocietyMembers";
 import Blocking from "../Components/Settings/Blocking";
 import AddBlocking from "../Components/Settings/AddBlocking";
 import OrderDetail from "../Components/Marketplace/OrderDetail";
+import OrderSuccess from "../Components/Marketplace/OrderSuccess";
 import GoLivePage from "../Components/Feed/GoLivePage";
 
 const router = createBrowserRouter([
@@ -129,14 +131,16 @@ const router = createBrowserRouter([
       },
 
       // Markets places routing.................
+      // Public marketplace routes (accessible without authentication)
       {
         path: "/marketplace",
-        element: (
-          <ProtectedRoute>
-            <MarketPlace />
-          </ProtectedRoute>
-        ),
+        element: <MarketPlace />,
       },
+      {
+        path: "/marketplace/product/:id",
+        element: <ProductCard />,
+      },
+      // Protected marketplace routes (require authentication)
       {
         path: "/marketplace/orderlist",
         element: (
@@ -154,18 +158,50 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/marketplace/product/:id",
-        element: (
-          <ProtectedRoute>
-            <ProductCard />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: "/marketplace/:id/payment",
         element: (
           <ProtectedRoute>
             <Payment />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/marketplace/payment",
+        element: (
+          <ProtectedRoute>
+            <Payment />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/marketplace/cart",
+        element: (
+          <ProtectedRoute>
+            <OrderCart />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/marketplace/orders",
+        element: (
+          <ProtectedRoute>
+            <OrderCart />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/marketplace/orders/:id",
+        element: (
+          <ProtectedRoute>
+            <OrderDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/marketplace/order-success",
+        element: (
+          <ProtectedRoute>
+            <OrderSuccess />
           </ProtectedRoute>
         ),
       },
@@ -267,6 +303,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PendingMembers />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/society/:id/members",
+        element: (
+          <ProtectedRoute>
+            <SocietyMembers />
           </ProtectedRoute>
         ),
       },

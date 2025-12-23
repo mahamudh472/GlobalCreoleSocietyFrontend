@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import CreateSocietyForm from "./CreateSocietyForm";
 import { toast } from "react-toastify";
-import { useSocieties } from "../../hooks/queries/useSocieties";
+import { useSocieties, useUserSocieties } from "../../hooks/queries/useSocieties";
 import {
   useJoinSocietyMutation,
   useLeaveSocietyMutation,
@@ -15,17 +15,21 @@ const SocietyCardGrid = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Use TanStack Query for fetching societies and current user
-  const { data: societiesData = [], isLoading: loading } = useSocieties();
+  // Fetch user's societies separately
+  const { data: yourSocieties = [], isLoading: loadingYours } = useUserSocieties();
+  // Fetch available societies (not member of)
+  const { data: availableSocieties = [], isLoading: loadingAvailable } = useSocieties({ available: true });
   const { data: currentUser } = useCurrentUser();
 
   // Use mutations
   const joinMutation = useJoinSocietyMutation();
   const leaveMutation = useLeaveSocietyMutation();
 
-  // Separate user's societies from others
-  const yourSocieties = societiesData.filter((s) => s.is_member).slice(0, 4);
-  const joinSocieties = societiesData.filter((s) => !s.is_member).slice(0, 4);
+  // Show first 4 of each
+  const yourSocietiesSlice = yourSocieties.slice(0, 4);
+  const joinSocietiesSlice = availableSocieties.slice(0, 4);
+  
+  const loading = loadingYours || loadingAvailable;
 
   const handleLeave = (e, societyId, societyName) => {
     e.stopPropagation(); // Prevent navigation when clicking leave
@@ -99,7 +103,7 @@ const SocietyCardGrid = () => {
               <h2 className="text-xl sm:text-2xl font-bold mb-3">
                 Your Societies
               </h2>
-              {yourSocieties.length > 0 && (
+              {yourSocietiesSlice.length > 0 && (
                 <p
                   onClick={() => navigate("/society/my_society_list")}
                   className="text-[#3B82F6] font-semibold cursor-pointer"
@@ -109,7 +113,7 @@ const SocietyCardGrid = () => {
               )}
             </div>
 
-            {yourSocieties.length === 0 ? (
+            {yourSocietiesSlice.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">
                   You haven't joined any societies yet
@@ -117,7 +121,7 @@ const SocietyCardGrid = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {yourSocieties.map((society) => (
+                {yourSocietiesSlice.map((society) => (
                   <div
                     onClick={() => {
                       navigate(`/society/${society?.id}`);
@@ -167,7 +171,7 @@ const SocietyCardGrid = () => {
               <h2 className="text-xl sm:text-2xl font-bold mb-3">
                 Join Societies
               </h2>
-              {joinSocieties.length > 0 && (
+              {joinSocietiesSlice.length > 0 && (
                 <p
                   onClick={() => navigate("/society/join_society_list")}
                   className="text-[#3B82F6] font-semibold cursor-pointer"
@@ -177,13 +181,13 @@ const SocietyCardGrid = () => {
               )}
             </div>
 
-            {joinSocieties.length === 0 ? (
+            {joinSocietiesSlice.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No societies available to join</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {joinSocieties.map((society) => (
+                {joinSocietiesSlice.map((society) => (
                   <div
                     onClick={() => {
                       navigate(`/society/${society?.id}`);

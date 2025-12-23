@@ -111,3 +111,24 @@ export const useUserFriends = (userId, options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Current User Full Profile Query Hook
+ * 
+ * Fetches the full current user profile from API including extra emails/phones
+ * Use this when you need fresh data from the server
+ * 
+ * @param {object} options - Additional query options
+ * @returns {object} query object with user profile data
+ */
+export const useCurrentUserProfile = (options = {}) => {
+  return useQuery({
+    queryKey: ['currentUserProfile'],
+    queryFn: async () => {
+      const response = await apiMethods.get(ENDPOINTS.ACCOUNTS.PROFILE);
+      return response.data;
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    ...options,
+  });
+};

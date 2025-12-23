@@ -62,3 +62,16 @@ export {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation,
 } from './useNotifications';
+
+/**
+ * Profile Settings Mutations
+ */
+export {
+  useToggleProfileLockMutation,
+  useSendOTPMutation,
+  useAddEmailMutation,
+  useDeleteEmailMutation,
+  useAddPhoneNumberMutation,
+  useDeletePhoneNumberMutation,
+  useChangePasswordMutation,
+} from './useProfileSettings';

@@ -9,6 +9,14 @@ const api = axios.create({
   },
 });
 
+// Create a public axios instance (for unauthenticated requests)
+const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
@@ -50,19 +58,16 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
         } else {
-          // No refresh token, clear storage and reject
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          localStorage.removeItem("user");
-          window.location.href = "/signin";
+          // No refresh token - don't redirect, just reject
+          // This allows public pages to work without forcing login
           return Promise.reject(error);
         }
       } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
+        // Refresh failed, clear tokens but don't redirect
+        // Let the component handle the redirect if needed
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
-        window.location.href = "/signin";
         return Promise.reject(refreshError);
       }
     }
@@ -129,6 +134,12 @@ export const apiMethods = {
 
   // DELETE request
   delete: (url, config = {}) => api.delete(url, config),
+};
+
+// Public API methods (no authentication required)
+export const publicApiMethods = {
+  // GET request (public, no auth token)
+  get: (url, config = {}) => publicApi.get(url, config),
 };
 
 

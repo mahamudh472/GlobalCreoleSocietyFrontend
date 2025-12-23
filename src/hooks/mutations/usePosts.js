@@ -50,9 +50,11 @@ export const useCreatePostMutation = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
       
       // If society post, invalidate society posts
-      if (newPost.society) {
+      // society can be an object with id or a direct UUID string
+      const societyId = newPost.society?.id || newPost.society;
+      if (societyId) {
         queryClient.invalidateQueries({ 
-          queryKey: queryKeys.societies.posts(newPost.society) 
+          queryKey: queryKeys.societies.posts(societyId) 
         });
       }
       

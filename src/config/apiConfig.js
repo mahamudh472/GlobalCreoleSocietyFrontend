@@ -14,7 +14,14 @@ export const ENDPOINTS = {
     OTHER_USER_PROFILE: (userId) => `/accounts/profile/${userId}/`,
     CHANGE_PASSWORD: "/accounts/change-password/",
     CHANGE_EMAIL: "/accounts/change-email/",
+    CHANGE_PHONE_NUMBER: "/accounts/change-phone-number/",
     SEND_OTP: "/accounts/send-otp/",
+    SEARCH_USERS: "/accounts/search/",
+    ADD_EMAIL: "/accounts/add-email/",
+    ADD_PHONE_NUMBER: "/accounts/add-phone-number/",
+    DELETE_EMAIL: (emailId) => `/accounts/delete-email/${emailId}/`,
+    DELETE_PHONE_NUMBER: (phoneId) => `/accounts/delete-phone-number/${phoneId}/`,
+    PROFILE_LOCK: "/accounts/profile-lock/",
   },
 
   // Accounts (alias for AUTH for consistency)
@@ -28,7 +35,14 @@ export const ENDPOINTS = {
     FRIENDS: (userId) => `/social/friends/?user=${userId}`,
     CHANGE_PASSWORD: "/accounts/change-password/",
     CHANGE_EMAIL: "/accounts/change-email/",
+    CHANGE_PHONE_NUMBER: "/accounts/change-phone-number/",
     SEND_OTP: "/accounts/send-otp/",
+    SEARCH_USERS: "/accounts/search/",
+    ADD_EMAIL: "/accounts/add-email/",
+    ADD_PHONE_NUMBER: "/accounts/add-phone-number/",
+    DELETE_EMAIL: (emailId) => `/accounts/delete-email/${emailId}/`,
+    DELETE_PHONE_NUMBER: (phoneId) => `/accounts/delete-phone-number/${phoneId}/`,
+    PROFILE_LOCK: "/accounts/profile-lock/",
   },
 
   // Social - Friends
@@ -83,6 +97,8 @@ export const ENDPOINTS = {
     // PENDING_MEMBERS: (societyId) => `/social/societies/${societyId}/members`,
     APPROVE_MEMBERSHIP: (societyId, membershipId) =>
       `/social/societies/${societyId}/memberships/${membershipId}/approve/`,
+    INVITABLE_FRIENDS: (societyId) => `/social/societies/${societyId}/invitable-friends/`,
+    INVITE: (societyId) => `/social/societies/${societyId}/invite/`,
   },
 
   // Social - Stories
@@ -159,6 +175,13 @@ export const ENDPOINTS = {
     CHECKOUT: "/shop/orders/checkout/",
     BUY_NOW: "/shop/orders/buy-now/",
     UPDATE_ORDER_STATUS: (orderId) => `/shop/orders/${orderId}/update-status/`,
+    CHECKOUT_PREVIEW: "/shop/checkout/preview/",
+    CREATE_CHECKOUT_SESSION: "/shop/checkout/create-session/",
+    DELIVERY_ADDRESS: "/shop/delivery-address/",
+    ADD_DELIVERY_ADDRESS: "/shop/delivery-address/add-address/",
+    // Stripe
+    CREATE_STRIPE_ACCOUNT: "/shop/stripe/create-connected-account/",
+    STRIPE_WEBHOOK: "/shop/webhook/stripe/",
   },
 };
 
