@@ -69,3 +69,20 @@ export const useOrderDetail = (orderId, options = {}) => {
     ...options,
   });
 };
+
+/**
+ * Fetch Stripe account status for the current user
+ * @returns {UseQueryResult}
+ */
+export const useStripeAccountStatus = (options = {}) => {
+  return useQuery({
+    queryKey: ['stripeAccountStatus'],
+    queryFn: async () => {
+      const response = await apiMethods.get(ENDPOINTS.SHOP.STRIPE_ACCOUNT_STATUS);
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 1, // 1 minute - refresh frequently to catch status updates
+    retry: 1,
+    ...options,
+  });
+};

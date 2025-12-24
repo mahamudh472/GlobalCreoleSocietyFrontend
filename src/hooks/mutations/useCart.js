@@ -164,11 +164,48 @@ export const useCreateCheckoutSessionMutation = () => {
 
 /**
  * Create Stripe Connected Account mutation
+ * Handles both creating new accounts and resuming incomplete onboarding
  */
 export const useCreateStripeAccountMutation = () => {
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: async (data = {}) => {
       const response = await apiMethods.post(ENDPOINTS.SHOP.CREATE_STRIPE_ACCOUNT, data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      // Invalidate user query to refresh stripe status
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      
+      // Redirect to Stripe onboarding
+      if (data.account_link_url) {
+        window.location.href = data.account_link_url;
+      }
+      
+      if (data.is_resuming) {
+        toast.success('Resuming Stripe onboarding...');
+      } else {
+        toast.success('Stripe account created! Redirecting to onboarding...');
+      }
+    },
+    onError: (error) => {
+      console.error('Create Stripe account error:', error);
+      toast.error(error.response?.data?.error || 'Failed to create Stripe account');
+    },
+  });
+};
+
+/**
+ * Resume Stripe onboarding mutation
+ * Used when user has incomplete Stripe account setup
+ */
+export const useResumeStripeOnboardingMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data = {}) => {
+      const response = await apiMethods.post(ENDPOINTS.SHOP.STRIPE_RESUME_ONBOARDING, data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -176,11 +213,15 @@ export const useCreateStripeAccountMutation = () => {
       if (data.account_link_url) {
         window.location.href = data.account_link_url;
       }
-      toast.success('Stripe account created! Redirecting to onboarding...');
+      toast.success('Redirecting to complete Stripe setup...');
     },
     onError: (error) => {
-      console.error('Create Stripe account error:', error);
-      toast.error(error.response?.data?.error || 'Failed to create Stripe account');
+      console.error('Resume Stripe onboarding error:', error);
+      // If account was deleted, invalidate user data
+      if (error.response?.data?.account_deleted) {
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      }
+      toast.error(error.response?.data?.error || 'Failed to resume onboarding');
     },
   });
 };

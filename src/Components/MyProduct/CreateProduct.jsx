@@ -7,7 +7,8 @@ import Navbar from "../Navbar"
 import { useCreateProductMutation } from "../../hooks/mutations/useProducts"
 import { useCurrentUser } from "../../hooks/queries/useUser"
 import { useProductCategories } from "../../hooks/queries/useProducts"
-import { useCreateStripeAccountMutation } from "../../hooks/mutations/useCart"
+import { useCreateStripeAccountMutation, useResumeStripeOnboardingMutation } from "../../hooks/mutations/useCart"
+import { useStripeAccountStatus } from "../../hooks/queries/useCart"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import { DEFAULT_AVATAR } from "../../utils/defaultAvatar"
@@ -20,22 +21,42 @@ function CreateProduct() {
   const { data: categoriesData = [], isLoading: loadingCategories } = useProductCategories()
   const createProductMutation = useCreateProductMutation()
   const createStripeAccountMutation = useCreateStripeAccountMutation()
+  const resumeStripeOnboardingMutation = useResumeStripeOnboardingMutation()
   
-  // Check if user has Stripe account set up
+  // Fetch Stripe account status when user has stripe_account_id but onboarding not complete
+  const { data: stripeStatus, isLoading: loadingStripeStatus, refetch: refetchStripeStatus } = useStripeAccountStatus({
+    enabled: !!user?.stripe_account_id,
+  })
+  
+  // Determine Stripe account state
   const hasStripeAccount = user?.stripe_account_id && user?.is_onboarding_completed
+  const hasIncompleteOnboarding = user?.stripe_account_id && !user?.is_onboarding_completed
+  const needsStripeAction = stripeStatus?.needs_action || hasIncompleteOnboarding
   
   // Handle Stripe onboarding return
   useEffect(() => {
     const stripeOnboarding = searchParams.get('stripe_onboarding')
+    const stripeRefresh = searchParams.get('stripe_refresh')
+    
     if (stripeOnboarding === 'complete') {
-      // Refetch user data to get updated Stripe status
+      // Refetch user data and stripe status to get updated state
       refetchUser()
+      refetchStripeStatus()
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+      queryClient.invalidateQueries({ queryKey: ['stripeAccountStatus'] })
       toast.success('Stripe account setup completed! You can now sell products.')
       // Remove query param from URL
       navigate('/marketplace/myproduct/addproduct', { replace: true })
+    } else if (stripeRefresh === 'true') {
+      // User returned from Stripe but needs to continue onboarding
+      refetchUser()
+      refetchStripeStatus()
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+      queryClient.invalidateQueries({ queryKey: ['stripeAccountStatus'] })
+      toast.info('Please complete your Stripe account setup to start selling.')
+      navigate('/marketplace/myproduct/addproduct', { replace: true })
     }
-  }, [searchParams, refetchUser, queryClient, navigate])
+  }, [searchParams, refetchUser, refetchStripeStatus, queryClient, navigate])
   
   // Ensure categories is always an array
   const categories = Array.isArray(categoriesData) ? categoriesData : []
@@ -60,6 +81,12 @@ function CreateProduct() {
   const handleCreateStripeAccount = () => {
     const frontendUrl = window.location.origin
     createStripeAccountMutation.mutate({ frontend_url: frontendUrl })
+  }
+  
+  // Handle resuming Stripe onboarding
+  const handleResumeOnboarding = () => {
+    const frontendUrl = window.location.origin
+    resumeStripeOnboardingMutation.mutate({ frontend_url: frontendUrl })
   }
 
   // Handle input changes
@@ -132,65 +159,151 @@ function CreateProduct() {
             {/* Header */}
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Item for sale</h1>
 
-            {/* Stripe Account Setup Required */}
+            {/* Stripe Account Setup - Shows different states */}
             {!loadingUser && !hasStripeAccount && (
               <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${hasIncompleteOnboarding ? 'bg-amber-100' : 'bg-purple-100'}`}>
+                      {hasIncompleteOnboarding ? (
+                        <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      )}
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Set Up Your Seller Account</h3>
-                    <p className="text-gray-600 mb-4">
-                      To sell products on our marketplace, you need to connect a Stripe account. 
-                      This allows you to receive payments directly when customers purchase your products.
-                    </p>
-                    <ul className="text-sm text-gray-500 mb-4 space-y-1">
-                      <li className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Secure payment processing
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Direct deposits to your bank account
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Only 2% platform fee
-                      </li>
-                    </ul>
-                    <button
-                      onClick={handleCreateStripeAccount}
-                      disabled={createStripeAccountMutation.isPending}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-semibold rounded-lg transition-colors"
-                    >
-                      {createStripeAccountMutation.isPending ? (
-                        <>
-                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          Setting up...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                          Connect with Stripe
-                        </>
-                      )}
-                    </button>
+                    {hasIncompleteOnboarding ? (
+                      <>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Your Seller Account Setup</h3>
+                        <p className="text-gray-600 mb-4">
+                          Your Stripe account was created but the setup is not complete. 
+                          Please finish the onboarding process to start selling products.
+                        </p>
+                        
+                        {/* Show verification status if available */}
+                        {stripeStatus && !loadingStripeStatus && (
+                          <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Account Status:</h4>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex items-center gap-2">
+                                {stripeStatus.details_submitted ? (
+                                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                                <span className={stripeStatus.details_submitted ? 'text-green-700' : 'text-amber-700'}>
+                                  Details: {stripeStatus.details_submitted ? 'Submitted' : 'Pending'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {stripeStatus.charges_enabled ? (
+                                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                                <span className={stripeStatus.charges_enabled ? 'text-green-700' : 'text-amber-700'}>
+                                  Payments: {stripeStatus.charges_enabled ? 'Enabled' : 'Not yet enabled'}
+                                </span>
+                              </div>
+                              {stripeStatus.requirements?.pending_verification?.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                  </svg>
+                                  <span className="text-blue-700">Verification in progress</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <button
+                          onClick={handleResumeOnboarding}
+                          disabled={resumeStripeOnboardingMutation.isPending || createStripeAccountMutation.isPending}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-semibold rounded-lg transition-colors"
+                        >
+                          {resumeStripeOnboardingMutation.isPending ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Continue Setup
+                            </>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Set Up Your Seller Account</h3>
+                        <p className="text-gray-600 mb-4">
+                          To sell products on our marketplace, you need to connect a Stripe account. 
+                          This allows you to receive payments directly when customers purchase your products.
+                        </p>
+                        <ul className="text-sm text-gray-500 mb-4 space-y-1">
+                          <li className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Secure payment processing
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Direct deposits to your bank account
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Only 2% platform fee
+                          </li>
+                        </ul>
+                        <button
+                          onClick={handleCreateStripeAccount}
+                          disabled={createStripeAccountMutation.isPending}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-semibold rounded-lg transition-colors"
+                        >
+                          {createStripeAccountMutation.isPending ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              Setting up...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Connect with Stripe
+                            </>
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

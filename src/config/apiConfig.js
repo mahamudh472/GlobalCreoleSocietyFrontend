@@ -198,6 +198,8 @@ export const ENDPOINTS = {
     ADD_DELIVERY_ADDRESS: "/shop/delivery-address/add-address/",
     // Stripe
     CREATE_STRIPE_ACCOUNT: "/shop/stripe/create-connected-account/",
+    STRIPE_ACCOUNT_STATUS: "/shop/stripe/account-status/",
+    STRIPE_RESUME_ONBOARDING: "/shop/stripe/resume-onboarding/",
     STRIPE_WEBHOOK: "/shop/webhook/stripe/",
   },
 };
