@@ -13,6 +13,7 @@ import { apiMethods } from "../utils/api";
 import { ENDPOINTS } from "../config/apiConfig";
 import { useCurrentUser } from "../hooks/queries/useUser";
 import { useFriends, useUserFriendsQuery } from "../hooks/queries/useFriends";
+import { useSendFriendRequestMutation, useRespondToRequestMutation } from "../hooks/mutations/useFriends";
 
 const Profile = () => {
   const { userId } = useParams(); // Get user ID from URL if viewing another user's profile
@@ -42,6 +43,15 @@ const Profile = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const editAboutmodal = useRef(null);
 
+  // Friendship status: 'none', 'pending', 'request_received', 'friends'
+  const [friendStatus, setFriendStatus] = useState('none');
+  const [friendStatusLoading, setFriendStatusLoading] = useState(false);
+  const sendFriendRequestMutation = useSendFriendRequestMutation();
+  const respondToRequestMutation = useRespondToRequestMutation();
+
+  // Determine if viewing own profile (defined early for use in effects)
+  const isOwnProfile = !userId || userId === currentUser?.id;
+
   // Modals: comment & share
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
@@ -66,11 +76,56 @@ const Profile = () => {
     );
   };
 
+  // Check friendship status when viewing another user's profile
+  useEffect(() => {
+    const checkFriendshipStatus = async () => {
+      if (!userId || userId === currentUser?.id || !currentUser) {
+        setFriendStatus('none');
+        return;
+      }
+
+      setFriendStatusLoading(true);
+      try {
+        const response = await apiMethods.get(ENDPOINTS.FRIENDS.STATUS(userId));
+        const status = response.data.status;
+
+        if (status === 'friends') {
+          setFriendStatus('friends');
+        } else if (status === 'request_sent') {
+          setFriendStatus('pending');
+        } else if (status === 'request_received') {
+          setFriendStatus('request_received');
+        } else {
+          setFriendStatus('none');
+        }
+      } catch (error) {
+        console.error('Error checking friendship status:', error);
+        setFriendStatus('none');
+      } finally {
+        setFriendStatusLoading(false);
+      }
+    };
+
+    checkFriendshipStatus();
+  }, [userId, currentUser?.id]);
+
   // Fetch profile data
   useEffect(() => {
     fetchProfile();
-    fetchProfilePosts(1);
   }, [userId]);
+
+  // Fetch posts - but only if allowed (own profile, friends, or unlocked profile)
+  useEffect(() => {
+    if (!profile) return;
+    
+    const canViewPosts = isOwnProfile || !profile.profile_lock || friendStatus === 'friends';
+    if (canViewPosts) {
+      fetchProfilePosts(1);
+    } else {
+      setPosts([]);
+      setHasMore(false);
+    }
+  }, [profile?.id, profile?.profile_lock, friendStatus, isOwnProfile]);
 
   // If landing on profile with a post hash (e.g., #post-123), try to scroll after posts load
   useEffect(() => {
@@ -199,6 +254,28 @@ const Profile = () => {
     setIsModalOpen((prev) => !prev);
   };
 
+  // Friend action handlers
+  const handleSendFriendRequest = () => {
+    if (!userId) return;
+    sendFriendRequestMutation.mutate(userId, {
+      onSuccess: () => {
+        setFriendStatus('pending');
+      }
+    });
+  };
+
+  const handleAcceptFriendRequest = () => {
+    if (!userId) return;
+    respondToRequestMutation.mutate(
+      { userId, action: 'accept' },
+      {
+        onSuccess: () => {
+          setFriendStatus('friends');
+        }
+      }
+    );
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -214,8 +291,6 @@ const Profile = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const isOwnProfile = !userId || userId === currentUser?.id;
 
   if (loading && !profile) {
     return (
@@ -250,9 +325,19 @@ const Profile = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div
             ref={editAboutmodal}
-            className="bg-white rounded-lg p-6 shadow-xl"
+            className="bg-white rounded-lg p-6 shadow-xl max-h-[90vh] overflow-y-auto"
           >
-            <EditAboutModal />
+            <EditAboutModal 
+              profile={profile}
+              onProfileUpdate={(updatedProfile) => {
+                setProfile(updatedProfile);
+                // Update current user cache if viewing own profile
+                if (isOwnProfile) {
+                  refetchCurrentUser();
+                }
+              }}
+              onClose={() => setIsModalOpen(false)}
+            />
             <div className="flex justify-end mt-4">
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -278,6 +363,12 @@ const Profile = () => {
             posts={posts}
             friendsCount={friendsCount}
             isOwnProfile={isOwnProfile}
+            friendStatus={friendStatus}
+            friendStatusLoading={friendStatusLoading}
+            onSendFriendRequest={handleSendFriendRequest}
+            onAcceptFriendRequest={handleAcceptFriendRequest}
+            sendingRequest={sendFriendRequestMutation.isPending}
+            acceptingRequest={respondToRequestMutation.isPending}
             onProfileUpdate={(updatedProfile) => {
               setProfile(updatedProfile);
               // Update current user cache if viewing own profile
@@ -312,7 +403,41 @@ const Profile = () => {
             </div>
 
             {/* Posts Section */}
-            {loading && posts.length === 0 ? (
+            {/* Check if profile is locked and user is not a friend */}
+            {!isOwnProfile && profile?.profile_lock && friendStatus !== 'friends' ? (
+              <div className="bg-white rounded-lg p-8 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-gray-700">This Profile is Private</h3>
+                  <p className="text-gray-500">Only friends can see {profile?.profile_name || 'this user'}'s posts.</p>
+                  {friendStatus === 'none' && (
+                    <button
+                      onClick={handleSendFriendRequest}
+                      disabled={sendFriendRequestMutation.isPending}
+                      className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      {sendFriendRequestMutation.isPending ? 'Sending...' : 'Send Friend Request'}
+                    </button>
+                  )}
+                  {friendStatus === 'pending' && (
+                    <span className="mt-2 px-4 py-2 bg-gray-200 text-gray-600 rounded-lg">
+                      Friend Request Sent
+                    </span>
+                  )}
+                  {friendStatus === 'request_received' && (
+                    <button
+                      onClick={handleAcceptFriendRequest}
+                      disabled={respondToRequestMutation.isPending}
+                      className="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                    >
+                      {respondToRequestMutation.isPending ? 'Accepting...' : 'Accept Friend Request'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : loading && posts.length === 0 ? (
               <div className="bg-white rounded-lg p-8 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
               </div>

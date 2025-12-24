@@ -3,6 +3,7 @@ import { BsThreeDots } from 'react-icons/bs'
 import { HiMiniCalendarDateRange } from 'react-icons/hi2'
 import { MdOutlineWork } from 'react-icons/md'
 import { SlLocationPin } from 'react-icons/sl'
+import { IoSchoolOutline } from 'react-icons/io5'
 
 const AboutMe = ({ profile, handleEditAboutPopup, isOwnProfile = true }) => {
   const formatDate = (dateString) => {
@@ -15,6 +16,8 @@ const AboutMe = ({ profile, handleEditAboutPopup, isOwnProfile = true }) => {
   const location = profile?.locations?.[0]?.name || 'Not specified'
   const work = profile?.works?.[0] 
   const workText = work ? `${work.position || 'Working'} at ${work.company || 'Company'}` : 'Not specified'
+  const education = profile?.educations?.[0]
+  const educationText = education ? `${education.subject ? `${education.subject} at ` : ''}${education.collage || 'School'}` : 'Not specified'
 
   return (
     <div className='relative'>
@@ -41,6 +44,10 @@ const AboutMe = ({ profile, handleEditAboutPopup, isOwnProfile = true }) => {
           <div className='flex justify-between items-center gap-2'>
             <MdOutlineWork size={20} className="flex-shrink-0" />
             <p className='text-lg flex-1 text-right truncate'>{workText}</p>
+          </div>
+          <div className='flex justify-between items-center gap-2'>
+            <IoSchoolOutline size={20} className="flex-shrink-0" />
+            <p className='text-lg flex-1 text-right truncate'>{educationText}</p>
           </div>
         </div>
       </section>

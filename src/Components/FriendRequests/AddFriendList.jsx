@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../Navbar';
 import { toast } from 'react-toastify';
 import { FaUserPlus, FaSearch, FaSync } from 'react-icons/fa';
@@ -89,22 +90,24 @@ const AddFriendList = () => {
                         {filteredSuggestions.map((user) => (
                             <div key={user.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                                 <div className="p-6 text-center">
-                                    <div className="mb-4">
+                                    <Link to={`/profile/${user.id}`} className="mb-4 block">
                                         {user.profile_image ? (
                                             <img
                                                 src={user.profile_image}
                                                 alt={user.profile_name || 'User'}
-                                                className="w-24 h-24 rounded-full mx-auto object-cover"
+                                                className="w-24 h-24 rounded-full mx-auto object-cover hover:opacity-80 transition"
                                             />
                                         ) : (
-                                            <div className="w-24 h-24 rounded-full mx-auto bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold">
+                                            <div className="w-24 h-24 rounded-full mx-auto bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold hover:opacity-80 transition hover:opacity-80 transition">
                                                 {user.profile_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
                                             </div>
                                         )}
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-1 truncate">
-                                        {user.profile_name || 'Anonymous User'}
-                                    </h3>
+                                    </Link>
+                                    <Link to={`/profile/${user.id}`} className="hover:text-blue-500 transition">
+                                        <h3 className="text-lg font-semibold mb-1 truncate">
+                                            {user.profile_name || 'Anonymous User'}
+                                        </h3>
+                                    </Link>
                                     {user.email && (
                                         <p className="text-sm text-gray-500 mb-4 truncate">
                                             {user.email}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaDesktop, FaExpand } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../Components/Navbar"
@@ -13,6 +13,8 @@ function VideoCall() {
     const [isVideoOn, setIsVideoOn] = useState(true)
     const [isScreenSharing, setIsScreenSharing] = useState(false)
     const [callDuration, setCallDuration] = useState(0)
+    const [localStreamReady, setLocalStreamReady] = useState(false)
+    const [remoteStreamReady, setRemoteStreamReady] = useState(false)
     const localVideoRef = useRef(null)
     const remoteVideoRef = useRef(null)
 
@@ -32,18 +34,97 @@ function VideoCall() {
         }
     }, [activeCall, callStatus, navigate]);
 
-    // Setup video streams
+    // Robust stream attachment function
+    const attachStream = useCallback((videoElement, stream, streamType) => {
+        if (!videoElement || !stream) {
+            console.log(`[VideoCall] Cannot attach ${streamType} stream:`, { 
+                hasElement: !!videoElement, 
+                hasStream: !!stream 
+            });
+            return false;
+        }
+
+        try {
+            // Check if stream has active tracks
+            const tracks = stream.getTracks();
+            console.log(`[VideoCall] Attaching ${streamType} stream with ${tracks.length} tracks:`, 
+                tracks.map(t => `${t.kind}:${t.readyState}`));
+
+            // Only attach if not already attached or stream changed
+            if (videoElement.srcObject !== stream) {
+                videoElement.srcObject = stream;
+                console.log(`[VideoCall] ${streamType} stream attached to video element`);
+            }
+
+            // Ensure video plays
+            videoElement.play().catch(err => {
+                console.log(`[VideoCall] ${streamType} autoplay blocked:`, err.message);
+                // Try playing with user interaction fallback
+            });
+
+            return true;
+        } catch (error) {
+            console.error(`[VideoCall] Error attaching ${streamType} stream:`, error);
+            return false;
+        }
+    }, []);
+
+    // Setup local video stream with retry
     useEffect(() => {
         if (localStream && localVideoRef.current) {
-            localVideoRef.current.srcObject = localStream
+            const attached = attachStream(localVideoRef.current, localStream, 'local');
+            setLocalStreamReady(attached);
+            
+            // Retry attachment after a short delay if initial attach had issues
+            if (!attached) {
+                const retryTimeout = setTimeout(() => {
+                    if (localVideoRef.current && localStream) {
+                        attachStream(localVideoRef.current, localStream, 'local (retry)');
+                    }
+                }, 500);
+                return () => clearTimeout(retryTimeout);
+            }
         }
-    }, [localStream])
+    }, [localStream, attachStream]);
 
+    // Setup remote video stream with retry
     useEffect(() => {
         if (remoteStream && remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream
+            console.log('[VideoCall] Remote stream changed, tracks:', 
+                remoteStream.getTracks().map(t => `${t.kind}:${t.readyState}`));
+            
+            const attached = attachStream(remoteVideoRef.current, remoteStream, 'remote');
+            setRemoteStreamReady(attached);
+            
+            // Retry attachment after a short delay if initial attach had issues
+            if (!attached) {
+                const retryTimeout = setTimeout(() => {
+                    if (remoteVideoRef.current && remoteStream) {
+                        attachStream(remoteVideoRef.current, remoteStream, 'remote (retry)');
+                    }
+                }, 500);
+                return () => clearTimeout(retryTimeout);
+            }
         }
-    }, [remoteStream])
+    }, [remoteStream, attachStream]);
+
+    // Also try to attach when component mounts if streams exist
+    useEffect(() => {
+        const checkAndAttach = () => {
+            if (localStream && localVideoRef.current && !localVideoRef.current.srcObject) {
+                attachStream(localVideoRef.current, localStream, 'local (mount check)');
+            }
+            if (remoteStream && remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
+                attachStream(remoteVideoRef.current, remoteStream, 'remote (mount check)');
+            }
+        };
+        
+        // Check immediately and after a delay
+        checkAndAttach();
+        const timeout = setTimeout(checkAndAttach, 1000);
+        
+        return () => clearTimeout(timeout);
+    }, [localStream, remoteStream, attachStream]);
 
     // Call duration timer (start when connected)
     useEffect(() => {

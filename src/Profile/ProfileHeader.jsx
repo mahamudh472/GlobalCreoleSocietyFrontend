@@ -3,12 +3,19 @@ import UploadProfilePage from "./UploadProfilePage";
 import { apiMethods } from "../utils/api";
 import { ENDPOINTS } from "../config/apiConfig";
 import { DEFAULT_AVATAR, DEFAULT_BACKGROUND_COLOR } from "../utils/defaultAvatar";
+import { FaUserPlus, FaUserCheck, FaUserClock, FaCheck } from "react-icons/fa";
 
 const ProfileHeader = ({
   data,
   posts = [],
   friendsCount = 0,
   isOwnProfile = true,
+  friendStatus = 'none',
+  friendStatusLoading = false,
+  onSendFriendRequest,
+  onAcceptFriendRequest,
+  sendingRequest = false,
+  acceptingRequest = false,
   onProfileUpdate,
 }) => {
 
@@ -128,17 +135,69 @@ const ProfileHeader = ({
       </div>
 
       {/* Profile Information Section */}
-      <div className="flex py-15 md:py-8 pl-8 rounded-lg h-[60%] flex-col sm:flex-row sm:justify-between">
+      <div className="flex py-15 md:py-8 pl-8 pr-4 rounded-lg h-[60%] flex-col sm:flex-row sm:justify-between">
         <div className="w-[20%]"></div>
         <div className="sm:w-[40%] mb-4 sm:mb-0">
-          <h1 className="text-3xl font-bold pb-2">
-            {data?.profile_name || data?.email || "User"}
-          </h1>
-          <p className="text-sm opacity-60 mb-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-3xl font-bold">
+              {data?.profile_name || data?.email || "User"}
+            </h1>
+            {/* Friend Action Button - Beside name for other users */}
+            {!isOwnProfile && !friendStatusLoading && (
+              <>
+                {friendStatus === 'friends' && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+                    <FaUserCheck />
+                    Friends
+                  </span>
+                )}
+                {friendStatus === 'pending' && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
+                    <FaUserClock />
+                    Request Sent
+                  </span>
+                )}
+                {friendStatus === 'request_received' && (
+                  <button
+                    onClick={onAcceptFriendRequest}
+                    disabled={acceptingRequest}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 disabled:opacity-50 transition cursor-pointer"
+                  >
+                    <FaCheck />
+                    {acceptingRequest ? 'Accepting...' : 'Accept Request'}
+                  </button>
+                )}
+                {friendStatus === 'none' && (
+                  <button
+                    onClick={onSendFriendRequest}
+                    disabled={sendingRequest}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition cursor-pointer"
+                  >
+                    <FaUserPlus />
+                    {sendingRequest ? 'Sending...' : 'Add Friend'}
+                  </button>
+                )}
+              </>
+            )}
+            {!isOwnProfile && friendStatusLoading && (
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm">
+                Loading...
+              </span>
+            )}
+          </div>
+          <p className="text-sm opacity-60 mb-2 mt-2">
             {data?.description || "No bio yet"}
           </p>
           <div className="flex items-center gap-4">
             <h3 className="text-sm opacity-60">{friendsCount} friends</h3>
+            {data?.profile_lock && (
+              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Private
+              </span>
+            )}
           </div>
         </div>
 

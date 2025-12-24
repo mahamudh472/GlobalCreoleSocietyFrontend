@@ -5,13 +5,33 @@
 
 import { WS_ENDPOINTS } from '../config/apiConfig';
 
-// STUN servers for NAT traversal
+// ICE servers for NAT traversal
+// Using multiple STUN servers and free TURN servers for better connectivity
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-  ]
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    // OpenRelay TURN servers (free, for development/testing)
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ],
+  iceCandidatePoolSize: 10
 };
 
 class WebRTCService {
@@ -22,8 +42,10 @@ class WebRTCService {
     this.callSocket = null;
     this.onRemoteStreamCallback = null;
     this.onCallEndCallback = null;
+    this.onSignalingMessageCallback = null; // New callback for forwarding messages
     this.pendingIceCandidates = [];
     this.targetUserId = null; // Store the target user ID for signaling
+    this.isCallbackRegistered = false; // Track if callbacks are registered
   }
 
   /**
@@ -49,10 +71,24 @@ class WebRTCService {
         console.log('[WebRTC] Socket closed:', event.code, event.reason);
       };
 
+      // Single message handler that forwards to callbacks
       this.callSocket.onmessage = (event) => {
-        this.handleSignalingMessage(JSON.parse(event.data));
+        const data = JSON.parse(event.data);
+        console.log('[WebRTC] Raw message received:', data.type);
+        
+        // Forward to external callback first (CallContext)
+        if (this.onSignalingMessageCallback) {
+          this.onSignalingMessageCallback(data);
+        }
       };
     });
+  }
+
+  /**
+   * Set callback for signaling messages (used by CallContext)
+   */
+  onSignalingMessage(callback) {
+    this.onSignalingMessageCallback = callback;
   }
 
   /**
@@ -199,6 +235,7 @@ class WebRTCService {
 
   /**
    * Create peer connection
+   * IMPORTANT: Call onRemoteStream() to register callback BEFORE calling this method
    */
   createPeerConnection() {
     if (this.peerConnection) {
@@ -206,6 +243,7 @@ class WebRTCService {
       return this.peerConnection;
     }
 
+    console.log('[WebRTC] Creating peer connection with ICE servers:', ICE_SERVERS);
     this.peerConnection = new RTCPeerConnection(ICE_SERVERS);
     console.log('[WebRTC] Peer connection created');
 
@@ -213,53 +251,111 @@ class WebRTCService {
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => {
         this.peerConnection.addTrack(track, this.localStream);
-        console.log('[WebRTC] Added track to peer connection:', track.kind);
+        console.log('[WebRTC] Added track to peer connection:', track.kind, 'enabled:', track.enabled);
       });
+    } else {
+      console.warn('[WebRTC] No local stream available when creating peer connection!');
     }
 
     // Handle ICE candidates
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log('[WebRTC] Sending ICE candidate');
+        console.log('[WebRTC] Sending ICE candidate:', event.candidate.type);
         this.sendSignalingMessage('webrtc_ice_candidate', event.candidate, this.targetUserId);
+      } else {
+        console.log('[WebRTC] ICE gathering complete');
       }
     };
 
-    // Handle remote stream
+    // Handle ICE gathering state changes
+    this.peerConnection.onicegatheringstatechange = () => {
+      console.log('[WebRTC] ICE gathering state:', this.peerConnection.iceGatheringState);
+    };
+
+    // Handle remote stream - create fresh MediaStream for React state detection
     this.peerConnection.ontrack = (event) => {
-      console.log('[WebRTC] Received remote track:', event.track.kind);
-      console.log('[WebRTC] onRemoteStreamCallback exists:', !!this.onRemoteStreamCallback);
+      console.log('[WebRTC] Received remote track:', event.track.kind, 'readyState:', event.track.readyState);
+      console.log('[WebRTC] onRemoteStreamCallback registered:', !!this.onRemoteStreamCallback);
+      
+      // Always create a new MediaStream to trigger React state update
       if (!this.remoteStream) {
         this.remoteStream = new MediaStream();
         console.log('[WebRTC] Created new remote MediaStream');
       }
-      this.remoteStream.addTrack(event.track);
-      console.log('[WebRTC] Remote stream track count:', this.remoteStream.getTracks().length);
+      
+      // Check if track already exists to avoid duplicates
+      const existingTrack = this.remoteStream.getTracks().find(t => t.id === event.track.id);
+      if (!existingTrack) {
+        this.remoteStream.addTrack(event.track);
+        console.log('[WebRTC] Added track to remote stream. Track count:', this.remoteStream.getTracks().length);
+      }
+      
+      // Create a new MediaStream reference to force React to detect the change
+      const newRemoteStream = new MediaStream(this.remoteStream.getTracks());
+      this.remoteStream = newRemoteStream;
       
       if (this.onRemoteStreamCallback) {
-        console.log('[WebRTC] Calling onRemoteStreamCallback');
-        this.onRemoteStreamCallback(this.remoteStream);
+        console.log('[WebRTC] Calling onRemoteStreamCallback with new stream');
+        this.onRemoteStreamCallback(newRemoteStream);
       } else {
-        console.warn('[WebRTC] No onRemoteStreamCallback registered!');
+        console.error('[WebRTC] ERROR: No onRemoteStreamCallback registered! Remote video will not display.');
       }
+
+      // Track state changes
+      event.track.onmute = () => {
+        console.log('[WebRTC] Remote track muted:', event.track.kind);
+      };
+      event.track.onunmute = () => {
+        console.log('[WebRTC] Remote track unmuted:', event.track.kind);
+      };
+      event.track.onended = () => {
+        console.log('[WebRTC] Remote track ended:', event.track.kind);
+      };
     };
 
     // Handle connection state changes
     this.peerConnection.onconnectionstatechange = () => {
       console.log('[WebRTC] Connection state:', this.peerConnection.connectionState);
       
-      if (this.peerConnection.connectionState === 'failed' || 
-          this.peerConnection.connectionState === 'disconnected' ||
-          this.peerConnection.connectionState === 'closed') {
+      if (this.peerConnection.connectionState === 'failed') {
+        console.error('[WebRTC] Connection failed - may need TURN server');
         if (this.onCallEndCallback) {
           this.onCallEndCallback('connection_failed');
         }
+      } else if (this.peerConnection.connectionState === 'disconnected') {
+        console.warn('[WebRTC] Connection disconnected - attempting to recover');
+        // Give some time to recover before ending
+        setTimeout(() => {
+          if (this.peerConnection && this.peerConnection.connectionState === 'disconnected') {
+            console.error('[WebRTC] Connection did not recover');
+            if (this.onCallEndCallback) {
+              this.onCallEndCallback('connection_failed');
+            }
+          }
+        }, 5000);
+      } else if (this.peerConnection.connectionState === 'closed') {
+        if (this.onCallEndCallback) {
+          this.onCallEndCallback('connection_closed');
+        }
+      } else if (this.peerConnection.connectionState === 'connected') {
+        console.log('[WebRTC] Connection established successfully!');
       }
     };
 
     // Handle ICE connection state changes
     this.peerConnection.oniceconnectionstatechange = () => {
       console.log('[WebRTC] ICE connection state:', this.peerConnection.iceConnectionState);
+      
+      if (this.peerConnection.iceConnectionState === 'failed') {
+        console.error('[WebRTC] ICE connection failed - retrying...');
+        // Try to restart ICE
+        this.peerConnection.restartIce();
+      }
+    };
+
+    // Handle signaling state changes
+    this.peerConnection.onsignalingstatechange = () => {
+      console.log('[WebRTC] Signaling state:', this.peerConnection.signalingState);
     };
 
     return this.peerConnection;
@@ -465,13 +561,18 @@ class WebRTCService {
     this.targetUserId = null;
     this.onRemoteStreamCallback = null;
     this.onCallEndCallback = null;
+    this.onSignalingMessageCallback = null;
+    this.isCallbackRegistered = false;
   }
 
   /**
    * Set callback for remote stream
+   * IMPORTANT: Call this BEFORE createPeerConnection()
    */
   onRemoteStream(callback) {
+    console.log('[WebRTC] Registering onRemoteStream callback');
     this.onRemoteStreamCallback = callback;
+    this.isCallbackRegistered = true;
   }
 
   /**

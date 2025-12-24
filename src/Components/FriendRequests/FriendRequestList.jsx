@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../Navbar';
 import { toast } from 'react-toastify';
 import { useFriendRequests } from '../../hooks/queries/useFriends';
@@ -46,16 +47,18 @@ const FriendRequestList = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {friendRequests.map(request => (
                                 <div key={request.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center">
-                                    <div className="flex justify-center items-start w-full mb-2">
+                                    <Link to={`/profile/${request.requester?.id}`} className="flex justify-center items-start w-full mb-2">
                                         <img
                                             src={request.requester?.profile_image || DEFAULT_AVATAR}
                                             alt={request.requester?.profile_name || 'User'}
-                                            className="w-18 h-18 rounded-full"
+                                            className="w-18 h-18 rounded-full hover:opacity-80 transition"
                                         />
-                                    </div>
-                                    <h3 className="text-lg sm:text-xl font-semibold">
-                                        {request.requester?.profile_name || 'Anonymous User'}
-                                    </h3>
+                                    </Link>
+                                    <Link to={`/profile/${request.requester?.id}`} className="hover:text-blue-500 transition">
+                                        <h3 className="text-lg sm:text-xl font-semibold">
+                                            {request.requester?.profile_name || 'Anonymous User'}
+                                        </h3>
+                                    </Link>
                                     <p className="text-gray-600 text-sm sm:text-base">
                                         {request.requester?.email || ''}
                                     </p>

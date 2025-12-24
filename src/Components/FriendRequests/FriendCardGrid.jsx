@@ -1,6 +1,6 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../Navbar";
-import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { FaUserPlus } from 'react-icons/fa';
 import { useFriendRequests, useFriendSuggestions } from '../../hooks/queries/useFriends';
@@ -48,17 +48,19 @@ const FriendCardGrid = () => {
                 key={friend.id}
                 className="bg-white rounded-2xl shadow-md p-4 flex flex-col items-center text-center"
             >
-                <div className="flex justify-center items-start w-full mb-2">
+                <Link to={`/profile/${userData.id}`} className="flex justify-center items-start w-full mb-2">
                     <img
                         src={userData.profile_image || DEFAULT_AVATAR}
                         alt={userData.profile_name}
-                        className="w-18 h-18 rounded-full"
+                        className="w-18 h-18 rounded-full hover:opacity-80 transition"
                     />
-                </div>
+                </Link>
 
-                <h3 className="text-lg font-semibold">
-                    {userData.profile_name}
-                </h3>
+                <Link to={`/profile/${userData.id}`} className="hover:text-blue-500 transition">
+                    <h3 className="text-lg font-semibold">
+                        {userData.profile_name}
+                    </h3>
+                </Link>
                 <p className="text-gray-600">{userData.email}</p>
 
                 <div className="flex space-x-2 mt-2">
@@ -153,22 +155,24 @@ const FriendCardGrid = () => {
                                 {suggestions.map((user) => (
                                     <div key={user.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                                         <div className="p-4 text-center">
-                                            <div className="mb-3">
+                                            <Link to={`/profile/${user.id}`} className="mb-3 block">
                                                 {user.profile_image ? (
                                                     <img
                                                         src={user.profile_image}
                                                         alt={user.profile_name || 'User'}
-                                                        className="w-20 h-20 rounded-full mx-auto object-cover"
+                                                        className="w-20 h-20 rounded-full mx-auto object-cover hover:opacity-80 transition"
                                                     />
                                                 ) : (
-                                                    <div className="w-20 h-20 rounded-full mx-auto bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+                                                    <div className="w-20 h-20 rounded-full mx-auto bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold hover:opacity-80 transition">
                                                         {user.profile_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
                                                     </div>
                                                 )}
-                                            </div>
-                                            <h3 className="text-lg font-semibold mb-1 truncate">
-                                                {user.profile_name || 'Anonymous User'}
-                                            </h3>
+                                            </Link>
+                                            <Link to={`/profile/${user.id}`} className="hover:text-blue-500 transition">
+                                                <h3 className="text-lg font-semibold mb-1 truncate">
+                                                    {user.profile_name || 'Anonymous User'}
+                                                </h3>
+                                            </Link>
                                             {user.email && (
                                                 <p className="text-sm text-gray-500 mb-3 truncate">
                                                     {user.email}

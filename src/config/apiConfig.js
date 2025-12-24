@@ -22,6 +22,15 @@ export const ENDPOINTS = {
     DELETE_EMAIL: (emailId) => `/accounts/delete-email/${emailId}/`,
     DELETE_PHONE_NUMBER: (phoneId) => `/accounts/delete-phone-number/${phoneId}/`,
     PROFILE_LOCK: "/accounts/profile-lock/",
+    // Locations
+    LOCATIONS: "/accounts/locations/",
+    LOCATION_DETAIL: (locationId) => `/accounts/locations/${locationId}/`,
+    // Works
+    WORKS: "/accounts/works/",
+    WORK_DETAIL: (workId) => `/accounts/works/${workId}/`,
+    // Educations
+    EDUCATIONS: "/accounts/educations/",
+    EDUCATION_DETAIL: (educationId) => `/accounts/educations/${educationId}/`,
   },
 
   // Accounts (alias for AUTH for consistency)

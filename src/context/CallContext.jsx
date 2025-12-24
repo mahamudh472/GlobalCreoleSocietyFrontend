@@ -112,16 +112,15 @@ export const CallProvider = ({ children }) => {
       
       setCallStatus('initiating');
       
-      // Get local media stream
+      // Get local media stream FIRST
       const stream = await webrtcService.getLocalStream(callType === 'video');
       setLocalStream(stream);
+      console.log('[CallContext] Local stream obtained');
       
-      // Initialize call WebSocket
-      await webrtcService.initializeCallSocket(conversationId, token);
-      
-      // Set up WebRTC callbacks
+      // Set up WebRTC callbacks BEFORE initializing socket and creating peer connection
+      // This ensures callbacks are ready before any events can fire
       webrtcService.onRemoteStream((remoteStream) => {
-        console.log('[CallContext] Remote stream received');
+        console.log('[CallContext] Remote stream received, setting state');
         setRemoteStream(remoteStream);
         setCallStatus('connected');
       });
@@ -131,9 +130,11 @@ export const CallProvider = ({ children }) => {
         handleCallEnd();
       });
       
-      // Listen for signaling messages
-      webrtcService.callSocket.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
+      // Initialize call WebSocket
+      await webrtcService.initializeCallSocket(conversationId, token);
+      
+      // Use single callback for signaling messages
+      webrtcService.onSignalingMessage(async (data) => {
         console.log('[CallContext] Received:', data.type, data);
         
         if (data.type === 'connection_established') {
@@ -169,26 +170,30 @@ export const CallProvider = ({ children }) => {
           setCallStatus('incoming');
           
           // Get local media stream for the incoming call
-          const stream = await webrtcService.getLocalStream(data.call_type === 'video');
-          setLocalStream(stream);
+          const incomingStream = await webrtcService.getLocalStream(data.call_type === 'video');
+          setLocalStream(incomingStream);
           
-          // Create peer connection ready to receive offer
+          // Create peer connection (callbacks already registered)
           webrtcService.createPeerConnection();
         } else if (data.type === 'call_accepted') {
           console.log('[CallContext] Call accepted by receiver');
           setCallStatus('connecting');
           
           // Now create peer connection and send offer (receiver is ready now)
+          // Callbacks are already registered above
           webrtcService.createPeerConnection();
           await webrtcService.createOffer(otherUser.id);
         } else if (data.type === 'call_rejected') {
           console.log('[CallContext] Call rejected');
           handleCallEnd();
-        } else {
-          // Handle other WebRTC signaling
+        } else if (data.type === 'webrtc_offer' || data.type === 'webrtc_answer' || data.type === 'webrtc_ice_candidate') {
+          // Handle WebRTC signaling
           await webrtcService.handleSignalingMessage(data);
+        } else if (data.type === 'call_ended') {
+          console.log('[CallContext] Call ended by other party');
+          handleCallEnd();
         }
-      };
+      });
       
       // Send call initiate request
       webrtcService.callSocket.send(JSON.stringify({
@@ -231,9 +236,23 @@ export const CallProvider = ({ children }) => {
       
       setCallStatus('accepting');
       
-      // Get local media stream
+      // Get local media stream FIRST
       const stream = await webrtcService.getLocalStream(incomingCall.call_type === 'video');
       setLocalStream(stream);
+      console.log('[CallContext] Local stream obtained for accepting call');
+      
+      // Set up WebRTC callbacks BEFORE initializing socket and creating peer connection
+      // This is critical - callbacks must be ready before ontrack fires
+      webrtcService.onRemoteStream((remoteStream) => {
+        console.log('[CallContext] Remote stream received in acceptCall');
+        setRemoteStream(remoteStream);
+        setCallStatus('connected');
+      });
+      
+      webrtcService.onCallEnd((reason) => {
+        console.log('[CallContext] Call ended:', reason);
+        handleCallEnd();
+      });
       
       // Initialize call WebSocket
       const token = localStorage.getItem('access_token');
@@ -247,24 +266,12 @@ export const CallProvider = ({ children }) => {
       console.log('[CallContext] Connecting to conversation:', conversationId);
       await webrtcService.initializeCallSocket(conversationId, token);
       
-      // Set up WebRTC callbacks
-      webrtcService.onRemoteStream((remoteStream) => {
-        console.log('[CallContext] Remote stream received');
-        setRemoteStream(remoteStream);
-        setCallStatus('connected');
-      });
-      
-      webrtcService.onCallEnd((reason) => {
-        console.log('[CallContext] Call ended:', reason);
-        handleCallEnd();
-      });
-      
-      // Create peer connection
+      // Create peer connection AFTER callbacks are set but BEFORE signaling begins
       webrtcService.createPeerConnection();
+      console.log('[CallContext] Peer connection created, ready to receive offer');
       
-      // Listen for WebRTC signaling
-      webrtcService.callSocket.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
+      // Use single callback for signaling messages
+      webrtcService.onSignalingMessage(async (data) => {
         console.log('[CallContext] Receiver got message:', data.type);
         
         // Handle call-specific messages
@@ -279,17 +286,18 @@ export const CallProvider = ({ children }) => {
         } else if (data.type === 'call_ended') {
           console.log('[CallContext] Call ended by other party');
           handleCallEnd();
-        } else {
+        } else if (data.type === 'webrtc_offer' || data.type === 'webrtc_answer' || data.type === 'webrtc_ice_candidate') {
           // Handle WebRTC signaling messages
           await webrtcService.handleSignalingMessage(data);
         }
-      };
+      });
       
-      // Send accept message
+      // Send accept message AFTER everything is set up
       webrtcService.callSocket.send(JSON.stringify({
         type: 'call_accept',
         call_id: incomingCall.id
       }));
+      console.log('[CallContext] Sent call_accept message');
       
       // Move incoming call to active call
       setActiveCall(incomingCall);
