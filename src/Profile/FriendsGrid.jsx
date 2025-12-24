@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { useFriends } from "../hooks/queries/useFriends"
 import { useCurrentUser } from "../hooks/queries/useUser"
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar"
 
 const FriendsGrid = ({ userId }) => {
   const navigate = useNavigate()
@@ -9,11 +10,6 @@ const FriendsGrid = ({ userId }) => {
   
   // Take only first 6 friends for grid display
   const friends = friendsData.slice(0, 6)
-
-  const getDefaultProfileImage = (friend) => {
-    const name = friend.profile_name || friend.email || "User";
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-  };
 
   if (loading) {
     return (
@@ -51,11 +47,11 @@ const FriendsGrid = ({ userId }) => {
             return (
               <div key={friend.id} className="flex flex-col items-center">
                 <div 
-                  className="w-17 h-17 rounded-xl overflow-hidden transform transition-transform duration-700 ease-in-out hover:scale-105 cursor-pointer"
+                  className="w-17 h-17 rounded-xl overflow-hidden cursor-pointer"
                   onClick={() => navigate(`/profile/${friendData.id}`)}
                 >
                   <img
-                    src={friendData.profile_image || getDefaultProfileImage(friendData)}
+                    src={friendData.profile_image || DEFAULT_AVATAR}
                     alt={friendData.profile_name || friendData.email}
                     className="w-full h-full object-cover "
                   />

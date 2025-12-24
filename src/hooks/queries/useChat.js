@@ -2,6 +2,7 @@ import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiMethods } from "../../utils/api";
 import { ENDPOINTS } from "../../config/apiConfig";
 import { queryKeys } from "../../utils/queryKeys";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 /**
  * Fetch all conversations for the current user
@@ -30,7 +31,7 @@ export const useConversations = (options = {}) => {
             conv.society?.avatar ||
             "/placeholder.svg"
           : conv.other_participant?.profile_image ||
-            getDefaultProfileImage(conv.other_participant);
+            DEFAULT_AVATAR;
 
         return {
           id: conv.id,
@@ -84,7 +85,7 @@ export const useConversationMessages = (conversationId, options = {}) => {
           senderName:
             msg.sender?.profile_name || msg.sender?.email || "Unknown",
           senderAvatar:
-            msg.sender?.profile_image || getDefaultProfileImage(msg.sender),
+            msg.sender?.profile_image || DEFAULT_AVATAR,
           file_url: msg.file_url,
           file_type: msg.file_type,
         })),
@@ -130,7 +131,7 @@ export const useGlobalMessages = (options = {}) => {
           senderName:
             msg.sender?.profile_name || msg.sender?.email || "Unknown",
           senderAvatar:
-            msg.sender?.profile_image || getDefaultProfileImage(msg.sender),
+            msg.sender?.profile_image || DEFAULT_AVATAR,
           file_url: msg.file_url,
           file_type: msg.file_type,
         })),
@@ -177,14 +178,4 @@ export const useSearchFriendsForChat = (query, options = {}) => {
     staleTime: 60000, // 1 minute
     ...options,
   });
-};
-
-// Helper function for default profile image
-const getDefaultProfileImage = (user) => {
-  if (!user)
-    return "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-  const name = user.profile_name || user.email || "User";
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    name
-  )}&size=150&background=3b82f6&color=fff`;
 };

@@ -5,6 +5,7 @@ import { FaSearch } from "react-icons/fa"
 import ChatListItem from "./ChatListItem"
 import { apiMethods } from "../utils/api"
 import { ENDPOINTS } from "../config/apiConfig"
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar"
 
 function ChatSidebar({ chats, selectedChat, onChatSelect, filter, onFilterChange, onCreateConversation }) {
   const [searchQuery, setSearchQuery] = useState("")
@@ -119,7 +120,7 @@ function ChatSidebar({ chats, selectedChat, onChatSelect, filter, onFilterChange
               >
                 <div className="relative">
                   <img
-                    src={friend.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.profile_name || 'User')}&size=150&background=3b82f6&color=fff`}
+                    src={friend.profile_image || DEFAULT_AVATAR}
                     alt={friend.profile_name}
                     className="w-12 h-12 rounded-full object-cover"
                   />

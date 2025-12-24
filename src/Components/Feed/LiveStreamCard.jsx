@@ -2,16 +2,11 @@ import React from "react";
 import { Users, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/queries/useUser";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 const LiveStreamCard = ({ livestream }) => {
   const { data: user } = useCurrentUser();
   const navigate = useNavigate();
-
-  const DEFAULT_PROFILE_IMAGE = livestream.user
-    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        livestream.user.profile_name || livestream.user.email || "User"
-      )}&size=150&background=3b82f6&color=fff`
-    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
 
   const handleClick = () => {
     const isStreamer = user && livestream.user && user.id === livestream.user.id;
@@ -94,7 +89,7 @@ const LiveStreamCard = ({ livestream }) => {
           onClick={handleUserClick}
         >
           <img
-            src={livestream.user?.profile_image || DEFAULT_PROFILE_IMAGE}
+            src={livestream.user?.profile_image || DEFAULT_AVATAR}
             alt={livestream.user?.profile_name || "User"}
             className="w-10 h-10 rounded-full object-cover border-2 border-red-500"
           />

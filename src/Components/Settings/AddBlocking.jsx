@@ -6,6 +6,7 @@ import {
   useBlockUserMutation,
   useUnblockUserMutation,
 } from "../../hooks/mutations/useFriends";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 function AddBlocking() {
   const [query, setQuery] = useState("");
@@ -95,12 +96,7 @@ function AddBlocking() {
                     <div className="flex items-center space-x-3">
                       <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-300">
                         <img
-                          src={
-                            user.profile_image ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              user.profile_name || "User"
-                            )}&size=150&background=3b82f6&color=fff`
-                          }
+                          src={user.profile_image || DEFAULT_AVATAR}
                           alt={user.profile_name}
                           className="w-full h-full object-cover"
                         />

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useSociety } from "../../hooks/queries/useSocieties";
 import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
 import { toast } from "react-toastify";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 const GroupInfo = ({ societyId }) => {
   const { data: society, isLoading, isError } = useSociety(societyId);
@@ -66,7 +67,7 @@ const GroupInfo = ({ societyId }) => {
             <img
               src={
                 society.creator?.profile_image ||
-                "https://www.shutterstock.com/image-photo/happy-handsome-young-business-leader-260nw-2375039955.jpg"
+                DEFAULT_AVATAR
               }
               alt="Creator"
               className="w-10 h-10 rounded-full mr-2"
@@ -85,13 +86,13 @@ const GroupInfo = ({ societyId }) => {
               </p>
             </div>
           </div>
-          <div className="mb-4 bg-white rounded-lg p-2 px-4 flex justify-between cursor-pointer transform transition-transform duration-700 ease-in-out hover:scale-101">
+          <div className="mb-4 bg-white rounded-lg p-2 px-4 flex justify-between cursor-pointer">
             <p className="text-gray-600 font-semibold">Pending Posts</p>
             <p className="text-lg font-bold">
               {society.pending_posts_count ?? 0}
             </p>
           </div>
-          <div className="mb-4 flex justify-between bg-white rounded-lg p-2 px-4 cursor-pointer transform transition-transform duration-700 ease-in-out hover:scale-101">
+          <div className="mb-4 flex justify-between bg-white rounded-lg p-2 px-4 cursor-pointer">
             <p className="text-gray-600 font-semibold">Pending Members</p>
             <p className="text-lg font-bold">
               {society.pending_members_count ?? 0}

@@ -15,6 +15,7 @@ import { apiMethods } from "../utils/api";
 import { ENDPOINTS } from "../config/apiConfig";
 import { toast } from "react-toastify";
 import { useCall } from "../context/CallContext";
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 
 function ChatWindow({
   chat,
@@ -36,13 +37,6 @@ function ChatWindow({
   const isLoadingRef = useRef(false);
   const hasScrolledToBottomRef = useRef(false); // Track if we've scrolled to bottom initially
   const { initiateCall, callError, clearCallError } = useCall();
-
-  const getDefaultProfileImage = () => {
-    const name = chat?.name || "User";
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      name
-    )}&size=150&background=3b82f6&color=fff`;
-  };
 
   // Filter out system messages
   const userMessages = messages.filter((msg) => msg.file_type !== "system");
@@ -222,7 +216,7 @@ function ChatWindow({
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
-              src={chat.avatar || getDefaultProfileImage()}
+              src={chat.avatar || DEFAULT_AVATAR}
               alt={chat.name}
               className="w-10 h-10 rounded-full object-cover"
             />
@@ -261,7 +255,7 @@ function ChatWindow({
                 console.log("Call initiation failed, not navigating");
               }
             }}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
             title="Start audio call"
           >
             <FaPhone className="text-gray-600" />
@@ -289,7 +283,7 @@ function ChatWindow({
                 console.log("Call initiation failed, not navigating");
               }
             }}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
             title="Start video call"
           >
             <FaVideo className="text-gray-600" />
@@ -297,7 +291,7 @@ function ChatWindow({
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
             >
               <FaEllipsisV className="text-gray-600" />
             </button>
@@ -334,7 +328,7 @@ function ChatWindow({
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className={`flex-1 p-4 space-y-4 ${hasUserMessages ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
       >
         {/* Loading indicator at top */}
         {loadingMore && hasMoreMessages && (

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import { useCurrentUser } from "../../hooks/queries/useUser"
 import { useCreatePostMutation } from "../../hooks/mutations/usePosts"
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar"
 
 const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
   const [postText, setPostText] = useState("")
@@ -13,10 +14,6 @@ const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
   const navigate = useNavigate();
   const { data: user } = useCurrentUser();
   const createPostMutation = useCreatePostMutation();
-
-  const DEFAULT_PROFILE_IMAGE = (user || currentUser)
-    ? `https://ui-avatars.com/api/?name=${encodeURIComponent((user || currentUser).profile_name || (user || currentUser).email || "User")}&size=150&background=3b82f6&color=fff`
-    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
@@ -72,7 +69,7 @@ const CreatePostSection = ({ currentUser, onCreatePost, societyId = null }) => {
       <form onSubmit={handleSubmit}>
         <div className="flex items-start space-x-3">
           <img
-            src={displayUser?.profile_image || DEFAULT_PROFILE_IMAGE}
+            src={displayUser?.profile_image || DEFAULT_AVATAR}
             alt="Your avatar"
             className="w-10 h-10 rounded-full object-cover"
           />

@@ -10,6 +10,7 @@ import {
   useLeaveSocietyMutation,
 } from "../../hooks/mutations/useSocieties";
 import { useCurrentUser } from "../../hooks/queries/useUser";
+import { DEFAULT_GROUP_AVATAR } from "../../utils/defaultAvatar";
 
 const SocietyCardGrid = () => {
   const navigate = useNavigate();
@@ -131,8 +132,8 @@ const SocietyCardGrid = () => {
                   >
                     <img
                       src={
-                        society.profile_image ||
-                        "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"
+                        society.profile_image_url ||
+                        DEFAULT_GROUP_AVATAR
                       }
                       alt={society.name}
                       className="w-24 h-24 mb-2 rounded-full object-cover"
@@ -197,8 +198,8 @@ const SocietyCardGrid = () => {
                   >
                     <img
                       src={
-                        society.profile_image ||
-                        "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"
+                        society.profile_image_url ||
+                        DEFAULT_GROUP_AVATAR
                       }
                       alt={society.name}
                       className="w-24 h-24 mb-2 rounded-full object-cover"

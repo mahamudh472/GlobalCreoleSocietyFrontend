@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { FaUserPlus } from 'react-icons/fa';
 import { useFriendRequests, useFriendSuggestions } from '../../hooks/queries/useFriends';
 import { useRespondToRequestMutation, useSendFriendRequestMutation } from '../../hooks/mutations/useFriends';
+import { DEFAULT_AVATAR } from '../../utils/defaultAvatar';
 
 const FriendCardGrid = () => {
     const navigate = useNavigate();
@@ -38,12 +39,6 @@ const FriendCardGrid = () => {
         });
     };
 
-    // Helper function for default profile image
-    const getDefaultProfileImage = (name, email) => {
-        const displayName = name || email || 'User';
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&size=128`;
-    };
-
     // Helper for rendering friend cards
     const renderFriendCard = (friend) => {
         const userData = friend.requester;
@@ -55,7 +50,7 @@ const FriendCardGrid = () => {
             >
                 <div className="flex justify-center items-start w-full mb-2">
                     <img
-                        src={userData.profile_image || getDefaultProfileImage(userData.profile_name, userData.email)}
+                        src={userData.profile_image || DEFAULT_AVATAR}
                         alt={userData.profile_name}
                         className="w-18 h-18 rounded-full"
                     />

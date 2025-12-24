@@ -5,6 +5,7 @@ import { Video, Mic, Monitor } from "lucide-react";
 import { livestreamAPI } from "../../services/livestreamService";
 import { useCurrentUser } from "../../hooks/queries";
 import Navbar from "../Navbar";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 const GoLivePage = () => {
   const navigate = useNavigate();
@@ -17,10 +18,6 @@ const GoLivePage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [previewStream, setPreviewStream] = useState(null);
   const videoPreviewRef = useRef(null);
-
-  const DEFAULT_PROFILE_IMAGE = user
-    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
-    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
 
   // Get available media devices
   useEffect(() => {
@@ -214,7 +211,7 @@ const GoLivePage = () => {
 
                 <div className="flex items-center mb-3">
                   <img
-                    src={user?.profile_image || DEFAULT_PROFILE_IMAGE}
+                    src={user?.profile_image || DEFAULT_AVATAR}
                     alt="User"
                     className="w-9 h-9 rounded-full object-cover"
                   />

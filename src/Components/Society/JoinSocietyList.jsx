@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useSocieties } from "../../hooks/queries/useSocieties";
 import { useJoinSocietyMutation } from "../../hooks/mutations/useSocieties";
+import { DEFAULT_GROUP_AVATAR } from "../../utils/defaultAvatar";
 
 const JoinSocietyList = () => {
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ const JoinSocietyList = () => {
               >
                 <img
                   src={
-                    society.profile_image ||
-                    "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg"
+                    society.profile_image_url ||
+                    DEFAULT_GROUP_AVATAR
                   }
                   alt={society.name}
                   className="w-24 h-24 mb-2 object-cover rounded-full"

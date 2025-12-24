@@ -5,6 +5,7 @@ import { FaMicrophone, FaMicrophoneSlash, FaVideo } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../Components/Navbar"
 import { useCall } from "../context/CallContext"
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar"
 
 function AudioCall() {
     const navigate = useNavigate()
@@ -93,7 +94,7 @@ function AudioCall() {
 
     const otherUser = activeCall.is_caller ? activeCall.receiver : activeCall.caller
     const userName = otherUser?.profile_name || 'Unknown'
-    const userAvatar = otherUser?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&size=300&background=3b82f6&color=fff`
+    const userAvatar = otherUser?.profile_image || DEFAULT_AVATAR
 
     const getStatusText = () => {
         switch (callStatus) {

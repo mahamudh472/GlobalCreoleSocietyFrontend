@@ -10,6 +10,7 @@ import { useProductCategories } from "../../hooks/queries/useProducts"
 import { useCreateStripeAccountMutation } from "../../hooks/mutations/useCart"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar"
 
 function CreateProduct() {
   const navigate = useNavigate()
@@ -198,7 +199,7 @@ function CreateProduct() {
             {/* Seller Info */}
             <div className="flex items-center space-x-3 mb-6 pb-6 border-b border-gray-200">
               <img
-                src={user?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.profile_name || 'User')}&size=150&background=3b82f6&color=fff`}
+                src={user?.profile_image || DEFAULT_AVATAR}
                 alt={user?.profile_name || 'User'}
                 className="w-12 h-12 rounded-full object-cover"
               />

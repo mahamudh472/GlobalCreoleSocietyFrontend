@@ -10,14 +10,11 @@ import websitelogo from "../assets/websitelogo.png"
 import { useCurrentUser, useUserSearch } from "../hooks/queries";
 import { useLogoutMutation } from "../hooks/mutations";
 import { useDebounce } from "../hooks/useDebounce";
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 
 const Navbar = () => {
   const { data: user } = useCurrentUser();
   const logoutMutation = useLogoutMutation();
-  
-  const DEFAULT_PROFILE_IMAGE = user 
-    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
-    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
   
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -196,7 +193,7 @@ const Navbar = () => {
 
               <img
                 className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center object-cover"
-                src={user?.profile_image || DEFAULT_PROFILE_IMAGE} 
+                src={user?.profile_image || DEFAULT_AVATAR} 
                 alt={user?.profile_name || "User"} 
               />
 
@@ -220,7 +217,7 @@ const Navbar = () => {
                     className="flex gap-3 items-center font-semibold hover:bg-[#E2E8F0] p-2 rounded-xl transform transition-all duration-500 ease-in-out cursor-pointer">
                     <img
                       className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center object-cover"
-                      src={user?.profile_image || DEFAULT_PROFILE_IMAGE} 
+                      src={user?.profile_image || DEFAULT_AVATAR} 
                       alt={user?.profile_name || "User"} 
                     />
                     <p className="text-lg truncate" >{user?.profile_name || user?.email || "Profile"}</p>

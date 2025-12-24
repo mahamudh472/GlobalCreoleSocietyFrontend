@@ -1,14 +1,9 @@
 import { FaFile, FaDownload, FaImage, FaVideo, FaMusic } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 
 function Message({ message }) {
   const navigate = useNavigate();
-  const getDefaultProfileImage = () => {
-    const name = message.senderName || "User";
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      name
-    )}&size=150&background=3b82f6&color=fff`;
-  };
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return "";
@@ -197,7 +192,7 @@ function Message({ message }) {
       {/* Show avatar for received messages (not own messages) */}
       {!message.isOwn && (
         <img
-          src={message.senderAvatar || getDefaultProfileImage()}
+          src={message.senderAvatar || DEFAULT_AVATAR}
           alt={message.senderName}
           className="w-8 h-8 rounded-full object-cover flex-shrink-0"
         />

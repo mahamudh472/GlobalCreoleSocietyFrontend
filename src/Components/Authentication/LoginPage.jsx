@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Eye, EyeOff } from "lucide-react";
 import AuthButton from "../Authentication/AuthButton";
 import { useNavigate } from "react-router-dom";
 import { useLoginMutation } from "../../hooks/mutations";
@@ -77,9 +78,13 @@ const LoginPage = () => {
                             <button
                                 type="button"
                                 onClick={togglePasswordVisibility}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                             >
-                                {formData.showPassword ? "Hide" : "👁"}
+                                {formData.showPassword ? (
+                                    <EyeOff className="w-5 h-5" />
+                                ) : (
+                                    <Eye className="w-5 h-5" />
+                                )}
                             </button>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">

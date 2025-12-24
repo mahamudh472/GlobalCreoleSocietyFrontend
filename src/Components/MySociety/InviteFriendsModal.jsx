@@ -5,6 +5,7 @@ import { apiMethods } from "../../utils/api";
 import { ENDPOINTS } from "../../config/apiConfig";
 import { toast } from "react-toastify";
 import { AnimatePresence, motion } from "framer-motion";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 const InviteFriendsModal = ({ isOpen, onClose, societyId, societyName }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,12 +148,7 @@ const InviteFriendsModal = ({ isOpen, onClose, societyId, societyName }) => {
                     className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <img
-                      src={
-                        friend.profile_image ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          friend.profile_name || "User"
-                        )}&size=150&background=3b82f6&color=fff`
-                      }
+                      src={friend.profile_image || DEFAULT_AVATAR}
                       alt={friend.profile_name}
                       className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
                     />

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Heart, MessageCircle, MoreVertical, Trash2, Edit } from "lucide-react";
+import { Heart, MessageCircle, MoreVertical, Trash2, Edit, Globe, Lock, Users } from "lucide-react";
 import { FaShareFromSquare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -8,6 +8,7 @@ import {
   useLikePostMutation,
   useDeletePostMutation,
 } from "../../hooks/mutations/usePosts";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
   const { data: user } = useCurrentUser();
@@ -19,12 +20,6 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
 
   const likeMutation = useLikePostMutation();
   const deleteMutation = useDeletePostMutation();
-
-  const DEFAULT_PROFILE_IMAGE = post.user
-    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        post.user.profile_name || post.user.email || "User"
-      )}&size=150&background=3b82f6&color=fff`
-    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
 
   // Update counts when post prop changes (but not for likes - we handle those locally)
   React.useEffect(() => {
@@ -99,18 +94,39 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
     }
   };
 
-  const DEFAULT_SOCIETY_IMAGE = post.society
-    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        post.society.name || "Society"
-      )}&size=150&background=10b981&color=fff`
-    : null;
-
   const isOwnPost = user && post.user && user.id === post.user.id;
+
+  // Get privacy icon and text
+  const getPrivacyIcon = () => {
+    switch (post.privacy) {
+      case "public":
+        return <Globe className="w-4 h-4" />;
+      case "private":
+        return <Lock className="w-4 h-4" />;
+      case "friends":
+        return <Users className="w-4 h-4" />;
+      default:
+        return <Globe className="w-4 h-4" />;
+    }
+  };
+
+  const getPrivacyText = () => {
+    switch (post.privacy) {
+      case "public":
+        return "Public";
+      case "private":
+        return "Private";
+      case "friends":
+        return "Friends";
+      default:
+        return "Public";
+    }
+  };
 
   return (
     <div
       id={`post-${post.id}`}
-      className="bg-white rounded-xl p-4 mb-4 shadow-sm transform transition-transform duration-700 ease-out hover:scale-102"
+      className="bg-white rounded-xl p-4 mb-4 shadow-sm"
     >
       {/* Society Header - Show if post belongs to a society */}
       {post.society && (
@@ -120,9 +136,8 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
         >
           <img
             src={
-              post.society.cover_image ||
-              post.society.cover_image ||
-              DEFAULT_SOCIETY_IMAGE
+              post.society.profile_image_url ||
+              DEFAULT_AVATAR
             }
             alt={post.society.name}
             className="w-12 h-12 rounded-lg object-cover border-2 border-gray-200"
@@ -146,7 +161,7 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
             onClick={handleUserClick}
           >
             <img
-              src={post.user?.profile_image || DEFAULT_PROFILE_IMAGE}
+              src={post.user?.profile_image || DEFAULT_AVATAR}
               alt={post.user?.profile_name || "User"}
               className="w-10 h-10 rounded-full object-cover"
             />
@@ -154,11 +169,18 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
               <h3 className="font-semibold text-gray-900">
                 {post.user?.profile_name || post.user?.username}
               </h3>
-              <p className="text-sm text-gray-500">
-                {post.created_at
-                  ? new Date(post.created_at).toLocaleString()
-                  : "Just now"}
-              </p>
+              <div className="flex items-center space-x-1 text-sm text-gray-500">
+                <span>
+                  {post.created_at
+                    ? new Date(post.created_at).toLocaleString()
+                    : "Just now"}
+                </span>
+                <span>·</span>
+                <div className="flex items-center space-x-1">
+                  {getPrivacyIcon()}
+                  <span>{getPrivacyText()}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -250,7 +272,7 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
         </div>
         <button
           onClick={onShare}
-          className="p-2 hover:bg-gray-100 rounded-full cursor-pointer transform transition-transform duration-700 ease-out hover:scale-120"
+          className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
         >
           <FaShareFromSquare className="w-4 h-4 text-gray-500" />
         </button>

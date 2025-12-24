@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { IoMdClose } from "react-icons/io";
 import { FaUser } from "react-icons/fa";
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 
 const SearchResults = ({ results, isLoading, query, onClose, onSelectUser }) => {
   const navigate = useNavigate();
@@ -66,12 +67,7 @@ const SearchResults = ({ results, isLoading, query, onClose, onSelectUser }) => 
             >
               {/* User Avatar */}
               <img
-                src={
-                  user.profile_image ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    user.profile_name || user.email || "User"
-                  )}&size=150&background=3b82f6&color=fff`
-                }
+                src={user.profile_image || DEFAULT_AVATAR}
                 alt={user.profile_name || "User"}
                 className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
               />

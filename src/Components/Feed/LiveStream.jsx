@@ -11,6 +11,7 @@ import { useSendFriendRequestMutation } from "../../hooks/mutations/useFriends"
 import { apiMethods } from "../../utils/api"
 import { ENDPOINTS } from "../../config/apiConfig"
 import { toast } from "react-toastify"
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar"
 
 function LiveStream() {
     const { id } = useParams()
@@ -41,10 +42,6 @@ function LiveStream() {
     const ivsPlayerRef = useRef(null)
     const ivsBroadcastClientRef = useRef(null)
     const mediaStreamRef = useRef(null)
-
-    const DEFAULT_PROFILE_IMAGE = user
-        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
-        : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff"
 
     // Load IVS player and broadcast SDK scripts
     useEffect(() => {
@@ -271,7 +268,7 @@ function LiveStream() {
         // Wait until we've fetched livestream data and determined isStreamer
         if (!livestream?.id || !isIdentified) return
 
-        const wsUrl = `${import.meta.env.VITE_WS_URL || import.meta.env.VITE_WEBSOCKET_URL || 'ws://127.0.0.1:8001'}/ws/livestream/${livestream.id}/`
+        const wsUrl = `${import.meta.env.VITE_WS_URL || import.meta.env.VITE_WEBSOCKET_URL}/ws/livestream/${livestream.id}/`
         const token = localStorage.getItem('access_token')
         
         const ws = new WebSocket(`${wsUrl}?token=${token}`)
@@ -671,7 +668,7 @@ function LiveStream() {
                     <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/20">
                         <div className="flex items-center space-x-3">
                             <img
-                                src={livestream.user?.profile_image || DEFAULT_PROFILE_IMAGE}
+                                src={livestream.user?.profile_image || DEFAULT_AVATAR}
                                 alt={livestream.user?.profile_name || livestream.user?.username}
                                 className="w-10 h-10 rounded-full border-2 border-yellow-500 object-cover"
                             />
@@ -713,7 +710,7 @@ function LiveStream() {
                         {comments.map((comment, index) => (
                             <div key={comment.id || index} className="flex space-x-2">
                                 <img
-                                    src={comment.user?.profile_image || DEFAULT_PROFILE_IMAGE}
+                                    src={comment.user?.profile_image || DEFAULT_AVATAR}
                                     alt={comment.user?.profile_name || comment.user?.email}
                                     className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
                                 />
@@ -736,7 +733,7 @@ function LiveStream() {
                     {/* Comment Input */}
                     <form onSubmit={handleSubmitComment} className="flex items-center space-x-2">
                         <img
-                            src={user?.profile_image || DEFAULT_PROFILE_IMAGE}
+                            src={user?.profile_image || DEFAULT_AVATAR}
                             alt="You"
                             className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
                         />

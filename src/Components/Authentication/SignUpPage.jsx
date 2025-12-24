@@ -1,7 +1,7 @@
 
 import { useState } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import AuthButton from "./AuthButton";
 import { useRegisterMutation } from "../../hooks/mutations";
 import { toast } from "react-toastify";
@@ -23,8 +23,10 @@ const SignUpPage = ({ onSwitchToLogin }) => {
         birthDate: "",
         birthYear: "",
         agreeToShare: false,
-        showPassword: false,
     })
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [passwordErrors, setPasswordErrors] = useState([]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target
@@ -32,17 +34,42 @@ const SignUpPage = ({ onSwitchToLogin }) => {
             ...prev,
             [name]: type === "checkbox" ? checked : value,
         }))
+        
+        // Validate password on change
+        if (name === "password") {
+            validatePassword(value);
+        }
     }
 
-    const togglePasswordVisibility = () => {
-        setFormData((prev) => ({
-            ...prev,
-            showPassword: !prev.showPassword,
-        }))
-    }
+    const validatePassword = (password) => {
+        const errors = [];
+        if (password.length < 8) {
+            errors.push("At least 8 characters");
+        }
+        if (!/[a-z]/.test(password)) {
+            errors.push("At least one lowercase letter");
+        }
+        if (!/[A-Z]/.test(password)) {
+            errors.push("At least one uppercase letter");
+        }
+        if (!/[0-9]/.test(password)) {
+            errors.push("At least one number");
+        }
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            errors.push("At least one special character");
+        }
+        setPasswordErrors(errors);
+        return errors.length === 0;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+
+        // Validate password before submitting
+        if (!validatePassword(formData.password)) {
+            toast.error("Please fix password validation errors");
+            return;
+        }
 
         // Combine date of birth
         const dateOfBirth = `${formData.birthYear}-${String(formData.birthMonth).padStart(2, '0')}-${String(formData.birthDate).padStart(2, '0')}`;
@@ -158,7 +185,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                         <label className="block text-md text-gray-600 mb-2">Password</label>
                         <div className="relative">
                             <input
-                                type={formData.showPassword ? "text" : "password"}
+                                type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
                                 onChange={handleInputChange}
@@ -167,12 +194,31 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                             />
                             <button
                                 type="button"
-                                onClick={togglePasswordVisibility}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                             >
-                                {formData.showPassword ? "Hide" : "👁"}
+                                {showPassword ? (
+                                    <EyeOff className="w-5 h-5" />
+                                ) : (
+                                    <Eye className="w-5 h-5" />
+                                )}
                             </button>
                         </div>
+                        {formData.password && (
+                            <div className="mt-2 space-y-1">
+                                {passwordErrors.length > 0 ? (
+                                    passwordErrors.map((error, index) => (
+                                        <p key={index} className="text-xs text-red-500 flex items-center">
+                                            <span className="mr-1">✗</span> {error}
+                                        </p>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-green-500 flex items-center">
+                                        <span className="mr-1">✓</span> Password meets all requirements
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">
                             Use 8 or more characters with a mix of letters, numbers & symbols
                         </p>
@@ -305,16 +351,6 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                         </a>
                         .
                     </p>
-
-                    {/* reCAPTCHA Placeholder */}
-                    <div className="w-full flex justify-start pl-7 py-3">
-                        <div className="scale-[1.2] transform origin-top">
-                            <ReCAPTCHA
-                                sitekey="6LeDKNIrAAAAAAqMzt62vFcRhJPawQNjawiD6MA0"
-                                // onChange={onSuccess}
-                            />
-                        </div>
-                    </div>
 
                     {/* Error Message */}
                     {registerMutation.isError && (

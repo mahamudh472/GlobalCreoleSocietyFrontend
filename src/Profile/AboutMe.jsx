@@ -24,7 +24,7 @@ const AboutMe = ({ profile, handleEditAboutPopup, isOwnProfile = true }) => {
           {isOwnProfile && (
             <BsThreeDots
               size={20}
-              className='cursor-pointer hover:scale-105'
+              className='cursor-pointer'
               onClick={handleEditAboutPopup} // trigger modal open
             />
           )}

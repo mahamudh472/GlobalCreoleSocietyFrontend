@@ -1,9 +1,7 @@
 import { FaPencilAlt, FaTimes } from "react-icons/fa";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-
-const DEFAULT_IMAGE =
-  "https://cdn.pixabay.com/photo/2025/05/23/08/54/girl-9617241_1280.png";
+import { DEFAULT_GROUP_AVATAR } from "../../utils/defaultAvatar";
 
 const SocietyImgUpload = ({
   societyId,
@@ -12,46 +10,21 @@ const SocietyImgUpload = ({
   isUploading,
   isCreator = false,
 }) => {
-  const getStoredImage = () => {
-    try {
-      if (!societyId || typeof window === "undefined") return null;
-      const raw = window.localStorage.getItem(
-        `society:profile_image:${societyId}`
-      );
-      if (!raw) return null;
-      const { url, ts } = JSON.parse(raw);
-      const ttlMs = 24 * 60 * 60 * 1000;
-      if (!url || (ts && Date.now() - ts > ttlMs)) return null;
-      return typeof url === "string" && url.trim().length ? url : null;
-    } catch {
-      return null;
-    }
-  };
-
   const [imagePreview, setImagePreview] = useState(
-    societyImage || getStoredImage() || DEFAULT_IMAGE
+    societyImage || DEFAULT_GROUP_AVATAR
   );
 
   const fileInputRef = useRef(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  /* 🔁 Sync preview from backend image; clear stored fallback when backend provides */
+  /* 🔁 Sync preview from backend image */
   useEffect(() => {
-    if (societyImage && societyImage !== imagePreview) {
+    if (societyImage) {
       setImagePreview(societyImage);
-      try {
-        if (societyId && typeof window !== "undefined") {
-          window.localStorage.removeItem(`society:profile_image:${societyId}`);
-        }
-      } catch {}
-    } else if (!societyImage) {
-      // If no image from backend, use default or stored
-      const stored = getStoredImage();
-      if (!stored) {
-        setImagePreview(DEFAULT_IMAGE);
-      }
+    } else {
+      setImagePreview(DEFAULT_GROUP_AVATAR);
     }
-  }, [societyImage, societyId]);
+  }, [societyImage]);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -72,15 +45,7 @@ const SocietyImgUpload = ({
     reader.onloadend = () => {
       const result = reader.result;
       setImagePreview(result);
-      // Persist fallback so it survives refresh until backend sends final URL
-      try {
-        if (societyId && typeof window !== "undefined") {
-          window.localStorage.setItem(
-            `society:profile_image:${societyId}`,
-            JSON.stringify({ url: result, ts: Date.now() })
-          );
-        }
-      } catch {}
+      // Don't store in localStorage - let the API response confirm the upload
     };
     reader.readAsDataURL(file);
 

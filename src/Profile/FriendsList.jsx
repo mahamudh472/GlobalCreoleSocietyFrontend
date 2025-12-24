@@ -9,6 +9,7 @@ import { useCurrentUser } from '../hooks/queries/useUser';
 import { useFriends } from '../hooks/queries/useFriends';
 import { useUnfriendMutation } from '../hooks/mutations/useFriends';
 import { useNavigate } from 'react-router-dom';
+import { DEFAULT_AVATAR } from '../utils/defaultAvatar';
 
 function FriendsList() {
   const { data: currentUser } = useCurrentUser();
@@ -62,11 +63,6 @@ function FriendsList() {
     return profileName.includes(query) || email.includes(query);
   });
 
-  const getDefaultProfileImage = (friend) => {
-    const name = friend.profile_name || friend.email || "User";
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-  };
-
   return (
     <div>
 
@@ -109,7 +105,7 @@ function FriendsList() {
                       onClick={() => navigate(`/profile/${friend.id}`)}
                     >
                       <img
-                        src={friend.profile_image || getDefaultProfileImage(friend)}
+                        src={friend.profile_image || DEFAULT_AVATAR}
                         alt={friend.profile_name || friend.email}
                         className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                       />

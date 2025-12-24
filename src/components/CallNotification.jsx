@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FaPhone, FaVideo, FaTimes, FaPhoneSlash } from 'react-icons/fa';
 import { useCall } from '../context/CallContext';
 import { useNavigate } from 'react-router-dom';
+import { DEFAULT_AVATAR } from '../utils/defaultAvatar';
 
 /**
  * CallNotification - Bottom-right popup for incoming calls (Facebook style)
@@ -48,7 +49,7 @@ function CallNotification() {
   const caller = incomingCall.caller;
   const callType = incomingCall.call_type;
   const callerName = caller?.profile_name || 'Unknown';
-  const callerAvatar = caller?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(callerName)}&size=150&background=3b82f6&color=fff`;
+  const callerAvatar = caller?.profile_image || DEFAULT_AVATAR;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 animate-slide-up">

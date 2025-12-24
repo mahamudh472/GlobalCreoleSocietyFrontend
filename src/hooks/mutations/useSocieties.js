@@ -73,17 +73,14 @@ export const useUpdateSocietyMutation = () => {
         queryKeys.societies.detail(societyId)
       );
 
-      // Optimistically update
-      if (previousSociety) {
-        queryClient.setQueryData(queryKeys.societies.detail(societyId), {
-          ...previousSociety,
-          ...societyData,
-        });
-      }
+      // Note: We don't optimistically update for FormData (file uploads)
+      // The local preview in the component handles the visual feedback
 
       return { previousSociety };
     },
     onSuccess: (updatedSociety, { societyId }) => {
+      console.log("Society update success - response:", updatedSociety);
+      
       // Update the cache with server response
       queryClient.setQueryData(
         queryKeys.societies.detail(societyId),
@@ -111,7 +108,8 @@ export const useUpdateSocietyMutation = () => {
         );
       }
 
-      console.error("Error updating society:", error);
+      console.error("Error updating society - full error:", error);
+      console.error("Error response data:", error.response?.data);
       toast.error(error.response?.data?.message || "Failed to update society");
     },
   });

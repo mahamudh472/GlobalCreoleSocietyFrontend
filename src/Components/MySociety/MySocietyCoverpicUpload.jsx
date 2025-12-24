@@ -1,5 +1,6 @@
 import { FaPencilAlt, FaTimes } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
+import { DEFAULT_BACKGROUND_COLOR } from "../../utils/defaultAvatar";
 
 const MySocietyCoverpicUpload = ({
   coverImage,
@@ -8,9 +9,8 @@ const MySocietyCoverpicUpload = ({
   isCreator = false,
 }) => {
   const [imagePreview, setImagePreview] = useState(
-    coverImage ||
-      "https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg"
-  ); // Default image
+    coverImage || null
+  ); // Default to null for solid gray background
   const [imageFile, setImageFile] = useState(null); 
   const fileInputRef = useRef(null);
 
@@ -78,17 +78,20 @@ const MySocietyCoverpicUpload = ({
       <div className="flex-1 flex flex-col items-center justify-center text-center w-full mx-auto">
         {/* Profile Image Box */}
         <div
-          className="relative w-full  h-60 rounded-2xl border-4 border-white bg-gray-200 shadow-xl overflow-hidden flex items-center justify-center mb-2 cursor-pointer"
+          className="relative w-full  h-60 rounded-2xl border-4 border-white shadow-xl overflow-hidden flex items-center justify-center mb-2 cursor-pointer"
+          style={{ backgroundColor: imagePreview ? 'transparent' : DEFAULT_BACKGROUND_COLOR }}
           onClick={openPreview}
           role="button"
           aria-label="Open image preview"
           title="Click to preview"
         >
-          <img
-            src={imagePreview}
-            alt="Profile"
-            className="object-cover w-full h-full"
-          />
+          {imagePreview && (
+            <img
+              src={imagePreview}
+              alt="Profile"
+              className="object-cover w-full h-full"
+            />
+          )}
 
           {/* Edit icon (opens file picker) - Only show for creators */}
           {isCreator && (

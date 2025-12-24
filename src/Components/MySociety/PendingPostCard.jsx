@@ -20,7 +20,7 @@ const PendingPostCard = ({ post,  onShare, onApprove,onreject}) => {
   const image = post?.image || post?.image_url || post?.media?.url || null;
 
   return (
-    <div className="bg-white rounded-xl p-4 mb-4 shadow-sm transform transition-transform duration-700 ease-out hover:scale-102">
+    <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-3">
           <img
@@ -35,7 +35,7 @@ const PendingPostCard = ({ post,  onShare, onApprove,onreject}) => {
         </div>
         <button
           onClick={onShare}
-          className="p-2 hover:bg-gray-100 rounded-full cursor-pointer transform transition-transform duration-700 ease-out hover:scale-120"
+          className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
         ></button>
       </div>
 

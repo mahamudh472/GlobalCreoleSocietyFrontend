@@ -4,6 +4,7 @@ import MySocietyCoverpicUpload from "./MySocietyCoverpicUpload";
 import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSocietyMembers } from "../../hooks/queries/useSocieties";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 const GroupSection = ({ society, isCreator = false }) => {
   const { id: societyId } = useParams();
@@ -34,7 +35,7 @@ const GroupSection = ({ society, isCreator = false }) => {
       {/* Cover Image Section */}
       <div className="relative">
         <MySocietyCoverpicUpload
-          coverImage={society?.cover_image || society?.cover_image}
+          coverImage={society?.cover_image_url}
           onChangeImage={handleCoverChange}
           isUploading={updateMutation.isPending}
           isCreator={isCreator}
@@ -73,7 +74,7 @@ const GroupSection = ({ society, isCreator = false }) => {
                   <img
                     src={
                       member.user?.profile_image ||
-                      "https://thumbs.dreamstime.com/b/profile-picture-caucasian-male-employee-posing-office-happy-young-worker-look-camera-workplace-headshot-portrait-smiling-190186649.jpg"
+                      DEFAULT_AVATAR
                     }
                     alt={member.user?.profile_name || "Member"}
                     className="w-10 h-10 rounded-full object-cover border-2 border-white transition-all duration-200 group-hover:scale-110 group-hover:border-blue-500 group-hover:z-10 cursor-pointer shadow-sm"

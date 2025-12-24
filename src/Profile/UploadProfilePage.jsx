@@ -8,12 +8,12 @@ import { toast } from 'react-toastify';
 import { useCurrentUser } from '../hooks/queries/useUser';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../utils/queryKeys';
+import { DEFAULT_AVATAR } from '../utils/defaultAvatar';
 
 const UploadProfilePage = ({ currentImage, onImageUpdate }) => {
     const { data: user, refetch: refetchUser } = useCurrentUser();
     const queryClient = useQueryClient();
-    const DEFAULT_IMAGE = "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-    const [imagePreview, setImagePreview] = useState(currentImage || DEFAULT_IMAGE);
+    const [imagePreview, setImagePreview] = useState(currentImage || DEFAULT_AVATAR);
     const [imageFile, setImageFile] = useState(null); // Store the image file
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
@@ -117,7 +117,7 @@ const UploadProfilePage = ({ currentImage, onImageUpdate }) => {
                         type="button"
                         onClick={handleFromGallery}
                         disabled={uploading}
-                        className="absolute hover:scale-103 lg:hover:scale-107 right-1 bottom-2 shadow-2xl text-white text-base disabled:opacity-50"
+                        className="absolute right-1 bottom-2 shadow-2xl text-white text-base disabled:opacity-50"
                     >
                         <MdModeEdit color="white" size={20} />
                     </button>

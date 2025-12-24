@@ -18,6 +18,7 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation,
 } from "../hooks/mutations/useNotifications";
+import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 
 function Notifications() {
   const [showMenu, setShowMenu] = useState(null);
@@ -145,7 +146,7 @@ function Notifications() {
                   {/* User Avatar */}
                   <img
                     src={
-                      notification.sender?.profile_image || "/placeholder.svg"
+                      notification.sender?.profile_image || DEFAULT_AVATAR
                     }
                     alt={notification.sender?.profile_name || "User"}
                     className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover flex-shrink-0 cursor-pointer"

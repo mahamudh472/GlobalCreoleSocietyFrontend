@@ -3,16 +3,11 @@ import Navbar from '../Navbar';
 import { toast } from 'react-toastify';
 import { useFriendRequests } from '../../hooks/queries/useFriends';
 import { useRespondToRequestMutation } from '../../hooks/mutations/useFriends';
+import { DEFAULT_AVATAR } from '../../utils/defaultAvatar';
 
 const FriendRequestList = () => {
     const { data: friendRequests = [], isLoading: loading } = useFriendRequests();
     const respondMutation = useRespondToRequestMutation();
-
-    // Helper function for default profile image
-    const getDefaultProfileImage = (name, email) => {
-        const displayName = name || email || 'User';
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&size=128`;
-    };
 
     const handleAccept = (userId) => {
         respondMutation.mutate({ userId, action: 'accept' });
@@ -53,7 +48,7 @@ const FriendRequestList = () => {
                                 <div key={request.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center">
                                     <div className="flex justify-center items-start w-full mb-2">
                                         <img
-                                            src={request.requester?.profile_image || getDefaultProfileImage(request.requester?.profile_name, request.requester?.email)}
+                                            src={request.requester?.profile_image || DEFAULT_AVATAR}
                                             alt={request.requester?.profile_name || 'User'}
                                             className="w-18 h-18 rounded-full"
                                         />

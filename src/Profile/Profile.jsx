@@ -272,7 +272,7 @@ const Profile = () => {
 
       {/* Profile Body */}
       <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-5">
-        <section className="pb-5 rounded-lg transform transition-transform duration-700 ease-out hover:scale-101">
+        <section className="pb-5 rounded-lg">
           <ProfileHeader
             data={profile}
             posts={posts}
@@ -290,20 +290,20 @@ const Profile = () => {
 
         <section className="md:grid grid-cols-12 gap-5">
           <section className="col-span-4">
-            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-103">
+            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl">
               <AboutMe
                 profile={profile}
                 handleEditAboutPopup={handleEditAboutPopup}
                 isOwnProfile={isOwnProfile}
               />
             </div>
-            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-103">
+            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl">
               <FriendsGrid userId={profile?.id} />
             </div>
           </section>
 
           <section className="col-span-8">
-            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-102">
+            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl">
               <Description
                 profile={profile}
                 onUpdate={updateProfile}

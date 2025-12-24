@@ -40,7 +40,7 @@ const Description = ({ profile, onUpdate, isOwnProfile = true }) => {
                     <button
                         onClick={handleEditToggle}
                         disabled={saving}
-                        className="border-2 border-gray-200 cursor-pointer transform transition-transform duration-300 ease-in-out hover:scale-105 px-3 py-1 rounded-lg text-sm font-medium disabled:opacity-50"
+                        className="border-2 border-gray-200 cursor-pointer px-3 py-1 rounded-lg text-sm font-medium disabled:opacity-50"
                     >
                         {isEdit ? 'Cancel' : 'Edit'}
                     </button>

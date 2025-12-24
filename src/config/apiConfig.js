@@ -187,7 +187,7 @@ export const ENDPOINTS = {
 
 // WebSocket URLs
 export const WS_BASE_URL =
-  import.meta.env.VITE_WEBSOCKET_URL || "ws://127.0.0.1:8001";
+  import.meta.env.VITE_WEBSOCKET_URL;
 
 // Livestream WebSocket
 export const LIVESTREAM_WS_BASE_URL = import.meta.env.VITE_WS_URL || WS_BASE_URL;

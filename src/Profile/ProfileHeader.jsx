@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import UploadProfilePage from "./UploadProfilePage";
 import { apiMethods } from "../utils/api";
 import { ENDPOINTS } from "../config/apiConfig";
+import { DEFAULT_AVATAR, DEFAULT_BACKGROUND_COLOR } from "../utils/defaultAvatar";
 
 const ProfileHeader = ({
   data,
@@ -10,22 +11,15 @@ const ProfileHeader = ({
   isOwnProfile = true,
   onProfileUpdate,
 }) => {
-  const DEFAULT_PROFILE_IMAGE =
-    "https://ui-avatars.com/api/?name=" +
-    encodeURIComponent(data?.profile_name || data?.email || "User") +
-    "&size=150&background=3b82f6&color=fff";
-
-  const DEFAULT_COVER_IMAGE =
-    "https://fiverr-res.cloudinary.com/images/q_auto,f_auto/gigs/109754369/original/7d68bae2733a0643c7b6d1376f66f3450c1b8207/create-a-premium-facebook-cover.jpg";
 
   const [coverPreview, setCoverPreview] = useState(
-    data?.cover_photo || DEFAULT_COVER_IMAGE
+    data?.cover_photo || null
   );
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const coverInputRef = useRef(null);
 
   useEffect(() => {
-    setCoverPreview(data?.cover_photo || DEFAULT_COVER_IMAGE);
+    setCoverPreview(data?.cover_photo || null);
   }, [data?.cover_photo]);
 
   const onEditCoverClick = () => {
@@ -79,12 +73,17 @@ const ProfileHeader = ({
   return (
     <div className="bg-white shadow-xl rounded-lg max-w-full max-h-[550px]">
       {/* Cover Photo */}
-      <div className="relative h-[40%]">
-        <img
-          className="w-full rounded-t-lg object-cover max-h-[270px] min-h-[200px]"
-          src={coverPreview}
-          alt="cover_Profile"
-        />
+      <div className="relative h-[40%]" style={{ backgroundColor: coverPreview ? 'transparent' : DEFAULT_BACKGROUND_COLOR }}>
+        {coverPreview && (
+          <img
+            className="w-full rounded-t-lg object-cover max-h-[270px] min-h-[200px]"
+            src={coverPreview}
+            alt="cover_Profile"
+          />
+        )}
+        {!coverPreview && (
+          <div className="w-full rounded-t-lg max-h-[270px] min-h-[200px]" />
+        )}
         {isOwnProfile && (
           <button
             onClick={onEditCoverClick}
@@ -105,7 +104,7 @@ const ProfileHeader = ({
 
         {/* Profile Image Upload Section - Only show for own profile */}
         {isOwnProfile && (
-          <div className="transform transition-transform duration-700 ease-in-out hover:scale-103 absolute left-5 lg:left-10 -bottom-12 lg:-bottom-20 h-28 w-28 rounded-2xl bg-gray-100">
+          <div className="absolute left-5 lg:left-10 -bottom-12 lg:-bottom-20 h-28 w-28 rounded-2xl bg-gray-100">
             <UploadProfilePage
               currentImage={data?.profile_image}
               onImageUpdate={(newImage) => {
@@ -120,7 +119,7 @@ const ProfileHeader = ({
         {!isOwnProfile && (
           <div className="absolute left-5 lg:left-10 -bottom-12 lg:-bottom-20 h-28 w-28 rounded-2xl bg-gray-100 overflow-hidden shadow-lg">
             <img
-              src={data?.profile_image || DEFAULT_PROFILE_IMAGE}
+              src={data?.profile_image || DEFAULT_AVATAR}
               alt="profile"
               className="w-full h-full object-cover"
             />

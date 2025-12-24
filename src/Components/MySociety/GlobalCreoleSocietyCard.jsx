@@ -15,6 +15,7 @@ import {
 } from "../../hooks/queries/useSocieties";
 import { useUpdateSocietyMutation } from "../../hooks/mutations/useSocieties";
 import { API_BASE_URL } from "../../config/apiConfig";
+import { DEFAULT_AVATAR, DEFAULT_GROUP_AVATAR } from "../../utils/defaultAvatar";
 
 const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
   const navigate = useNavigate();
@@ -177,12 +178,7 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
               return `${baseHost}/${u}`;
             };
 
-            const rawImage =
-              society.profile_image ||
-              society.profile_image_url ||
-              society.avatar ||
-              society.image_url ||
-              society.image;
+            const rawImage = society.profile_image_url;
             const societyImage = toAbsolute(rawImage);
 
             return (
@@ -204,7 +200,7 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
           <img
             src={
               society.creator?.profile_image ||
-              "https://via.placeholder.com/50"
+              DEFAULT_AVATAR
             }
             alt="Creator"
             className="w-10 h-10 rounded-full object-cover border border-gray-300"
@@ -234,7 +230,7 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
       {/* Pending Posts */}
       <div
         onClick={() => navigate(`/society/${id}/pending_posts`)}
-        className="bg-white rounded-xl p-4 w-full mt-4 flex justify-between items-center cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all duration-200"
+        className="bg-white rounded-xl p-4 w-full mt-4 flex justify-between items-center cursor-pointer hover:shadow-md transition-shadow duration-200"
       >
         <p className="text-gray-700 font-semibold">Pending Posts</p>
         <p className="text-lg font-bold text-gray-800">
@@ -245,7 +241,7 @@ const GlobalCreoleSocietyCard = ({ society, postsCount = 0 }) => {
       {/* Pending Members */}
       <div
         onClick={() => navigate(`/society/${id}/pending_members`)}
-        className="bg-white rounded-xl p-4 w-full mt-4 flex justify-between items-center cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all duration-200"
+        className="bg-white rounded-xl p-4 w-full mt-4 flex justify-between items-center cursor-pointer hover:shadow-md transition-shadow duration-200"
       >
         <p className="text-gray-700 font-semibold">Pending Members</p>
         <p className="text-lg font-bold text-gray-800">

@@ -7,6 +7,7 @@ import { toast } from "react-toastify"
 import { useCurrentUser } from "../../hooks/queries/useUser"
 import { usePostComments } from "../../hooks/queries/usePosts"
 import { useCreateCommentMutation, useLikeCommentMutation } from "../../hooks/mutations/usePosts"
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar"
 
 const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
   const { data: user } = useCurrentUser();
@@ -25,16 +26,6 @@ const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
   
   const createCommentMutation = useCreateCommentMutation()
   const likeCommentMutation = useLikeCommentMutation()
-
-  const DEFAULT_PROFILE_IMAGE = user 
-    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile_name || user.email || "User")}&size=150&background=3b82f6&color=fff`
-    : "https://ui-avatars.com/api/?name=User&size=150&background=3b82f6&color=fff";
-
-  const getDefaultProfileImage = (commentUser) => {
-    if (!commentUser) return DEFAULT_PROFILE_IMAGE;
-    const name = commentUser.profile_name || commentUser.email || "User";
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=3b82f6&color=fff`;
-  };
 
   const handleUserClick = (userId) => {
     if (userId) {
@@ -118,7 +109,7 @@ const CommentsModal = ({ isOpen, onClose, postId, onCommentAdded }) => {
             comments.map((comment) => (
               <div key={comment.id} className="flex items-start space-x-3 mb-4">
                 <img 
-                  src={comment.user?.profile_image || getDefaultProfileImage(comment.user)} 
+                  src={comment.user?.profile_image || DEFAULT_AVATAR} 
                   alt={comment.user?.profile_name || comment.user?.username} 
                   className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80" 
                   onClick={() => handleUserClick(comment.user?.id)}

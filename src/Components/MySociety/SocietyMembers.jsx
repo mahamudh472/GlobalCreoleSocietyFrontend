@@ -4,6 +4,7 @@ import { FiSearch, FiArrowLeft } from "react-icons/fi";
 import Navbar from "../Navbar";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSocietyMembers } from "../../hooks/queries/useSocieties";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 function SocietyMembers() {
   const { id } = useParams();
@@ -89,12 +90,7 @@ function SocietyMembers() {
                   onClick={() => navigate(`/profile/${member.user?.id}`)}
                 >
                   <img
-                    src={
-                      member.user?.profile_image ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        member.user?.profile_name || member.user?.email || "User"
-                      )}&size=150&background=3b82f6&color=fff`
-                    }
+                    src={member.user?.profile_image || DEFAULT_AVATAR}
                     alt={member.user?.profile_name || "Member"}
                     className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                   />

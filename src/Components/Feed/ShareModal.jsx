@@ -9,6 +9,7 @@ import { apiMethods } from "../../utils/api";
 import { ENDPOINTS } from "../../config/apiConfig";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { DEFAULT_AVATAR } from "../../utils/defaultAvatar";
 
 // Accept either a full postData object or just a postId from parent components
 const ShareModal = ({ isOpen, onClose, postData, postId }) => {
@@ -157,9 +158,7 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
   const displayAvatar =
     currentUser?.profile_image ||
     currentUser?.profile_image_url ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      displayName
-    )}&size=150&background=3b82f6&color=fff`;
+    DEFAULT_AVATAR;
 
   return (
     <div className="fixed inset-0 bg-black/15 flex items-center justify-center z-50 transition-opacity duration-300">
@@ -280,7 +279,7 @@ const ShareModal = ({ isOpen, onClose, postData, postId }) => {
                       <img
                         src={
                           society.avatar ||
-                          society.profile_image ||
+                          society.profile_image_url ||
                           "https://cdn.pixabay.com/photo/2025/05/23/08/54/girl-9617241_1280.png"
                         }
                         alt={society.name || society.title}
