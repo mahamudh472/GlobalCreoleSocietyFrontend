@@ -3,7 +3,6 @@ import LandingPageNavbar from "./LandingPageNavbar";
 import LangdingPageHeader from "./LangdingPageHeader";
 import LandingPageFooter from "./LandingPageFooter";
 import LandingPageAdds from "./LandingPageAdds";
-import LandingPageSubscription from "./LandingPageSubscription";
 import LandingPagePersonalized from "./LandingPagePersonalized";
 
 
@@ -21,9 +20,6 @@ const LandingPage = () => {
             </section>
             <div>
                 <LandingPagePersonalized></LandingPagePersonalized>
-            </div>
-            <div>
-                <LandingPageSubscription></LandingPageSubscription>
             </div>
             <div>
                 <LandingPageAdds></LandingPageAdds>

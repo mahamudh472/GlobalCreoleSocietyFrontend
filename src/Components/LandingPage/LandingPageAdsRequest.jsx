@@ -1,6 +1,6 @@
 import { useState } from "react";
 import LandingPageNavbar from "./LandingPageNavbar";
-import ReCAPTCHA from "react-google-recaptcha";
+import { API_BASE_URL, ENDPOINTS } from "../../config/apiConfig";
 
 
 const LandingPageAdsRequest = () => {
@@ -18,6 +18,8 @@ const LandingPageAdsRequest = () => {
         price: ""
 
     })
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target
@@ -35,17 +37,75 @@ const LandingPageAdsRequest = () => {
         }))
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form Data:", formData)
+        setIsSubmitting(true);
+        setSubmitStatus({ type: '', message: '' });
 
-        // If there are files, log them separately
-        if (formData.mediaFiles.length > 0) {
-            console.log("Uploaded Files:", formData.mediaFiles)
+        try {
+            // Create FormData for multipart/form-data submission
+            const submitData = new FormData();
+            submitData.append('company_name', formData.companyName);
+            submitData.append('email', formData.email);
+            submitData.append('country_code', formData.countryCode);
+            submitData.append('phone_number', formData.phoneNumber);
+            submitData.append('owner_name', formData.ownerName);
+            submitData.append('title', formData.title);
+            submitData.append('description', formData.description);
+            submitData.append('duration_days', formData.time);
+            submitData.append('price_per_day', formData.price);
+            submitData.append('agree_to_share', formData.agreeToShare);
+
+            // Append media files
+            formData.mediaFiles.forEach((file) => {
+                submitData.append('media_files', file);
+            });
+
+            const response = await fetch(`${API_BASE_URL}${ENDPOINTS.ADVERTISEMENTS.CREATE}`, {
+                method: 'POST',
+                body: submitData,
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setSubmitStatus({ 
+                    type: 'success', 
+                    message: data.message || 'Advertisement request submitted successfully!' 
+                });
+                // Reset form
+                setFormData({
+                    companyName: "",
+                    email: "",
+                    phoneNumber: "",
+                    countryCode: "+1",
+                    ownerName: "",
+                    title: "",
+                    description: "",
+                    agreeToShare: false,
+                    mediaFiles: [],
+                    time: "",
+                    price: ""
+                });
+            } else {
+                // Handle validation errors
+                const errorMessages = Object.entries(data)
+                    .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                    .join('\n');
+                setSubmitStatus({ 
+                    type: 'error', 
+                    message: errorMessages || 'Failed to submit advertisement request.' 
+                });
+            }
+        } catch (error) {
+            console.error('Error submitting advertisement:', error);
+            setSubmitStatus({ 
+                type: 'error', 
+                message: 'An error occurred while submitting your request. Please try again.' 
+            });
+        } finally {
+            setIsSubmitting(false);
         }
-    }
-    const onSuccess = (value) => {
-        console.log("Captcha value:", value);
     }
 
     return (
@@ -205,51 +265,29 @@ const LandingPageAdsRequest = () => {
                         />
                     </div>
 
-                    {/* Agreement Checkbox */}
-                    <div className="flex items-start space-x-3">
-                        <input
-                            type="checkbox"
-                            name="agreeToShare"
-                            checked={formData.agreeToShare}
-                            onChange={handleInputChange}
-                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <label className="text-md text-gray-600 leading-relaxed">
-                            Share the registration data with our content providers for marketing purposes.
-                        </label>
-                    </div>
 
-                    {/* Terms Agreement */}
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                        By clicking on account, you agree to the{" "}
-                        <a href="#" className="text-blue-500 hover:text-blue-600">
-                            Terms of use
-                        </a>{" "}
-                        and{" "}
-                        <a href="#" className="text-blue-500 hover:text-blue-600">
-                            Privacy Policy
-                        </a>
-                        .
-                    </p>
-
-                    {/* reCAPTCHA Placeholder */}
-                    <div className="w-full flex justify-start pl- py-3">
-                        <div className="scale-[1] transform origin-top">
-                            <ReCAPTCHA
-                                sitekey="6LeDKNIrAAAAAAqMzt62vFcRhJPawQNjawiD6MA0"
-                                onChange={onSuccess}
-                            />
+                    {/* Status Message */}
+                    {submitStatus.message && (
+                        <div className={`p-4 rounded-md ${
+                            submitStatus.type === 'success' 
+                                ? 'bg-green-50 border border-green-200 text-green-700' 
+                                : 'bg-red-50 border border-red-200 text-red-700'
+                        }`}>
+                            <p className="whitespace-pre-line">{submitStatus.message}</p>
                         </div>
-                    </div>
-
-
+                    )}
 
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full bg-gray-400 hover:bg-gray-500 text-white font-medium py-3 px-4 rounded-full transition duration-200 cursor-pointer"
+                        disabled={isSubmitting}
+                        className={`w-full font-medium py-3 px-4 rounded-full transition duration-200 cursor-pointer ${
+                            isSubmitting 
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                : 'bg-gray-400 hover:bg-gray-500 text-white'
+                        }`}
                     >
-                        Continue
+                        {isSubmitting ? 'Submitting...' : 'Continue'}
                     </button>
                 </form>
             </div>

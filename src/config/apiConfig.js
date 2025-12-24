@@ -135,6 +135,14 @@ export const ENDPOINTS = {
     BLOCKED_USERS: "/social/users/blocked/",
   },
 
+  // Advertisements
+  ADVERTISEMENTS: {
+    CREATE: "/social/advertisements/create/",
+    LIST: "/social/advertisements/",
+    PUBLIC: "/social/advertisements/public/",
+    DETAIL: (adId) => `/social/advertisements/${adId}/`,
+  },
+
   // Chat
   CHAT: {
     CONVERSATIONS: "/chat/conversations/",
