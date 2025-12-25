@@ -71,13 +71,13 @@ const LandingPageAdds = () => {
   };
 
   return (
-    <div className="px-4 py-20 mx-auto text-center">
+    <div className="px-3 sm:px-4 py-12 sm:py-16 md:py-20 mx-auto text-center">
       {/* Heading */}
-      <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
         Unlock Your <br />
         <span className="text-blue-600 font-extrabold">Social Media Growth</span>
       </h2>
-      <p className="text-gray-500 mt-4 max-w-2xl mx-auto">
+      <p className="text-sm sm:text-base text-gray-500 mt-3 sm:mt-4 max-w-2xl mx-auto px-2">
         We help you amplify your voice, grow your online influence, and connect
         with the world. From creators to businesses, we empower you to reach new
         heights.

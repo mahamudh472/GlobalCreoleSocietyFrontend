@@ -9,7 +9,7 @@ import LandingPagePersonalized from "./LandingPagePersonalized";
 
 const LandingPage = () => {
     return (
-        <div className='p-10 '>
+        <div className='p-3 sm:p-6 md:p-10'>
             <section className='bg-[radial-gradient(circle, #ffffff_25%, #f6f7ff_35%, #e7e9fb_50%)]'>
                 <div className=' '>
                     <LandingPageNavbar></LandingPageNavbar>

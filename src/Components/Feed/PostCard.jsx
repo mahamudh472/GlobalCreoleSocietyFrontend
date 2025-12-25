@@ -126,13 +126,13 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
   return (
     <div
       id={`post-${post.id}`}
-      className="bg-white rounded-xl p-4 mb-4 shadow-sm"
+      className="bg-white rounded-xl p-3 sm:p-4 mb-3 sm:mb-4 shadow-sm"
     >
       {/* Society Header - Show if post belongs to a society */}
       {post.society && (
         <div
           onClick={handleSocietyClick}
-          className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 -m-4 p-4 rounded-t-xl transition-colors"
+          className="flex items-center space-x-2 sm:space-x-3 mb-3 pb-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 -m-3 sm:-m-4 p-3 sm:p-4 rounded-t-xl transition-colors"
         >
           <img
             src={
@@ -140,13 +140,13 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
               DEFAULT_AVATAR
             }
             alt={post.society.name}
-            className="w-12 h-12 rounded-lg object-cover border-2 border-gray-200"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover border-2 border-gray-200"
           />
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-900 text-base hover:underline">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-gray-900 text-sm sm:text-base hover:underline truncate">
               {post.society.name}
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-[10px] sm:text-xs text-gray-500">
               Society · {post.society.members_count || 0} members
             </p>
           </div>
@@ -155,22 +155,22 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
 
       {/* User Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div
-            className="flex items-center space-x-3 cursor-pointer hover:opacity-80"
+            className="flex items-center space-x-2 sm:space-x-3 cursor-pointer hover:opacity-80"
             onClick={handleUserClick}
           >
             <img
               src={post.user?.profile_image || DEFAULT_AVATAR}
               alt={post.user?.profile_name || "User"}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
             />
-            <div>
-              <h3 className="font-semibold text-gray-900">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                 {post.user?.profile_name || post.user?.username}
               </h3>
-              <div className="flex items-center space-x-1 text-sm text-gray-500">
-                <span>
+              <div className="flex flex-wrap items-center gap-1 text-xs sm:text-sm text-gray-500">
+                <span className="truncate max-w-[100px] sm:max-w-none">
                   {post.created_at
                     ? new Date(post.created_at).toLocaleString()
                     : "Just now"}
@@ -178,27 +178,27 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
                 <span>·</span>
                 <div className="flex items-center space-x-1">
                   {getPrivacyIcon()}
-                  <span>{getPrivacyText()}</span>
+                  <span className="hidden sm:inline">{getPrivacyText()}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           {isOwnPost && (
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full cursor-pointer"
             >
               <MoreVertical className="w-4 h-4 text-gray-500" />
             </button>
           )}
           {showMenu && isOwnPost && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+            <div className="absolute right-0 mt-2 w-40 sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
               <button
                 onClick={handleDelete}
                 disabled={deleteMutation.isPending}
-                className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                className="w-full px-3 sm:px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-2 text-sm"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>
@@ -211,7 +211,7 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
       </div>
 
       <div className="mb-3">
-        <p className="text-gray-800 mb-3">{post.content}</p>
+        <p className="text-gray-800 mb-3 text-sm sm:text-base">{post.content}</p>
         {post.media && post.media.length > 0 && (
           <div className="grid grid-cols-1 gap-2">
             {post.media.map((mediaItem, index) => (
@@ -220,18 +220,18 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
                   <img
                     src={mediaItem.file || "/placeholder.svg"}
                     alt={mediaItem.caption || "Post content"}
-                    className="w-full rounded-lg object-cover max-h-[700px]"
+                    className="w-full rounded-lg object-cover max-h-[400px] sm:max-h-[700px]"
                   />
                 )}
                 {mediaItem.media_type === "video" && (
                   <video
                     src={mediaItem.file}
                     controls
-                    className="w-full rounded-lg max-h-96"
+                    className="w-full rounded-lg max-h-72 sm:max-h-96"
                   />
                 )}
                 {mediaItem.caption && (
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-xs sm:text-sm text-gray-600 mt-1">
                     {mediaItem.caption}
                   </p>
                 )}
@@ -244,35 +244,35 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
           <img
             src={post.image || "/placeholder.svg"}
             alt="Post content"
-            className="w-full rounded-lg object-cover max-h-96"
+            className="w-full rounded-lg object-cover max-h-72 sm:max-h-96"
           />
         )}
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-3 sm:space-x-6">
           <button
             onClick={handleLike}
-            className="cursor-pointer flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors"
+            className="cursor-pointer flex items-center space-x-1 sm:space-x-2 text-gray-500 hover:text-red-500 transition-colors"
           >
             <Heart
-              className={`w-5 h-5 ${
+              className={`w-4 h-4 sm:w-5 sm:h-5 ${
                 isLiked ? "fill-red-500 text-red-500" : ""
               }`}
             />
-            <span className="text-sm">{likesCount} Likes</span>
+            <span className="text-xs sm:text-sm">{likesCount} <span className="hidden xs:inline">Likes</span></span>
           </button>
           <button
             onClick={onComment}
-            className="cursor-pointer flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
+            className="cursor-pointer flex items-center space-x-1 sm:space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
           >
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-sm">{commentCount} Comments</span>
+            <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm">{commentCount} <span className="hidden xs:inline">Comments</span></span>
           </button>
         </div>
         <button
           onClick={onShare}
-          className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
+          className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full cursor-pointer"
         >
           <FaShareFromSquare className="w-4 h-4 text-gray-500" />
         </button>

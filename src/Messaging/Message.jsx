@@ -111,7 +111,7 @@ function Message({ message }) {
               <img
                 src={fileUrl}
                 alt="Attachment"
-                className="max-w-xs max-h-64 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                className="max-w-[200px] sm:max-w-xs max-h-48 sm:max-h-64 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src =
@@ -127,7 +127,7 @@ function Message({ message }) {
             <video
               src={fileUrl}
               controls
-              className="max-w-xs max-h-64 rounded-lg"
+              className="max-w-[200px] sm:max-w-xs max-h-48 sm:max-h-64 rounded-lg"
             >
               Your browser does not support the video tag.
             </video>
@@ -136,7 +136,7 @@ function Message({ message }) {
       case "audio":
         return (
           <div className="mb-2">
-            <audio src={fileUrl} controls className="w-full max-w-xs">
+            <audio src={fileUrl} controls className="w-full max-w-[200px] sm:max-w-xs">
               Your browser does not support the audio tag.
             </audio>
           </div>
@@ -149,25 +149,25 @@ function Message({ message }) {
             href={fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex items-center gap-2 p-3 rounded-lg mb-2 transition-colors ${
+            className={`flex items-center gap-2 p-2 sm:p-3 rounded-lg mb-2 transition-colors ${
               message.isOwn
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-gray-200 hover:bg-gray-300"
             }`}
           >
             <FaFile
-              className={message.isOwn ? "text-white" : "text-gray-700"}
+              className={`text-sm sm:text-base ${message.isOwn ? "text-white" : "text-gray-700"}`}
             />
             <div className="flex-1 min-w-0">
               <p
-                className={`text-sm font-medium truncate ${
+                className={`text-xs sm:text-sm font-medium truncate ${
                   message.isOwn ? "text-white" : "text-gray-900"
                 }`}
               >
                 {fileName}
               </p>
               <p
-                className={`text-xs ${
+                className={`text-[10px] sm:text-xs ${
                   message.isOwn ? "text-blue-100" : "text-gray-500"
                 }`}
               >
@@ -175,7 +175,7 @@ function Message({ message }) {
               </p>
             </div>
             <FaDownload
-              className={message.isOwn ? "text-white" : "text-gray-700"}
+              className={`text-sm sm:text-base ${message.isOwn ? "text-white" : "text-gray-700"}`}
             />
           </a>
         );
@@ -185,7 +185,7 @@ function Message({ message }) {
 
   return (
     <div
-      className={`flex gap-2 ${
+      className={`flex gap-1.5 sm:gap-2 ${
         message.isOwn ? "justify-end" : "justify-start"
       }`}
     >
@@ -194,22 +194,22 @@ function Message({ message }) {
         <img
           src={message.senderAvatar || DEFAULT_AVATAR}
           alt={message.senderName}
-          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
         />
       )}
 
       <div
-        className={`max-w-xs md:max-w-md lg:max-w-lg ${
+        className={`max-w-[220px] sm:max-w-xs md:max-w-md lg:max-w-lg ${
           message.isOwn ? "order-2" : "order-1"
         }`}
       >
         {!message.isOwn && (
-          <p className="text-xs text-gray-600 mb-1 ml-1">
+          <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1 ml-1">
             {message.senderName}
           </p>
         )}
         <div
-          className={`rounded-2xl px-4 py-2.5 ${
+          className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 ${
             message.isOwn
               ? "bg-blue-500 text-white rounded-br-none"
               : "bg-gray-100 text-gray-900 rounded-bl-none"
@@ -217,13 +217,13 @@ function Message({ message }) {
         >
           {renderFileContent()}
           {message.text && (
-            <p className="text-sm leading-relaxed break-words">
+            <p className="text-xs sm:text-sm leading-relaxed break-words">
               {linkifyText(message.text)}
             </p>
           )}
         </div>
         <p
-          className={`text-xs text-gray-500 mt-1 ${
+          className={`text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 ${
             message.isOwn ? "text-right mr-1" : "ml-1"
           }`}
         >

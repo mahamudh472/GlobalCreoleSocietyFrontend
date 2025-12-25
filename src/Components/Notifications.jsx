@@ -102,17 +102,17 @@ function Notifications() {
 
       {/* Main part...................... */}
 
-      <div className="min-h-[calc(100vh-100px)] pb-6 px-4 sm:px-6 lg:px-8">
-        <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8">
+      <div className="min-h-[calc(100vh-100px)] pb-6 px-2 sm:px-4 md:px-6 lg:px-8">
+        <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-2">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <div className="flex justify-between items-center mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
               Notifications
             </h1>
             {notifications.some((n) => !n.is_read) && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Mark all as read
               </button>
@@ -121,25 +121,25 @@ function Notifications() {
 
           {/* Loading State */}
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div className="flex justify-center py-8 sm:py-12">
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-500"></div>
             </div>
           ) : notifications.length === 0 ? (
             /* Empty State */
-            <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-              <FaBell className="text-gray-300 text-5xl mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="bg-white rounded-lg shadow-sm p-8 sm:p-12 text-center">
+              <FaBell className="text-gray-300 text-4xl sm:text-5xl mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                 No notifications
               </h3>
-              <p className="text-gray-500">You're all caught up!</p>
+              <p className="text-gray-500 text-sm sm:text-base">You're all caught up!</p>
             </div>
           ) : (
             /* Notifications List */
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`bg-gray-50 rounded-lg shadow-sm p-4 sm:p-5 flex items-start gap-3 sm:gap-4 hover:shadow-md transition-shadow ${
+                  className={`bg-gray-50 rounded-lg shadow-sm p-3 sm:p-4 md:p-5 flex items-start gap-2 sm:gap-3 md:gap-4 hover:shadow-md transition-shadow ${
                     !notification.is_read ? "border-l-4 border-blue-500" : ""
                   }`}
                 >
@@ -149,7 +149,7 @@ function Notifications() {
                       notification.sender?.profile_image || DEFAULT_AVATAR
                     }
                     alt={notification.sender?.profile_name || "User"}
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                    className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full object-cover flex-shrink-0 cursor-pointer"
                     onClick={() => handleNotificationClick(notification)}
                   />
 
@@ -158,13 +158,13 @@ function Notifications() {
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <p className="text-sm sm:text-base text-gray-900">
+                    <p className="text-xs sm:text-sm md:text-base text-gray-900">
                       <span className="font-semibold">
                         {notification.sender?.profile_name || "Someone"}
                       </span>{" "}
                       {notification.message}
                     </p>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                    <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-1">
                       {notification.created_at
                         ? new Date(notification.created_at).toLocaleString()
                         : "Just now"}
@@ -172,7 +172,7 @@ function Notifications() {
                   </div>
 
                   {/* Action Icons */}
-                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
                     {/* Type-specific icon */}
                     <button
                       onClick={() =>
@@ -181,7 +181,7 @@ function Notifications() {
                           notification.notification_type
                         )
                       }
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
                       aria-label={`${notification.notification_type} action`}
                     >
                       {getNotificationIcon(notification.notification_type)}
@@ -191,10 +191,10 @@ function Notifications() {
                     <div className="relative">
                       <button
                         onClick={() => handleMenuToggle(notification.id)}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
                         aria-label="More options"
                       >
-                        <FaEllipsisH className="text-gray-500 text-lg" />
+                        <FaEllipsisH className="text-gray-500 text-base sm:text-lg" />
                       </button>
 
                       {/* Dropdown Menu */}

@@ -2,36 +2,33 @@ import { useQuery } from '@tanstack/react-query';
 import { authHelpers, apiMethods } from '../../utils/api';
 import { ENDPOINTS } from '../../config/apiConfig';
 import { queryKeys } from '../../utils/queryKeys';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * Current User Query Hook
  * 
- * Fetches and caches the current authenticated user's data
- * This replaces the user state from AuthContext
+ * Returns the current authenticated user's data from AuthContext.
+ * This ensures components using this hook stay in sync with auth state changes.
  * 
- * @returns {object} query object with data (user), isLoading, error, etc.
+ * IMPORTANT: This now wraps AuthContext to provide a consistent interface
+ * while maintaining synchronization with login/logout state.
+ * 
+ * @returns {object} query-like object with data (user), isLoading, etc.
  */
 export const useCurrentUser = () => {
-  return useQuery({
-    queryKey: queryKeys.auth.currentUser(),
-    queryFn: () => {
-      // First check localStorage for initial data
-      const user = authHelpers.getCurrentUser();
-      const isAuth = authHelpers.isAuthenticated();
-      
-      if (!isAuth) {
-        return null;
-      }
-      
-      // Return cached user data immediately
-      return user;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 1,
-    // Only enable query if user is authenticated
-    enabled: authHelpers.isAuthenticated(),
-  });
+  // Get user directly from AuthContext - this is the source of truth
+  const { user, loading, isAuthenticated } = useAuth();
+  
+  // Return a query-like object for backward compatibility
+  return {
+    data: user,
+    isLoading: loading,
+    isError: false,
+    error: null,
+    isSuccess: !loading && isAuthenticated,
+    isFetching: loading,
+    refetch: () => Promise.resolve({ data: user }), // No-op for backward compat
+  };
 };
 
 /**

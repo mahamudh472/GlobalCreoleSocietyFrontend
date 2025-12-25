@@ -18,13 +18,13 @@ function AudioCall() {
     // Redirect if no active call
     useEffect(() => {
         // Only redirect if there's no call activity at all
-        const hasCallActivity = activeCall || 
-                                callStatus === 'initiating' || 
-                                callStatus === 'ringing' || 
-                                callStatus === 'connecting' ||
-                                callStatus === 'accepting' ||
-                                callStatus === 'incoming';
-        
+        const hasCallActivity = activeCall ||
+            callStatus === 'initiating' ||
+            callStatus === 'ringing' ||
+            callStatus === 'connecting' ||
+            callStatus === 'accepting' ||
+            callStatus === 'incoming';
+
         if (!hasCallActivity) {
             console.log('[AudioCall] No call activity, redirecting to chat');
             navigate('/chat');
@@ -78,7 +78,7 @@ function AudioCall() {
     }
 
     const handleEndCall = () => {
-        endCall()
+        endCall(true) // Pass true to indicate manual user action
         navigate('/chat')
     }
 
@@ -176,9 +176,8 @@ function AudioCall() {
                                 {/* Mute/Unmute Button */}
                                 <button
                                     onClick={handleToggleMute}
-                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
-                                        isMuted ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
-                                    } shadow-lg`}
+                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${isMuted ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
+                                        } shadow-lg`}
                                     title={isMuted ? "Unmute" : "Mute"}
                                 >
                                     {isMuted ? (

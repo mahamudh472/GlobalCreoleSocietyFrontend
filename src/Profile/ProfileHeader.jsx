@@ -78,24 +78,24 @@ const ProfileHeader = ({
   };
 
   return (
-    <div className="bg-white shadow-xl rounded-lg max-w-full max-h-[550px]">
+    <div className="bg-white shadow-xl rounded-lg max-w-full">
       {/* Cover Photo */}
-      <div className="relative h-[40%]" style={{ backgroundColor: coverPreview ? 'transparent' : DEFAULT_BACKGROUND_COLOR }}>
+      <div className="relative h-[150px] sm:h-[200px] md:h-[250px]" style={{ backgroundColor: coverPreview ? 'transparent' : DEFAULT_BACKGROUND_COLOR }}>
         {coverPreview && (
           <img
-            className="w-full rounded-t-lg object-cover max-h-[270px] min-h-[200px]"
+            className="w-full h-full rounded-t-lg object-cover"
             src={coverPreview}
             alt="cover_Profile"
           />
         )}
         {!coverPreview && (
-          <div className="w-full rounded-t-lg max-h-[270px] min-h-[200px]" />
+          <div className="w-full h-full rounded-t-lg" />
         )}
         {isOwnProfile && (
           <button
             onClick={onEditCoverClick}
             disabled={isUploadingCover}
-            className="absolute top-3 right-3 px-3 py-1.5 text-xs bg-black/60 text-white rounded-md hover:bg-black/70 transition disabled:opacity-50"
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs bg-black/60 text-white rounded-md hover:bg-black/70 transition disabled:opacity-50"
             title={isUploadingCover ? "Uploading…" : "Edit Cover"}
           >
             {isUploadingCover ? "Uploading…" : "Edit Cover"}
@@ -111,7 +111,7 @@ const ProfileHeader = ({
 
         {/* Profile Image Upload Section - Only show for own profile */}
         {isOwnProfile && (
-          <div className="absolute left-5 lg:left-10 -bottom-12 lg:-bottom-20 h-28 w-28 rounded-2xl bg-gray-100">
+          <div className="absolute left-3 sm:left-5 lg:left-10 -bottom-10 sm:-bottom-12 lg:-bottom-16 h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28 rounded-2xl bg-gray-100">
             <UploadProfilePage
               currentImage={data?.profile_image}
               onImageUpdate={(newImage) => {
@@ -124,7 +124,7 @@ const ProfileHeader = ({
         )}
         {/* Profile Image Display - For other users */}
         {!isOwnProfile && (
-          <div className="absolute left-5 lg:left-10 -bottom-12 lg:-bottom-20 h-28 w-28 rounded-2xl bg-gray-100 overflow-hidden shadow-lg">
+          <div className="absolute left-3 sm:left-5 lg:left-10 -bottom-10 sm:-bottom-12 lg:-bottom-16 h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28 rounded-2xl bg-gray-100 overflow-hidden shadow-lg">
             <img
               src={data?.profile_image || DEFAULT_AVATAR}
               alt="profile"
@@ -135,25 +135,25 @@ const ProfileHeader = ({
       </div>
 
       {/* Profile Information Section */}
-      <div className="flex py-15 md:py-8 pl-8 pr-4 rounded-lg h-[60%] flex-col sm:flex-row sm:justify-between">
-        <div className="w-[20%]"></div>
-        <div className="sm:w-[40%] mb-4 sm:mb-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-bold">
+      <div className="flex pt-12 sm:pt-14 md:pt-16 pb-4 sm:pb-6 md:pb-8 px-3 sm:px-4 md:px-8 rounded-lg flex-col sm:flex-row sm:justify-between gap-4">
+        <div className="hidden sm:block w-[15%] lg:w-[20%]"></div>
+        <div className="sm:w-[45%] lg:w-[40%]">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
               {data?.profile_name || data?.email || "User"}
             </h1>
             {/* Friend Action Button - Beside name for other users */}
             {!isOwnProfile && !friendStatusLoading && (
               <>
                 {friendStatus === 'friends' && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-                    <FaUserCheck />
+                  <span className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-medium">
+                    <FaUserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
                     Friends
                   </span>
                 )}
                 {friendStatus === 'pending' && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
-                    <FaUserClock />
+                  <span className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs sm:text-sm font-medium">
+                    <FaUserClock className="w-3 h-3 sm:w-4 sm:h-4" />
                     Request Sent
                   </span>
                 )}
@@ -161,9 +161,9 @@ const ProfileHeader = ({
                   <button
                     onClick={onAcceptFriendRequest}
                     disabled={acceptingRequest}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 disabled:opacity-50 transition cursor-pointer"
+                    className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-600 disabled:opacity-50 transition cursor-pointer"
                   >
-                    <FaCheck />
+                    <FaCheck className="w-3 h-3 sm:w-4 sm:h-4" />
                     {acceptingRequest ? 'Accepting...' : 'Accept Request'}
                   </button>
                 )}
@@ -171,28 +171,28 @@ const ProfileHeader = ({
                   <button
                     onClick={onSendFriendRequest}
                     disabled={sendingRequest}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition cursor-pointer"
+                    className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition cursor-pointer"
                   >
-                    <FaUserPlus />
+                    <FaUserPlus className="w-3 h-3 sm:w-4 sm:h-4" />
                     {sendingRequest ? 'Sending...' : 'Add Friend'}
                   </button>
                 )}
               </>
             )}
             {!isOwnProfile && friendStatusLoading && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm">
+              <span className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 text-gray-400 rounded-lg text-xs sm:text-sm">
                 Loading...
               </span>
             )}
           </div>
-          <p className="text-sm opacity-60 mb-2 mt-2">
+          <p className="text-xs sm:text-sm opacity-60 mb-1 sm:mb-2 mt-1 sm:mt-2">
             {data?.description || "No bio yet"}
           </p>
-          <div className="flex items-center gap-4">
-            <h3 className="text-sm opacity-60">{friendsCount} friends</h3>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <h3 className="text-xs sm:text-sm opacity-60">{friendsCount} friends</h3>
             {data?.profile_lock && (
-              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span className="text-[10px] sm:text-xs bg-gray-200 text-gray-600 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 sm:h-3 sm:w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 Private
@@ -201,18 +201,18 @@ const ProfileHeader = ({
           </div>
         </div>
 
-        <div className="sm:w-[40%] flex justify-between sm:justify-around sm:mt-0 mt-4">
-          <div>
-            <p className="text-sm font-semibold">Posts</p>
-            <p className="text-lg font-bold">{posts.length}</p>
+        <div className="sm:w-[35%] lg:w-[40%] flex justify-between sm:justify-around mt-3 sm:mt-0">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm font-semibold">Posts</p>
+            <p className="text-base sm:text-lg font-bold">{posts.length}</p>
           </div>
-          <div>
-            <p className="text-sm font-semibold">Friends</p>
-            <p className="text-lg font-bold">{friendsCount}</p>
+          <div className="text-center">
+            <p className="text-xs sm:text-sm font-semibold">Friends</p>
+            <p className="text-base sm:text-lg font-bold">{friendsCount}</p>
           </div>
-          <div>
-            <p className="text-sm font-semibold">Joined</p>
-            <p className="font-bold text-sm">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm font-semibold">Joined</p>
+            <p className="font-bold text-xs sm:text-sm">
               {data?.date_joined
                 ? new Date(data.date_joined).toLocaleDateString("en-US", {
                     month: "short",

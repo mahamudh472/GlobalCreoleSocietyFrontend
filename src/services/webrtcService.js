@@ -6,32 +6,31 @@
 import { WS_ENDPOINTS } from '../config/apiConfig';
 
 // ICE servers for NAT traversal
-// Using multiple STUN servers and free TURN servers for better connectivity
+// Using multiple STUN servers and TURN servers for better connectivity
 const ICE_SERVERS = {
   iceServers: [
+    {
+      urls: [
+        "turn:turn.globalcreolesociety.com:3478?transport=udp",
+        "turn:turn.globalcreolesociety.com:3478?transport=tcp"
+      ],
+      username: "user",
+      credential: "password"
+    },
+    // Google STUN servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    // OpenRelay TURN servers (free, for development/testing)
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    }
+    // Additional public STUN servers
+    { urls: 'stun:stun.stunprotocol.org:3478' },
+    { urls: 'stun:stun.voip.blackberry.com:3478' }
   ],
-  iceCandidatePoolSize: 10
+  iceCandidatePoolSize: 10,
+  iceTransportPolicy: 'all', // FORCED RELAY: Ensure usage of TURN server always
+  bundlePolicy: 'max-bundle',
+  rtcpMuxPolicy: 'require'
 };
 
 class WebRTCService {
@@ -44,8 +43,10 @@ class WebRTCService {
     this.onCallEndCallback = null;
     this.onSignalingMessageCallback = null; // New callback for forwarding messages
     this.pendingIceCandidates = [];
+    this.processedIceCandidates = new Set(); // START: Deduplication set
     this.targetUserId = null; // Store the target user ID for signaling
     this.isCallbackRegistered = false; // Track if callbacks are registered
+    this.pingInterval = null; // Store the ping interval ID
   }
 
   /**
@@ -59,6 +60,10 @@ class WebRTCService {
 
       this.callSocket.onopen = () => {
         console.log('[WebRTC] Call signaling socket connected');
+
+        // Start keepalive
+        this.startKeepAlive();
+
         resolve();
       };
 
@@ -69,19 +74,53 @@ class WebRTCService {
 
       this.callSocket.onclose = (event) => {
         console.log('[WebRTC] Socket closed:', event.code, event.reason);
+        this.stopKeepAlive();
       };
 
       // Single message handler that forwards to callbacks
       this.callSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log('[WebRTC] Raw message received:', data.type);
-        
-        // Forward to external callback first (CallContext)
-        if (this.onSignalingMessageCallback) {
-          this.onSignalingMessageCallback(data);
+        // Ignore empty messages or pongs if backend sends them
+        if (!event.data) return;
+
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[WebRTC] Raw message received:', data.type);
+
+          // Forward to external callback first (CallContext)
+          if (this.onSignalingMessageCallback) {
+            this.onSignalingMessageCallback(data);
+          }
+        } catch (e) {
+          console.error('[WebRTC] Error parsing message:', e);
         }
       };
     });
+  }
+
+  /**
+   * Start sending ping messages to keep connection alive
+   */
+  startKeepAlive() {
+    this.stopKeepAlive(); // Clear existing if any
+
+    // Send ping every 30 seconds
+    this.pingInterval = setInterval(() => {
+      if (this.callSocket && this.callSocket.readyState === WebSocket.OPEN) {
+        // console.log('[WebRTC] Sending keepalive ping');
+        // Sending a small JSON object as ping
+        this.callSocket.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000);
+  }
+
+  /**
+   * Stop keepalive interval
+   */
+  stopKeepAlive() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
   }
 
   /**
@@ -126,17 +165,17 @@ class WebRTCService {
    */
   isMediaDevicesSupported() {
     // Check if we're in a secure context (HTTPS or localhost)
-    const isSecureContext = window.isSecureContext || 
-      window.location.protocol === 'https:' || 
+    const isSecureContext = window.isSecureContext ||
+      window.location.protocol === 'https:' ||
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1';
-    
+
     // Check if mediaDevices API is available
     const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    
+
     console.log('[WebRTC] Secure context:', isSecureContext);
     console.log('[WebRTC] MediaDevices available:', hasMediaDevices);
-    
+
     return hasMediaDevices;
   }
 
@@ -147,19 +186,19 @@ class WebRTCService {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       return (constraints) => navigator.mediaDevices.getUserMedia(constraints);
     }
-    
+
     // Fallback for older browsers
-    const getUserMedia = navigator.getUserMedia || 
-                         navigator.webkitGetUserMedia || 
-                         navigator.mozGetUserMedia ||
-                         navigator.msGetUserMedia;
-    
+    const getUserMedia = navigator.getUserMedia ||
+      navigator.webkitGetUserMedia ||
+      navigator.mozGetUserMedia ||
+      navigator.msGetUserMedia;
+
     if (getUserMedia) {
       return (constraints) => new Promise((resolve, reject) => {
         getUserMedia.call(navigator, constraints, resolve, reject);
       });
     }
-    
+
     return null;
   }
 
@@ -169,10 +208,10 @@ class WebRTCService {
   async getLocalStream(isVideo = false) {
     try {
       // Check if we're in a secure context
-      if (!window.isSecureContext && 
-          window.location.protocol !== 'https:' && 
-          window.location.hostname !== 'localhost' &&
-          window.location.hostname !== '127.0.0.1') {
+      if (!window.isSecureContext &&
+        window.location.protocol !== 'https:' &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1') {
         const error = new Error(
           'Media devices require a secure context (HTTPS). ' +
           'Please access the application over HTTPS or use localhost.'
@@ -183,7 +222,7 @@ class WebRTCService {
 
       // Get the getUserMedia function
       const getUserMedia = this.getGetUserMedia();
-      
+
       if (!getUserMedia) {
         const error = new Error(
           'Your browser does not support media devices. ' +
@@ -208,12 +247,38 @@ class WebRTCService {
       };
 
       console.log('[WebRTC] Requesting media with constraints:', constraints);
-      this.localStream = await getUserMedia(constraints);
-      console.log('[WebRTC] Local stream obtained:', this.localStream.id);
-      return this.localStream;
+
+      try {
+        this.localStream = await getUserMedia(constraints);
+        console.log('[WebRTC] Local stream obtained:', this.localStream.id);
+        return this.localStream;
+      } catch (mediaError) {
+        // If video was requested but device not found, try audio-only fallback
+        if (isVideo && (mediaError.name === 'NotFoundError' || mediaError.name === 'DevicesNotFoundError')) {
+          console.warn('[WebRTC] Video device not found, falling back to audio-only');
+          const audioOnlyConstraints = {
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+            video: false
+          };
+
+          try {
+            this.localStream = await getUserMedia(audioOnlyConstraints);
+            console.log('[WebRTC] Audio-only stream obtained (video fallback):', this.localStream.id);
+            return this.localStream;
+          } catch (audioError) {
+            console.error('[WebRTC] Audio-only fallback also failed:', audioError);
+            throw audioError;
+          }
+        }
+        throw mediaError;
+      }
     } catch (error) {
       console.error('[WebRTC] Error getting local stream:', error);
-      
+
       // Provide more helpful error messages
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         error.userMessage = 'Camera/microphone access was denied. Please allow access in your browser settings and try again.';
@@ -228,7 +293,7 @@ class WebRTCService {
       } else {
         error.userMessage = 'Unable to access camera/microphone. Please check your browser permissions and try again.';
       }
-      
+
       throw error;
     }
   }
@@ -239,7 +304,7 @@ class WebRTCService {
    */
   createPeerConnection() {
     if (this.peerConnection) {
-      console.log('[WebRTC] Peer connection already exists');
+      console.log('[WebRTC] Peer connection already exists - reusing instance. (Preventing duplicate)');
       return this.peerConnection;
     }
 
@@ -276,24 +341,24 @@ class WebRTCService {
     this.peerConnection.ontrack = (event) => {
       console.log('[WebRTC] Received remote track:', event.track.kind, 'readyState:', event.track.readyState);
       console.log('[WebRTC] onRemoteStreamCallback registered:', !!this.onRemoteStreamCallback);
-      
+
       // Always create a new MediaStream to trigger React state update
       if (!this.remoteStream) {
         this.remoteStream = new MediaStream();
         console.log('[WebRTC] Created new remote MediaStream');
       }
-      
+
       // Check if track already exists to avoid duplicates
       const existingTrack = this.remoteStream.getTracks().find(t => t.id === event.track.id);
       if (!existingTrack) {
         this.remoteStream.addTrack(event.track);
         console.log('[WebRTC] Added track to remote stream. Track count:', this.remoteStream.getTracks().length);
       }
-      
+
       // Create a new MediaStream reference to force React to detect the change
       const newRemoteStream = new MediaStream(this.remoteStream.getTracks());
       this.remoteStream = newRemoteStream;
-      
+
       if (this.onRemoteStreamCallback) {
         console.log('[WebRTC] Calling onRemoteStreamCallback with new stream');
         this.onRemoteStreamCallback(newRemoteStream);
@@ -310,33 +375,23 @@ class WebRTCService {
       };
       event.track.onended = () => {
         console.log('[WebRTC] Remote track ended:', event.track.kind);
+        // Do NOT end the call here. Tracks can end during renegotiation or mute.
       };
     };
 
     // Handle connection state changes
     this.peerConnection.onconnectionstatechange = () => {
       console.log('[WebRTC] Connection state:', this.peerConnection.connectionState);
-      
+
       if (this.peerConnection.connectionState === 'failed') {
-        console.error('[WebRTC] Connection failed - may need TURN server');
-        if (this.onCallEndCallback) {
-          this.onCallEndCallback('connection_failed');
-        }
+        console.error('[WebRTC] Connection failed - attempting ICE restart or waiting for manual end');
+        // Do NOT automatically end the call. Let the user decide or ICE restart handle it.
       } else if (this.peerConnection.connectionState === 'disconnected') {
-        console.warn('[WebRTC] Connection disconnected - attempting to recover');
-        // Give some time to recover before ending
-        setTimeout(() => {
-          if (this.peerConnection && this.peerConnection.connectionState === 'disconnected') {
-            console.error('[WebRTC] Connection did not recover');
-            if (this.onCallEndCallback) {
-              this.onCallEndCallback('connection_failed');
-            }
-          }
-        }, 5000);
+        console.warn('[WebRTC] Connection disconnected - waiting for recovery or ICE restart');
+        // Do NOT automatically end the call here. ICE restart might handle it.
+        // The user can manually end the call if it doesn't recover.
       } else if (this.peerConnection.connectionState === 'closed') {
-        if (this.onCallEndCallback) {
-          this.onCallEndCallback('connection_closed');
-        }
+        console.log('[WebRTC] Connection closed');
       } else if (this.peerConnection.connectionState === 'connected') {
         console.log('[WebRTC] Connection established successfully!');
       }
@@ -345,11 +400,22 @@ class WebRTCService {
     // Handle ICE connection state changes
     this.peerConnection.oniceconnectionstatechange = () => {
       console.log('[WebRTC] ICE connection state:', this.peerConnection.iceConnectionState);
-      
+
       if (this.peerConnection.iceConnectionState === 'failed') {
-        console.error('[WebRTC] ICE connection failed - retrying...');
+        console.error('[WebRTC] ICE connection failed - restarting ICE...');
         // Try to restart ICE
-        this.peerConnection.restartIce();
+        try {
+          this.peerConnection.restartIce();
+          console.log('[WebRTC] ICE restart initiated');
+        } catch (e) {
+          console.error('[WebRTC] Failed to restart ICE:', e);
+        }
+      } else if (this.peerConnection.iceConnectionState === 'connected') {
+        console.log('[WebRTC] ICE connected - audio/video should flow now');
+        // Log connection stats for debugging
+        this.logConnectionStats();
+      } else if (this.peerConnection.iceConnectionState === 'completed') {
+        console.log('[WebRTC] ICE completed - optimal route found');
       }
     };
 
@@ -368,7 +434,7 @@ class WebRTCService {
     try {
       // Store target user ID for subsequent signaling messages
       this.targetUserId = targetUserId;
-      
+
       const offer = await this.peerConnection.createOffer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: this.localStream?.getVideoTracks().length > 0,
@@ -389,9 +455,21 @@ class WebRTCService {
    */
   async handleOffer(offer, senderId) {
     try {
+      // Guard: Check if we are in a state to accept an offer
+      if (this.peerConnection.signalingState !== 'stable' && this.peerConnection.signalingState !== 'have-local-offer') {
+        console.warn('[WebRTC] Signal state not stable, ignoring duplicate/conflicting offer. State:', this.peerConnection.signalingState);
+        return;
+      }
+
+      // If we already have a remote offer pending (glare), we might need to handle it, but for now duplicate guard:
+      if (this.peerConnection.signalingState === 'have-remote-offer') {
+        console.warn('[WebRTC] already have remote offer, ignoring duplicate');
+        return;
+      }
+
       // Store the sender ID as our target for responses
       this.targetUserId = senderId;
-      
+
       await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
       console.log('[WebRTC] Remote description set from offer');
 
@@ -405,7 +483,7 @@ class WebRTCService {
       this.sendSignalingMessage('webrtc_answer', answer, senderId);
     } catch (error) {
       console.error('[WebRTC] Error handling offer:', error);
-      throw error;
+      // Don't throw, just log, so we don't crash the socket handler
     }
   }
 
@@ -414,6 +492,17 @@ class WebRTCService {
    */
   async handleAnswer(answer) {
     try {
+      // Guard: Only accept answer if we actually sent an offer
+      if (this.peerConnection.signalingState === 'stable') {
+        console.warn('[WebRTC] Received answer but state is already stable. Ignoring duplicate answer.');
+        return;
+      }
+
+      if (this.peerConnection.signalingState !== 'have-local-offer') {
+        console.warn('[WebRTC] Received answer but state is', this.peerConnection.signalingState, '- ignoring.');
+        return;
+      }
+
       await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
       console.log('[WebRTC] Remote description set from answer');
 
@@ -421,7 +510,6 @@ class WebRTCService {
       await this.processPendingIceCandidates();
     } catch (error) {
       console.error('[WebRTC] Error handling answer:', error);
-      throw error;
     }
   }
 
@@ -430,13 +518,38 @@ class WebRTCService {
    */
   async handleIceCandidate(candidate) {
     try {
-      if (this.peerConnection.remoteDescription) {
-        await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log('[WebRTC] ICE candidate added');
+      if (!candidate || !candidate.candidate) {
+        console.warn('[WebRTC] Received invalid ICE candidate:', candidate);
+        return;
+      }
+
+      // 1. Deduplication check
+      if (this.processedIceCandidates.has(candidate.candidate)) {
+        // console.log('[WebRTC] Ignoring duplicate ICE candidate'); 
+        return;
+      }
+      this.processedIceCandidates.add(candidate.candidate);
+
+      // 2. Check complete state (Prevent flooding)
+      if (this.peerConnection &&
+        (this.peerConnection.iceConnectionState === 'connected' ||
+          this.peerConnection.iceConnectionState === 'completed')) {
+        // console.log('[WebRTC] Ignoring ICE candidate - Connection already stable');
+        return;
+      }
+
+      // Safe queueing: Only add if remote description is SET
+      if (this.peerConnection && this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
+        try {
+          await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log('[WebRTC] ICE candidate added. Total unique:', this.processedIceCandidates.size);
+        } catch (e) {
+          console.error('[WebRTC] Error adding ICE candidate:', e);
+        }
       } else {
         // Queue ICE candidates if remote description not set yet
         this.pendingIceCandidates.push(candidate);
-        console.log('[WebRTC] ICE candidate queued');
+        console.log('[WebRTC] ICE candidate queued (remote description not set)');
       }
     } catch (error) {
       console.error('[WebRTC] Error handling ICE candidate:', error);
@@ -449,14 +562,19 @@ class WebRTCService {
   async processPendingIceCandidates() {
     if (this.pendingIceCandidates.length > 0) {
       console.log(`[WebRTC] Processing ${this.pendingIceCandidates.length} pending ICE candidates`);
-      for (const candidate of this.pendingIceCandidates) {
+      // Clone and clear queue immediately to prevent loops if errored
+      const candidatesRaw = [...this.pendingIceCandidates];
+      this.pendingIceCandidates = [];
+
+      for (const candidate of candidatesRaw) {
         try {
-          await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          if (this.peerConnection && this.peerConnection.remoteDescription) {
+            await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          }
         } catch (error) {
           console.error('[WebRTC] Error adding pending ICE candidate:', error);
         }
       }
-      this.pendingIceCandidates = [];
     }
   }
 
@@ -530,6 +648,37 @@ class WebRTCService {
   }
 
   /**
+   * Log connection statistics for debugging
+   */
+  async logConnectionStats() {
+    if (!this.peerConnection) return;
+
+    try {
+      const stats = await this.peerConnection.getStats();
+      stats.forEach(report => {
+        if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+          console.log('[WebRTC] Active candidate pair:', {
+            localCandidateType: report.localCandidateType,
+            remoteCandidateType: report.remoteCandidateType,
+            bytesSent: report.bytesSent,
+            bytesReceived: report.bytesReceived
+          });
+        }
+        if (report.type === 'local-candidate' || report.type === 'remote-candidate') {
+          console.log(`[WebRTC] ${report.type}:`, {
+            candidateType: report.candidateType,
+            protocol: report.protocol,
+            address: report.address,
+            port: report.port
+          });
+        }
+      });
+    } catch (e) {
+      console.error('[WebRTC] Failed to get connection stats:', e);
+    }
+  }
+
+  /**
    * Clean up resources
    */
   cleanup() {
@@ -555,6 +704,8 @@ class WebRTCService {
       this.callSocket.close();
       this.callSocket = null;
     }
+
+    this.stopKeepAlive();
 
     this.remoteStream = null;
     this.pendingIceCandidates = [];

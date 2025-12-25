@@ -3,18 +3,21 @@ import { FaPhone, FaVideo, FaTimes, FaPhoneSlash } from 'react-icons/fa';
 import { useCall } from '../context/CallContext';
 import { useNavigate } from 'react-router-dom';
 import { DEFAULT_AVATAR } from '../utils/defaultAvatar';
+import { toast } from 'react-toastify';
 
 /**
  * CallNotification - Bottom-right popup for incoming calls (Facebook style)
  */
 function CallNotification() {
-  const { incomingCall, acceptCall, rejectCall } = useCall();
+  const { incomingCall, acceptCall, rejectCall, callError, clearCallError } = useCall();
   const [isRinging, setIsRinging] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (incomingCall) {
       setIsRinging(true);
+      setIsAccepting(false);
       
       // Play ringtone (optional - add your own audio)
       // const audio = new Audio('/ringtone.mp3');
@@ -28,13 +31,34 @@ function CallNotification() {
     }
   }, [incomingCall]);
 
+  // Show error toast when call error occurs
+  useEffect(() => {
+    if (callError) {
+      toast.error(callError, {
+        autoClose: 5000,
+        closeOnClick: true,
+      });
+      clearCallError();
+      setIsAccepting(false);
+    }
+  }, [callError, clearCallError]);
+
   const handleAccept = async () => {
-    await acceptCall();
-    // Navigate to appropriate call page
-    if (incomingCall.call_type === 'video') {
-      navigate('/chat/videocall');
-    } else {
-      navigate('/chat/audiocall');
+    if (isAccepting) return; // Prevent double-clicks
+    
+    setIsAccepting(true);
+    try {
+      await acceptCall();
+      // Navigate to appropriate call page
+      if (incomingCall?.call_type === 'video') {
+        navigate('/chat/videocall');
+      } else {
+        navigate('/chat/audiocall');
+      }
+    } catch (error) {
+      // Error is already handled via callError state
+      console.log('[CallNotification] Accept call failed:', error.message);
+      setIsAccepting(false);
     }
   };
 
@@ -97,7 +121,8 @@ function CallNotification() {
             {/* Reject button */}
             <button
               onClick={handleReject}
-              className="bg-red-500 hover:bg-red-600 text-white rounded-full p-4 transition-all transform hover:scale-110 shadow-lg"
+              disabled={isAccepting}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-full p-4 transition-all transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Reject call"
             >
               <FaPhoneSlash className="text-xl" />
@@ -106,10 +131,13 @@ function CallNotification() {
             {/* Accept button */}
             <button
               onClick={handleAccept}
-              className="bg-green-500 hover:bg-green-600 text-white rounded-full p-4 transition-all transform hover:scale-110 shadow-lg"
+              disabled={isAccepting}
+              className="bg-green-500 hover:bg-green-600 text-white rounded-full p-4 transition-all transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Accept call"
             >
-              {callType === 'video' ? (
+              {isAccepting ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : callType === 'video' ? (
                 <FaVideo className="text-xl" />
               ) : (
                 <FaPhone className="text-xl" />

@@ -26,25 +26,25 @@ function ChatListItem({ chat, isSelected, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-4 cursor-pointer transition-colors border-b border-gray-100 ${
+      className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 cursor-pointer transition-colors border-b border-gray-100 ${
         isSelected ? "bg-blue-50" : "hover:bg-gray-50"
       }`}
     >
       {/* Avatar */}
       <div className="relative flex-shrink-0">
-        <img src={chat.avatar || "/placeholder.svg"} alt={chat.name} className="w-12 h-12 rounded-full object-cover" />
+        <img src={chat.avatar || "/placeholder.svg"} alt={chat.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
         {chat.isActive && (
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 border-2 border-white rounded-full"></div>
         )}
       </div>
 
       {/* Chat Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-gray-900 text-sm truncate">{chat.name}</h3>
-          <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatTimestamp(chat.timestamp)}</span>
+        <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+          <h3 className="font-semibold text-gray-900 text-xs sm:text-sm truncate">{chat.name}</h3>
+          <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0 ml-2">{formatTimestamp(chat.timestamp)}</span>
         </div>
-        <p className="text-sm text-gray-600 truncate">{chat.lastMessage}</p>
+        <p className="text-xs sm:text-sm text-gray-600 truncate">{chat.lastMessage}</p>
       </div>
 
       {/* Unread Indicator */}

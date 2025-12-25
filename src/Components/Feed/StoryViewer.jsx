@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Trash2, Eye } from 'lucide-react';
 import { getStory, deleteStory } from '../../services/storyService';
+import { DEFAULT_AVATAR } from '../../utils/defaultAvatar';
 
 const StoryViewer = ({ storyId, isOpen, onClose, onStoryDeleted, stories = [], currentIndex = 0, onNavigate }) => {
   const [story, setStory] = useState(null);
@@ -114,37 +115,38 @@ const StoryViewer = ({ storyId, isOpen, onClose, onStoryDeleted, stories = [], c
       ) : story ? (
         <div className="relative w-full max-w-md h-full md:h-auto md:max-h-[90vh]">
           {/* Header */}
-          <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
+          <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-2 sm:p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <img
-                  src={story.user.profile_image || '/placeholder.svg'}
+                  src={story.user.profile_image || DEFAULT_AVATAR}
                   alt={story.user.profile_name}
-                  className="w-10 h-10 rounded-full border-2 border-white"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white object-cover"
+                  onError={(e) => { e.target.src = DEFAULT_AVATAR; }}
                 />
                 <div>
-                  <p className="text-white font-semibold">{story.user.profile_name}</p>
-                  <p className="text-white/80 text-xs">
+                  <p className="text-white font-semibold text-sm sm:text-base">{story.user.profile_name}</p>
+                  <p className="text-white/80 text-[10px] sm:text-xs">
                     {new Date(story.created_at).toLocaleString()}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 {isOwnStory && (
                   <button
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="text-white hover:text-red-400 transition-colors p-2"
+                    className="text-white hover:text-red-400 transition-colors p-1 sm:p-2"
                     title="Delete story"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 )}
                 <button
                   onClick={onClose}
-                  className="text-white hover:text-gray-300 transition-colors p-2"
+                  className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
               </div>
             </div>
@@ -188,22 +190,22 @@ const StoryViewer = ({ storyId, isOpen, onClose, onStoryDeleted, stories = [], c
                   <>
                     <button
                       onClick={handlePrevious}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
+                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 sm:p-2 rounded-full hover:bg-black/70 transition-colors z-10"
                     >
-                      <ChevronLeft className="w-6 h-6" />
+                      <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
                     </button>
                     <button
                       onClick={handleNext}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 sm:p-2 rounded-full hover:bg-black/70 transition-colors z-10"
                     >
-                      <ChevronRight className="w-6 h-6" />
+                      <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
                     </button>
                   </>
                 )}
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-                <p className="text-white text-xl font-semibold px-8 text-center">
+                <p className="text-white text-base sm:text-xl font-semibold px-4 sm:px-8 text-center">
                   {story.content || 'No content'}
                 </p>
               </div>
@@ -215,19 +217,19 @@ const StoryViewer = ({ storyId, isOpen, onClose, onStoryDeleted, stories = [], c
                 {currentIndex > 0 && (
                   <button
                     onClick={handlePreviousStory}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition-all shadow-lg"
+                    className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-white/30 transition-all shadow-lg"
                     title="Previous story"
                   >
-                    <ChevronLeft className="w-8 h-8" />
+                    <ChevronLeft className="w-5 h-5 sm:w-8 sm:h-8" />
                   </button>
                 )}
                 {currentIndex < stories.length - 1 && (
                   <button
                     onClick={handleNextStory}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition-all shadow-lg"
+                    className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-white/30 transition-all shadow-lg"
                     title="Next story"
                   >
-                    <ChevronRight className="w-8 h-8" />
+                    <ChevronRight className="w-5 h-5 sm:w-8 sm:h-8" />
                   </button>
                 )}
               </>
@@ -235,18 +237,21 @@ const StoryViewer = ({ storyId, isOpen, onClose, onStoryDeleted, stories = [], c
 
             {/* Content Overlay */}
             {story.content && story.media && story.media.length > 0 && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                <p className="text-white text-sm">{story.content}</p>
+              <div className="absolute bottom-12 sm:bottom-16 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 sm:p-6">
+                <p className="text-white text-xs sm:text-sm">{story.content}</p>
               </div>
             )}
           </div>
 
-          {/* Story Info */}
-          <div className="absolute bottom-4 left-4 right-4 text-white text-xs">
-            <div className="flex items-center justify-between">
-              <span>{story.view_count} views</span>
-              <span className={`px-2 py-1 rounded ${
-                story.is_active ? 'bg-green-500/20' : 'bg-red-500/20'
+          {/* Story Info - Visible to all users */}
+          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 text-white text-[10px] sm:text-xs">
+            <div className="flex items-center justify-between bg-black/30 backdrop-blur-sm rounded-lg p-2 sm:p-3">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span>{story.view_count || 0} views</span>
+              </div>
+              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs ${
+                story.is_active ? 'bg-green-500/30' : 'bg-red-500/30'
               }`}>
                 {story.is_active ? 'Active' : 'Expired'}
               </span>

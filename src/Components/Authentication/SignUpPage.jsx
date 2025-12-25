@@ -3,13 +3,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import AuthButton from "./AuthButton";
-import { useRegisterMutation } from "../../hooks/mutations";
+import { useAuth } from "../../context/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../utils/queryKeys";
 import { toast } from "react-toastify";
 
 
 const SignUpPage = ({ onSwitchToLogin }) => {
     const navigate = useNavigate();
-    const registerMutation = useRegisterMutation();
+    const { register } = useAuth();
+    const queryClient = useQueryClient();
+    const [isLoading, setIsLoading] = useState(false);
     
     const [formData, setFormData] = useState({
         profileName: "",
@@ -64,10 +68,12 @@ const SignUpPage = ({ onSwitchToLogin }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        setIsLoading(true);
 
         // Validate password before submitting
         if (!validatePassword(formData.password)) {
             toast.error("Please fix password validation errors");
+            setIsLoading(false);
             return;
         }
 
@@ -84,13 +90,18 @@ const SignUpPage = ({ onSwitchToLogin }) => {
             gender: formData.gender || undefined,
         };
 
-        registerMutation.mutate(registrationData, {
-            onSuccess: () => {
+        try {
+            // Use AuthContext register which properly updates React state
+            const result = await register(registrationData);
+            
+            if (result.success) {
+                // Invalidate all queries to ensure fresh data
+                queryClient.resetQueries();
+                toast.success('Registration successful!');
                 navigate('/feed');
-            },
-            onError: (error) => {
+            } else {
                 // Handle error messages from API
-                const errorData = error?.response?.data;
+                const errorData = result.error;
                 if (typeof errorData === 'object' && errorData !== null) {
                     Object.entries(errorData).forEach(([field, messages]) => {
                         if (Array.isArray(messages)) {
@@ -99,9 +110,26 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                             toast.error(`${field}: ${messages}`);
                         }
                     });
+                } else {
+                    toast.error(errorData || 'Registration failed');
                 }
             }
-        });
+        } catch (error) {
+            const errorData = error?.response?.data;
+            if (typeof errorData === 'object' && errorData !== null) {
+                Object.entries(errorData).forEach(([field, messages]) => {
+                    if (Array.isArray(messages)) {
+                        messages.forEach(msg => toast.error(`${field}: ${msg}`));
+                    } else {
+                        toast.error(`${field}: ${messages}`);
+                    }
+                });
+            } else {
+                toast.error('Registration failed');
+            }
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const months = [
@@ -352,19 +380,12 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                         .
                     </p>
 
-                    {/* Error Message */}
-                    {registerMutation.isError && (
-                        <div className="text-red-500 text-sm text-center">
-                            Registration failed. Please check your information and try again.
-                        </div>
-                    )}
-
                   {/* Submit Button */}
                     <AuthButton
-                        text={registerMutation.isPending ? "Creating Account..." : "Sign Up"}
+                        text={isLoading ? "Creating Account..." : "Sign Up"}
                         type="submit"
                         className="w-full "
-                        disabled={registerMutation.isPending}
+                        disabled={isLoading}
                     />
 
                     {/* Switch to Login */}

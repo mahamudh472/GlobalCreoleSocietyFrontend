@@ -20,6 +20,7 @@ function ChatApp() {
     const [selectedChat, setSelectedChat] = useState(null)
     const [filter, setFilter] = useState("all")
     const [error, setError] = useState(null)
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false)
     const wsRef = useRef(null)
     
     // Use TanStack Query for conversations list
@@ -308,8 +309,13 @@ function ChatApp() {
         ? conversationsData.filter((chat) => chat.unread) 
         : conversationsData
 
+    const handleMobileChatSelect = (chat) => {
+        handleChatSelect(chat)
+        setShowMobileSidebar(false) // Close drawer after selecting
+    }
+
     return (
-        <div className="min-h-screen  bg-gray-100 ">
+        <div className="min-h-screen bg-gray-100">
             <div className="py-7">
                 <Navbar></Navbar>
             </div>
@@ -318,15 +324,45 @@ function ChatApp() {
             ) : error && conversationsData.length === 0 ? (
                 <div className="flex h-[calc(100vh-160px)] items-center justify-center text-red-500">{error}</div>
             ) : (
-                <div className="flex h-[calc(100vh-160px)]  ">
-                    <ChatSidebar
-                        chats={filteredChats}
-                        selectedChat={selectedChat}
-                        onChatSelect={handleChatSelect}
-                        filter={filter}
-                        onFilterChange={handleFilterChange}
-                        onCreateConversation={handleCreateConversation}
-                    />
+                <div className="flex h-[calc(100vh-120px)] sm:h-[calc(100vh-160px)] relative">
+                    {/* Mobile Sidebar Overlay */}
+                    {showMobileSidebar && (
+                        <div 
+                            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                            onClick={() => setShowMobileSidebar(false)}
+                        />
+                    )}
+                    
+                    {/* Mobile Sidebar Drawer - only shown when showMobileSidebar is true */}
+                    {showMobileSidebar && (
+                        <div className="fixed inset-y-0 left-0 z-50 w-[85%] max-w-sm animate-slide-in md:hidden">
+                            <ChatSidebar
+                                chats={filteredChats}
+                                selectedChat={selectedChat}
+                                onChatSelect={handleMobileChatSelect}
+                                filter={filter}
+                                onFilterChange={handleFilterChange}
+                                onCreateConversation={handleCreateConversation}
+                                onClose={() => setShowMobileSidebar(false)}
+                                isMobileDrawer={true}
+                            />
+                        </div>
+                    )}
+                    
+                    {/* Desktop Sidebar - always visible on desktop, hidden on mobile when chat is selected */}
+                    <div className={`
+                        ${selectedChat ? 'hidden md:block' : 'w-full md:w-auto'} 
+                        md:relative md:z-auto
+                    `}>
+                        <ChatSidebar
+                            chats={filteredChats}
+                            selectedChat={selectedChat}
+                            onChatSelect={handleChatSelect}
+                            filter={filter}
+                            onFilterChange={handleFilterChange}
+                            onCreateConversation={handleCreateConversation}
+                        />
+                    </div>
                     {selectedChat ? (
                         <ChatWindow 
                             chat={selectedChat} 
@@ -336,9 +372,11 @@ function ChatApp() {
                             onLoadMoreMessages={handleLoadMoreMessages}
                             hasMoreMessages={hasNextPage}
                             loadingMore={loadingMore}
+                            onBack={() => setSelectedChat(null)}
+                            onShowConversations={() => setShowMobileSidebar(true)}
                         />
                     ) : (
-                        <div className="flex-1 flex items-center justify-center text-gray-500">Select a chat to start messaging</div>
+                        <div className="hidden md:flex flex-1 items-center justify-center text-gray-500 text-sm">Select a chat to start messaging</div>
                     )}
                 </div>
             )}

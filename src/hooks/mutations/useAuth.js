@@ -16,11 +16,22 @@ export const useLoginMutation = () => {
   return useMutation({
     mutationFn: ({ email, password }) => authHelpers.login(email, password),
     onSuccess: (data) => {
-      // Set user data in cache
+      // CRITICAL: First, reset ALL queries to clear any previous user's cached data
+      // This ensures no stale data from a previous user session remains
+      queryClient.resetQueries();
+      
+      // Set new user data in cache
       queryClient.setQueryData(queryKeys.auth.currentUser(), data.user);
       
-      // Invalidate and refetch any user-specific data
+      // Invalidate ALL user-specific queries to force refetch with new auth
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.friends.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.societies.all });
       
       toast.success('Login successful!');
     },
@@ -78,17 +89,19 @@ export const useLogoutMutation = () => {
   return useMutation({
     mutationFn: () => authHelpers.logout(),
     onSuccess: () => {
-      // Clear all cached data on logout
-      queryClient.clear();
+      // CRITICAL: Reset all queries to clear ALL cached data including active queries
+      // queryClient.clear() only removes inactive queries
+      queryClient.resetQueries();
       
-      // Or selectively remove auth-related queries
-      removeQueriesByPrefix(queryClient, queryKeys.auth.all);
+      // Also remove all queries to ensure no stale data remains
+      queryClient.removeQueries();
       
       toast.success('Logged out successfully');
     },
     onError: (error) => {
-      // Even on error, clear local data
-      queryClient.clear();
+      // Even on error, clear local data completely
+      queryClient.resetQueries();
+      queryClient.removeQueries();
       console.error('Logout error:', error);
     },
   });

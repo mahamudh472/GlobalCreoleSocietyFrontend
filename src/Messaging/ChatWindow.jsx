@@ -8,6 +8,8 @@ import {
   FaPaperclip,
   FaSmile,
   FaPaperPlane,
+  FaArrowLeft,
+  FaBars,
 } from "react-icons/fa";
 import Message from "./Message";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +27,8 @@ function ChatWindow({
   onLoadMoreMessages,
   hasMoreMessages,
   loadingMore,
+  onBack,
+  onShowConversations,
 }) {
   const [messageText, setMessageText] = useState("");
   const [showMenu, setShowMenu] = useState(false);
@@ -210,28 +214,38 @@ function ChatWindow({
   };
 
   return (
-    <div className="flex-1 flex flex-col ">
+    <div className="flex-1 flex flex-col bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between p-2 sm:p-4 border-b border-gray-200">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Menu button to show conversations on mobile */}
+          {onShowConversations && (
+            <button
+              onClick={onShowConversations}
+              className="md:hidden p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
+              title="Show conversations"
+            >
+              <FaBars className="text-gray-600 text-sm sm:text-base" />
+            </button>
+          )}
           <div className="relative">
             <img
               src={chat.avatar || DEFAULT_AVATAR}
               alt={chat.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
             />
             {chat.isActive && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+              <div className="absolute bottom-0 right-0 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 border-2 border-white rounded-full"></div>
             )}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{chat.name}</h3>
-            <p className="text-xs text-green-500">Active</p>
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{chat.name}</h3>
+            <p className="text-[10px] sm:text-xs text-green-500">Active</p>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-3">
           <button
             onClick={async () => {
               console.log("Voice call to:", chat.name);
@@ -255,10 +269,10 @@ function ChatWindow({
                 console.log("Call initiation failed, not navigating");
               }
             }}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
             title="Start audio call"
           >
-            <FaPhone className="text-gray-600" />
+            <FaPhone className="text-gray-600 text-sm sm:text-base" />
           </button>
           <button
             onClick={async () => {
@@ -283,31 +297,31 @@ function ChatWindow({
                 console.log("Call initiation failed, not navigating");
               }
             }}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
             title="Start video call"
           >
-            <FaVideo className="text-gray-600" />
+            <FaVideo className="text-gray-600 text-sm sm:text-base" />
           </button>
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
             >
-              <FaEllipsisV className="text-gray-600" />
+              <FaEllipsisV className="text-gray-600 text-sm sm:text-base" />
             </button>
 
             {/* Dropdown Menu */}
             {showMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200  z-10 ">
+              <div className="absolute right-0 mt-2 w-40 sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                 <button
                   onClick={() => handleMenuAction("view-profile")}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-400 rounded-t-xl transition-colors cursor-pointer "
+                  className="w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-blue-400 rounded-t-xl transition-colors cursor-pointer"
                 >
                   View profile
                 </button>
                 <button
                   onClick={() => handleMenuAction("block")}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-400 rounded-b-xl transition-colors cursor-pointer"
+                  className="w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-blue-400 rounded-b-xl transition-colors cursor-pointer"
                 >
                   Block
                 </button>
@@ -328,18 +342,18 @@ function ChatWindow({
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className={`flex-1 p-4 space-y-4 ${hasUserMessages ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
+        className={`flex-1 p-2 sm:p-4 space-y-2 sm:space-y-4 ${hasUserMessages ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
       >
         {/* Loading indicator at top */}
         {loadingMore && hasMoreMessages && (
           <div className="flex justify-center py-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
           </div>
         )}
 
         {!loadingMore && hasMoreMessages && userMessages.length > 0 && (
           <div className="text-center py-2">
-            <p className="text-xs text-gray-400">
+            <p className="text-[10px] sm:text-xs text-gray-400">
               Scroll up to load older messages
             </p>
           </div>
@@ -347,8 +361,8 @@ function ChatWindow({
 
         {!hasUserMessages ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-gray-500 text-sm">
+            <div className="text-center px-4">
+              <p className="text-gray-500 text-xs sm:text-sm">
                 You and <span className="font-semibold">{chat.name}</span> are
                 now connected! Start chatting.
               </p>
@@ -365,15 +379,15 @@ function ChatWindow({
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-2 sm:p-4 border-t border-gray-200">
         <form onSubmit={handleSend} className="flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
+          <div className="flex-1 flex items-center gap-1 sm:gap-2 bg-gray-50 rounded-lg px-2 sm:px-4 py-2 sm:py-3 border border-gray-200">
             <input
               type="text"
               placeholder="Type something here..."
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder-gray-500"
+              className="flex-1 bg-transparent outline-none text-xs sm:text-sm text-gray-900 placeholder-gray-500"
             />
             <input
               type="file"
@@ -383,7 +397,7 @@ function ChatWindow({
               accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
             />
             {selectedFile && (
-              <span className="text-xs text-gray-600 bg-blue-100 px-2 py-1 rounded">
+              <span className="text-[10px] sm:text-xs text-gray-600 bg-blue-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded max-w-[60px] sm:max-w-none truncate">
                 {selectedFile.name}
               </span>
             )}
@@ -392,22 +406,22 @@ function ChatWindow({
               onClick={handleAttachClick}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <FaPaperclip className="text-lg" />
+              <FaPaperclip className="text-base sm:text-lg" />
             </button>
             <button
               type="button"
               onClick={() => {}}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors hidden sm:block"
             >
-              <FaSmile className="text-lg" />
+              <FaSmile className="text-base sm:text-lg" />
             </button>
           </div>
           <button
             type="submit"
             disabled={!messageText.trim() && !selectedFile}
-            className="p-3 cursor-pointer bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 sm:p-3 cursor-pointer bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaPaperPlane />
+            <FaPaperPlane className="text-sm sm:text-base" />
           </button>
         </form>
       </div>

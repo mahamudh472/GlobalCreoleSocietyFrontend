@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
 import Navbar from '../Navbar';
@@ -8,12 +8,15 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 
 const MarketPlace = () => {
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { isAuthenticated, loading: authLoading, user } = useAuth();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    
+    // Track the user ID to detect account switches
+    const prevUserIdRef = useRef(user?.id);
 
     const fetchProducts = async () => {
         try {
@@ -48,6 +51,19 @@ const MarketPlace = () => {
     const handleSearch = (query) => {
         setSearchQuery(query);
     };
+
+    // CRITICAL: Refetch products when user changes (login/logout/account switch)
+    useEffect(() => {
+        const currentUserId = user?.id;
+        const prevUserId = prevUserIdRef.current;
+        
+        // Detect user change (including logout where user becomes null)
+        if (currentUserId !== prevUserId) {
+            console.log('User changed, refetching products...', { prevUserId, currentUserId });
+            prevUserIdRef.current = currentUserId;
+            fetchProducts();
+        }
+    }, [user?.id]);
 
     // Single useEffect for all product fetching - debounced for search/filter changes
     useEffect(() => {

@@ -21,13 +21,13 @@ function VideoCall() {
     // Redirect if no active call
     useEffect(() => {
         // Only redirect if there's no call activity at all
-        const hasCallActivity = activeCall || 
-                                callStatus === 'initiating' || 
-                                callStatus === 'ringing' || 
-                                callStatus === 'connecting' ||
-                                callStatus === 'accepting' ||
-                                callStatus === 'incoming';
-        
+        const hasCallActivity = activeCall ||
+            callStatus === 'initiating' ||
+            callStatus === 'ringing' ||
+            callStatus === 'connecting' ||
+            callStatus === 'accepting' ||
+            callStatus === 'incoming';
+
         if (!hasCallActivity) {
             console.log('[VideoCall] No call activity, redirecting to chat');
             navigate('/chat');
@@ -37,9 +37,9 @@ function VideoCall() {
     // Robust stream attachment function
     const attachStream = useCallback((videoElement, stream, streamType) => {
         if (!videoElement || !stream) {
-            console.log(`[VideoCall] Cannot attach ${streamType} stream:`, { 
-                hasElement: !!videoElement, 
-                hasStream: !!stream 
+            console.log(`[VideoCall] Cannot attach ${streamType} stream:`, {
+                hasElement: !!videoElement,
+                hasStream: !!stream
             });
             return false;
         }
@@ -47,7 +47,7 @@ function VideoCall() {
         try {
             // Check if stream has active tracks
             const tracks = stream.getTracks();
-            console.log(`[VideoCall] Attaching ${streamType} stream with ${tracks.length} tracks:`, 
+            console.log(`[VideoCall] Attaching ${streamType} stream with ${tracks.length} tracks:`,
                 tracks.map(t => `${t.kind}:${t.readyState}`));
 
             // Only attach if not already attached or stream changed
@@ -74,7 +74,7 @@ function VideoCall() {
         if (localStream && localVideoRef.current) {
             const attached = attachStream(localVideoRef.current, localStream, 'local');
             setLocalStreamReady(attached);
-            
+
             // Retry attachment after a short delay if initial attach had issues
             if (!attached) {
                 const retryTimeout = setTimeout(() => {
@@ -90,12 +90,12 @@ function VideoCall() {
     // Setup remote video stream with retry
     useEffect(() => {
         if (remoteStream && remoteVideoRef.current) {
-            console.log('[VideoCall] Remote stream changed, tracks:', 
+            console.log('[VideoCall] Remote stream changed, tracks:',
                 remoteStream.getTracks().map(t => `${t.kind}:${t.readyState}`));
-            
+
             const attached = attachStream(remoteVideoRef.current, remoteStream, 'remote');
             setRemoteStreamReady(attached);
-            
+
             // Retry attachment after a short delay if initial attach had issues
             if (!attached) {
                 const retryTimeout = setTimeout(() => {
@@ -118,11 +118,11 @@ function VideoCall() {
                 attachStream(remoteVideoRef.current, remoteStream, 'remote (mount check)');
             }
         };
-        
+
         // Check immediately and after a delay
         checkAndAttach();
         const timeout = setTimeout(checkAndAttach, 1000);
-        
+
         return () => clearTimeout(timeout);
     }, [localStream, remoteStream, attachStream]);
 
@@ -173,7 +173,7 @@ function VideoCall() {
     }
 
     const handleEndCall = () => {
-        endCall()
+        endCall(true) // Pass true to indicate manual user action
         navigate('/chat')
     }
 
@@ -218,15 +218,17 @@ function VideoCall() {
                         style={{ aspectRatio: "16/9", maxHeight: "calc(100vh - 250px)" }}
                     >
                         {/* Remote Video Feed (Main) */}
-                        <video
-                            ref={remoteVideoRef}
-                            autoPlay
-                            playsInline
-                            className="absolute inset-0 w-full h-full object-cover"
-                        />
+                        {remoteStream && remoteStream.getVideoTracks().length > 0 ? (
+                            <video
+                                ref={remoteVideoRef}
+                                autoPlay
+                                playsInline
+                                className="absolute inset-0 w-full h-full object-cover"
+                            />
+                        ) : null}
 
-                        {/* Fallback when no remote stream */}
-                        {!remoteStream && (
+                        {/* Fallback when no remote stream OR no video track (Audio only) */}
+                        {(!remoteStream || remoteStream.getVideoTracks().length === 0) && (
                             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-900 to-indigo-900">
                                 <div className="text-center text-white">
                                     <div className="w-32 h-32 rounded-full bg-blue-600 flex items-center justify-center mx-auto mb-4">
@@ -235,14 +237,18 @@ function VideoCall() {
                                         </span>
                                     </div>
                                     <h3 className="text-2xl font-semibold mb-2">{userName}</h3>
-                                    <p className="text-blue-200">{getStatusText()}</p>
+                                    <p className="text-blue-200">
+                                        {callStatus === 'connected' ? 'Audio Only' : getStatusText()}
+                                    </p>
                                 </div>
                             </div>
                         )}
 
+
+
                         {/* Local Video (Picture-in-Picture) */}
                         <div className="absolute top-4 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden shadow-xl border-2 border-gray-600">
-                            {isVideoOn && localStream ? (
+                            {isVideoOn && localStream && localStream.getVideoTracks().length > 0 ? (
                                 <video
                                     ref={localVideoRef}
                                     autoPlay
@@ -293,9 +299,8 @@ function VideoCall() {
                                 {/* Mute/Unmute Button */}
                                 <button
                                     onClick={handleToggleMute}
-                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
-                                        isMuted ? "bg-red-500 hover:bg-red-600" : "bg-gray-700 hover:bg-gray-800"
-                                    } shadow-lg`}
+                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${isMuted ? "bg-red-500 hover:bg-red-600" : "bg-gray-700 hover:bg-gray-800"
+                                        } shadow-lg`}
                                     title={isMuted ? "Unmute" : "Mute"}
                                 >
                                     {isMuted ? (
@@ -308,9 +313,8 @@ function VideoCall() {
                                 {/* Video On/Off Button */}
                                 <button
                                     onClick={handleToggleVideo}
-                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
-                                        isVideoOn ? "bg-gray-700 hover:bg-gray-800" : "bg-red-500 hover:bg-red-600"
-                                    } shadow-lg`}
+                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${isVideoOn ? "bg-gray-700 hover:bg-gray-800" : "bg-red-500 hover:bg-red-600"
+                                        } shadow-lg`}
                                     title={isVideoOn ? "Turn off video" : "Turn on video"}
                                 >
                                     {isVideoOn ? (
@@ -323,9 +327,8 @@ function VideoCall() {
                                 {/* Screen Share Button */}
                                 <button
                                     onClick={handleToggleScreenShare}
-                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
-                                        isScreenSharing ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 hover:bg-gray-400"
-                                    } shadow-lg`}
+                                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${isScreenSharing ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 hover:bg-gray-400"
+                                        } shadow-lg`}
                                     title={isScreenSharing ? "Stop sharing" : "Share screen (coming soon)"}
                                     disabled
                                 >

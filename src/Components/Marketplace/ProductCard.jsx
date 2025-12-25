@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -23,6 +23,9 @@ const ProductCard = () => {
   const [swiperReady, setSwiperReady] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // Track user ID to detect account switches
+  const prevUserIdRef = useRef(user?.id);
 
   // Fetch product first, then check ownership
   useEffect(() => {
@@ -33,6 +36,18 @@ const ProductCard = () => {
       fetchProduct();
     }
   }, [id]);
+
+  // CRITICAL: Refetch product when user changes to update ownership badge
+  useEffect(() => {
+    const currentUserId = user?.id;
+    const prevUserId = prevUserIdRef.current;
+    
+    if (currentUserId !== prevUserId && id) {
+      console.log('User changed on ProductCard, refetching...', { prevUserId, currentUserId });
+      prevUserIdRef.current = currentUserId;
+      fetchProduct();
+    }
+  }, [user?.id, id]);
 
   // Check if current user is the seller (with type-safe comparison)
   // Compare as strings since backend returns UUID as string
@@ -242,111 +257,111 @@ const ProductCard = () => {
       </div>
 
       {/* Product Details */}
-      <div className="w-full lg:w-[40%] space-y-6 px-2 sm:px-4">
+      <div className="w-full lg:w-[40%] space-y-4 sm:space-y-6 px-1 sm:px-4">
         {/* Product Info */}
         <div>
-          <p className="text-2xl font-bold text-green-600">${product.price}</p>
-          <p className="text-xl font-semibold mt-2">{product.name}</p>
-          <p className="text-sm text-gray-500 mt-1">{product.category_name}</p>
-          <p className="text-sm text-gray-600 mt-3">{product.description}</p>
-          <div className="flex items-center gap-4 mt-3">
-            <p className="text-sm text-gray-500">Stock: {product.stock} available</p>
-            <span className="text-gray-300">|</span>
-            <p className="text-sm text-gray-700 font-medium">
+          <p className="text-xl sm:text-2xl font-bold text-green-600">${product.price}</p>
+          <p className="text-lg sm:text-xl font-semibold mt-2">{product.name}</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">{product.category_name}</p>
+          <p className="text-xs sm:text-sm text-gray-600 mt-2 sm:mt-3">{product.description}</p>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-3">
+            <p className="text-xs sm:text-sm text-gray-500">Stock: {product.stock} available</p>
+            <span className="text-gray-300 hidden sm:inline">|</span>
+            <p className="text-xs sm:text-sm text-gray-700 font-medium">
               Seller: <span className="text-blue-600">{product.seller_name || 'Unknown'}</span>
             </p>
           </div>
         </div>
 
         {/* Quantity Section */}
-        <div className="p-4 rounded-lg shadow-inner bg-white">
+        <div className="p-3 sm:p-4 rounded-lg shadow-inner bg-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-lg font-medium text-gray-700">Set Amount and Notes</span>
+            <span className="text-base sm:text-lg font-medium text-gray-700">Set Amount and Notes</span>
           </div>
           <div className="flex flex-col justify-start ">
-            <span className="text-sm text-gray-600">
+            <span className="text-xs sm:text-sm text-gray-600">
               Available: {product.stock} units
             </span>
 
             <hr className='bg-[#E2E2E2] border-[#E2E2E2] mt-2' />
 
-            <div className="flex items-center justify-center border border-gray-300 rounded-full overflow-hidden my-3 w-30">
+            <div className="flex items-center justify-center border border-gray-300 rounded-full overflow-hidden my-2 sm:my-3 w-28 sm:w-30">
               <button
                 onClick={handleDecrease}
-                className="px-3 py-1 text-gray-600 hover:text-gray-800 cursor-pointer"
+                className="px-2 sm:px-3 py-1 text-gray-600 hover:text-gray-800 cursor-pointer"
                 disabled={quantity <= 1}
               >
-                <AiOutlineMinus />
+                <AiOutlineMinus className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
-              <span className="px-4">{quantity}</span>
+              <span className="px-3 sm:px-4 text-sm sm:text-base">{quantity}</span>
               <button
                 onClick={handleIncrease}
-                className="px-3 py-1 text-gray-600 hover:text-gray-800 cursor-pointer"
+                className="px-2 sm:px-3 py-1 text-gray-600 hover:text-gray-800 cursor-pointer"
                 disabled={quantity >= product.stock}
               >
-                <AiOutlinePlus />
+                <AiOutlinePlus className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
             </div>
 
-            <p className="text-lg font-semibold">Total: ${totalPrice}</p>
+            <p className="text-base sm:text-lg font-semibold">Total: ${totalPrice}</p>
           </div>
 
           {/* Action Buttons */}
           {authLoading ? (
-            <div className="mt-7 flex justify-center">
+            <div className="mt-5 sm:mt-7 flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
           ) : !isAuthenticated ? (
-            <div className="mt-7 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-              <p className="text-gray-700 font-medium text-center">
+            <div className="mt-5 sm:mt-7 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-gray-700 font-medium text-center text-sm sm:text-base">
                 Sign in to purchase
               </p>
-              <p className="text-gray-500 text-sm text-center mt-2">
+              <p className="text-gray-500 text-xs sm:text-sm text-center mt-1 sm:mt-2">
                 Create an account or sign in to add items to cart and make purchases
               </p>
-              <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 mt-4">
+              <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 mt-3 sm:mt-4">
                 <button
                   onClick={() => navigate('/signin', { state: { from: `/marketplace/product/${id}` } })}
-                  className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="w-full px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm sm:text-base"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => navigate('/signup')}
-                  className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                  className="w-full px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm sm:text-base"
                 >
                   Sign Up
                 </button>
               </div>
             </div>
           ) : isOwnProduct ? (
-            <div className="mt-7 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800 font-medium text-center">
+            <div className="mt-5 sm:mt-7 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 font-medium text-center text-sm sm:text-base">
                 This is your product
               </p>
-              <p className="text-blue-600 text-sm text-center mt-2">
+              <p className="text-blue-600 text-xs sm:text-sm text-center mt-1 sm:mt-2">
                 You cannot purchase your own products
               </p>
               <button
                 onClick={() => navigate(`/marketplace/myproduct/edit/${id}`)}
-                className="w-full mt-3 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                className="w-full mt-2 sm:mt-3 px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm sm:text-base"
               >
                 Edit Product
               </button>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 mt-7">
+            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 mt-5 sm:mt-7">
               <button 
                 onClick={handleAddToCart}
                 disabled={addingToCart || product.stock === 0}
-                className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {addingToCart ? 'Adding...' : 'Add to Cart'}
               </button>
               <button
                 onClick={handleBuyNow}
                 disabled={product.stock === 0}
-                className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 Buy Now
               </button>
@@ -358,8 +373,8 @@ const ProductCard = () => {
 
     {/* Suggested Products Section */}
     {suggestedProducts.length > 0 && (
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">
           Suggested Products
         </h2>
         <ProductGrid products={suggestedProducts} />

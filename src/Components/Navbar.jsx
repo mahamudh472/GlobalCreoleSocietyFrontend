@@ -7,14 +7,14 @@ import { MdExpandLess, MdLogout } from "react-icons/md";
 import SettingPopup from "./Settings/SettingPopup";
 import SearchResults from "./SearchResults";
 import websitelogo from "../assets/websitelogo.png"
-import { useCurrentUser, useUserSearch } from "../hooks/queries";
-import { useLogoutMutation } from "../hooks/mutations";
+import { useUserSearch } from "../hooks/queries";
+import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 
 const Navbar = () => {
-  const { data: user } = useCurrentUser();
-  const logoutMutation = useLogoutMutation();
+  // Use AuthContext for user data to stay in sync with auth state
+  const { user, logout } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -69,11 +69,9 @@ const Navbar = () => {
   };
 
   const handleLogout = async () => {
-    logoutMutation.mutate(undefined, {
-      onSuccess: () => {
-        navigate('/signin');
-      }
-    });
+    // Use AuthContext logout which properly clears both state and cache
+    await logout();
+    navigate('/signin');
   };
 
   const handleOpenModal = () => {
