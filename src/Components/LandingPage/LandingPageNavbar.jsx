@@ -52,57 +52,57 @@ const LandingPageNavbar = () => {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden text-white p-2"
-        >
-          {mobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
-        </button>
+        {/* Mobile Right Section: Sign In Button + Menu Toggle */}
+        <div className="md:hidden flex items-center gap-2">
+          {/* Mobile Sign In or Feed Button */}
+          {loading ? (
+            <div className="w-16 h-8 bg-gray-300 animate-pulse rounded-full"></div>
+          ) : isAuthenticated ? (
+            <button
+              onClick={() => navigate("/feed")}
+              className="cursor-pointer bg-white text-[#0f0f1f] py-1.5 px-3 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors"
+            >
+              Feed
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate("/signin")}
+              className="cursor-pointer bg-white text-[#0f0f1f] py-1.5 px-3 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors"
+            >
+              Sign In
+            </button>
+          )}
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="text-white p-2"
+          >
+            {mobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 mt-2 bg-[#0F172A] rounded-2xl p-4 z-50 shadow-lg">
           <div className="flex flex-col space-y-3">
-            <NavLink 
-              to="/marketplace" 
+            <NavLink
+              to="/marketplace"
               className="text-white text-base py-2 px-4 hover:bg-white/10 rounded-lg"
               onClick={() => setMobileMenuOpen(false)}
             >
               Shop
             </NavLink>
-            <NavLink 
-              to="/advertisement-request" 
+            <NavLink
+              to="/advertisement-request"
               className="text-white text-base py-2 px-4 hover:bg-white/10 rounded-lg"
               onClick={() => setMobileMenuOpen(false)}
             >
               Advertisement
             </NavLink>
             <div className="border-t border-white/20 pt-3">
-              {loading ? (
-                <div className="w-full h-10 bg-gray-300 animate-pulse rounded-full"></div>
-              ) : isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    navigate("/feed");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full cursor-pointer bg-white text-[#0f0f1f] py-2 px-6 rounded-full text-base font-medium hover:bg-gray-200 transition-colors"
-                >
-                  Feed
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    navigate("/signin");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full cursor-pointer bg-white text-[#0f0f1f] py-2 px-6 rounded-full text-base font-medium hover:bg-gray-200 transition-colors"
-                >
-                  Sign In
-                </button>
-              )}
+              {/* Mobile Menu Footer or additional links can go here if needed */}
             </div>
           </div>
         </div>

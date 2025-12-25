@@ -23,6 +23,7 @@ const ProfileHeader = ({
     data?.cover_photo || null
   );
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
   const coverInputRef = useRef(null);
 
   useEffect(() => {
@@ -135,7 +136,7 @@ const ProfileHeader = ({
       </div>
 
       {/* Profile Information Section */}
-      <div className="flex pt-12 sm:pt-14 md:pt-16 pb-4 sm:pb-6 md:pb-8 px-3 sm:px-4 md:px-8 rounded-lg flex-col sm:flex-row sm:justify-between gap-4">
+      <div className="flex pt-20 sm:pt-24 md:pt-28 pb-4 sm:pb-6 md:pb-8 px-3 sm:px-4 md:px-8 rounded-lg flex-col sm:flex-row sm:justify-between gap-4">
         <div className="hidden sm:block w-[15%] lg:w-[20%]"></div>
         <div className="sm:w-[45%] lg:w-[40%]">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -185,9 +186,22 @@ const ProfileHeader = ({
               </span>
             )}
           </div>
-          <p className="text-xs sm:text-sm opacity-60 mb-1 sm:mb-2 mt-1 sm:mt-2">
-            {data?.description || "No bio yet"}
-          </p>
+          {/* Bio with truncation */}
+          <div className="relative">
+            <p
+              className={`text-xs sm:text-sm opacity-60 mb-1 sm:mb-2 mt-1 sm:mt-2 transition-all duration-300 ${!isBioExpanded ? 'line-clamp-3' : ''}`}
+            >
+              {data?.description || "No bio yet"}
+            </p>
+            {data?.description && data.description.length > 150 && (
+              <button
+                onClick={() => setIsBioExpanded(!isBioExpanded)}
+                className="text-xs text-blue-500 hover:text-blue-700 font-medium mt-1 focus:outline-none"
+              >
+                {isBioExpanded ? "Show less" : "Show more"}
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <h3 className="text-xs sm:text-sm opacity-60">{friendsCount} friends</h3>
             {data?.profile_lock && (
@@ -215,9 +229,9 @@ const ProfileHeader = ({
             <p className="font-bold text-xs sm:text-sm">
               {data?.date_joined
                 ? new Date(data.date_joined).toLocaleDateString("en-US", {
-                    month: "short",
-                    year: "numeric",
-                  })
+                  month: "short",
+                  year: "numeric",
+                })
                 : "N/A"}
             </p>
           </div>

@@ -334,11 +334,10 @@ const GlobalChatPopUp = () => {
 
       <div
         ref={popupRef}
-        className={`absolute bottom-30 right-10 w-[350px] h-[600px] xl:h-[700px] xl:w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ease-in-out ${
-          isOpen
-            ? "opacity-100 transform scale-100"
-            : "opacity-0 transform scale-90"
-        }`}
+        className={`fixed bottom-24 right-4 md:bottom-30 md:right-10 w-[calc(100vw-32px)] md:w-[350px] xl:w-[400px] h-[calc(100vh-150px)] md:h-[600px] xl:h-[700px] bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ease-in-out z-[9999] ${isOpen
+          ? "opacity-100 transform scale-100"
+          : "opacity-0 transform scale-90"
+          }`}
       >
         {!isActive ? (
           // Initial popup state
@@ -392,9 +391,8 @@ const GlobalChatPopUp = () => {
                 {messages.map((msg, index) => (
                   <div
                     key={msg.id || index}
-                    className={`flex items-start gap-2 ${
-                      msg.isOwn ? "flex-row-reverse" : ""
-                    }`}
+                    className={`flex items-start gap-2 ${msg.isOwn ? "flex-row-reverse" : ""
+                      }`}
                   >
                     <img
                       src={msg.avatar}
@@ -402,17 +400,15 @@ const GlobalChatPopUp = () => {
                       className="w-8 h-8 rounded-full"
                     />
                     <div
-                      className={`flex flex-col ${
-                        msg.isOwn ? "items-end" : "items-start"
-                      }`}
+                      className={`flex flex-col ${msg.isOwn ? "items-end" : "items-start"
+                        }`}
                     >
                       <p className="text-xs text-white/80 mb-1">{msg.user}</p>
                       <div
-                        className={`px-4 py-2 rounded-lg max-w-[200px] ${
-                          msg.isOwn
-                            ? "bg-white/20 text-white"
-                            : "bg-white/10 text-white"
-                        }`}
+                        className={`px-4 py-2 rounded-lg max-w-[200px] ${msg.isOwn
+                          ? "bg-white/20 text-white"
+                          : "bg-white/10 text-white"
+                          }`}
                       >
                         {msg.file_url && (
                           <div className="mb-2">
