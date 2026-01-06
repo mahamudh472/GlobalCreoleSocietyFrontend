@@ -46,6 +46,38 @@ export const AuthProvider = ({ children }) => {
     // QueryClient not available in this context
   }
 
+  // Listen for authentication failures (expired tokens that can't be refreshed)
+  useEffect(() => {
+    const handleAuthFailed = () => {
+      console.log('Auth failed - logging out user');
+      setUser(null);
+      setIsAuthenticated(false);
+      // Clear React Query cache
+      if (queryClient) {
+        queryClient.resetQueries();
+        queryClient.removeQueries();
+      }
+    };
+
+    const handleTokenRefreshed = () => {
+      console.log('Token refreshed successfully');
+      // Token was refreshed, ensure user is still marked as authenticated
+      const currentUser = authHelpers.getCurrentUser();
+      if (currentUser && !isAuthenticated) {
+        setUser(currentUser);
+        setIsAuthenticated(true);
+      }
+    };
+
+    window.addEventListener('auth-failed', handleAuthFailed);
+    window.addEventListener('token-refreshed', handleTokenRefreshed);
+
+    return () => {
+      window.removeEventListener('auth-failed', handleAuthFailed);
+      window.removeEventListener('token-refreshed', handleTokenRefreshed);
+    };
+  }, [isAuthenticated, queryClient]);
+
   const login = useCallback(async (email, password) => {
     try {
       // CRITICAL: Clear ALL cached queries BEFORE login to prevent stale data

@@ -54,20 +54,28 @@ api.interceptors.response.use(
           const { access } = response.data;
           localStorage.setItem("access_token", access);
 
+          // Dispatch custom event to notify AuthContext of successful refresh
+          window.dispatchEvent(new Event('token-refreshed'));
+
           // Retry the original request with new token
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
         } else {
-          // No refresh token - don't redirect, just reject
-          // This allows public pages to work without forcing login
+          // No refresh token - clear everything and notify
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("user");
+          // Dispatch event to notify AuthContext
+          window.dispatchEvent(new Event('auth-failed'));
           return Promise.reject(error);
         }
       } catch (refreshError) {
-        // Refresh failed, clear tokens but don't redirect
-        // Let the component handle the redirect if needed
+        // Refresh failed, clear tokens and notify AuthContext
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
+        // Dispatch event to notify AuthContext
+        window.dispatchEvent(new Event('auth-failed'));
         return Promise.reject(refreshError);
       }
     }
