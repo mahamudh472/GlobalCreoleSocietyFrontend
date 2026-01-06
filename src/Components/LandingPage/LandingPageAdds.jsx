@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL, ENDPOINTS } from "../../config/apiConfig";
+import defaultAvatar from "../../assets/default-avatar.jpg";
 
 const LandingPageAdds = () => {
   const [playingAdId, setPlayingAdId] = useState(null);
@@ -23,21 +24,24 @@ const LandingPageAdds = () => {
           
           if (adsArray && adsArray.length > 0) {
             // Transform API data to match component structure
-            const transformedAds = adsArray.map((ad) => ({
-              id: ad.id,
-              logo: "https://via.placeholder.com/30", // Default logo
-              title: ad.title,
-              description: ad.description,
-              // Get first image as thumbnail, or first media
-              videoThumbnail: ad.media?.find(m => m.media_type === 'image')?.file_url 
-                || ad.media?.[0]?.file_url 
-                || "https://via.placeholder.com/400x300",
-              // Get video URL if available
-              videoUrl: ad.media?.find(m => m.media_type === 'video')?.file_url || null,
-              name: ad.owner_name,
-              role: ad.company_name,
-              hasVideo: ad.media?.some(m => m.media_type === 'video'),
-            }));
+            const transformedAds = adsArray.map((ad) => {
+              const videoMedia = ad.media?.find(m => m.media_type === 'video');
+              const imageMedia = ad.media?.find(m => m.media_type === 'image');
+              
+              return {
+                id: ad.id,
+                logo: defaultAvatar, // Use default avatar from assets
+                title: ad.title,
+                description: ad.description,
+                // If there's a video, try to get its thumbnail first, otherwise use first image
+                videoThumbnail: (videoMedia?.thumbnail_url || imageMedia?.file_url || ad.media?.[0]?.file_url || null),
+                // Get video URL if available
+                videoUrl: videoMedia?.file_url || null,
+                name: ad.owner_name,
+                role: ad.company_name,
+                hasVideo: !!videoMedia,
+              };
+            });
             console.log('Transformed ads:', transformedAds);
             setAdvertisements(transformedAds);
           } else {
@@ -121,7 +125,7 @@ const LandingPageAdds = () => {
               <p className="font-medium text-gray-800 mb-4">{ad.title}</p>
 
               {/* Video / Thumbnail */}
-              <div className="relative rounded-xl overflow-hidden aspect-video">
+              <div className="relative rounded-xl overflow-hidden aspect-video bg-gray-100">
                 {playingAdId === ad.id && ad.videoUrl ? (
                   // Playing video
                   isPlayableVideo(ad.videoUrl) && ad.videoUrl.includes('youtube') ? (
@@ -147,17 +151,29 @@ const LandingPageAdds = () => {
                   )
                 ) : (
                   <>
-                    <img
-                      src={ad.videoThumbnail}
-                      alt={ad.title}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
+                    {ad.videoThumbnail ? (
+                      <img
+                        src={ad.videoThumbnail}
+                        alt={ad.title}
+                        className="w-full h-full object-cover rounded-xl"
+                        onError={(e) => {
+                          // Fallback to a default placeholder if image fails to load
+                          e.target.src = defaultAvatar;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                        <svg className="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
                     {(ad.videoUrl || ad.hasVideo) && (
                       <button
                         onClick={() => setPlayingAdId(ad.id)}
-                        className="absolute inset-0 flex items-center justify-center"
+                        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-20 transition-all"
                       >
-                        <div className="bg-white p-2 rounded-full shadow-md">
+                        <div className="bg-white p-3 rounded-full shadow-lg hover:scale-110 transition-transform">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             fill="black"

@@ -10,6 +10,7 @@ import LandingPageAdsRequest from "../Components/LandingPage/LandingPageAdsReque
 // Authentication components
 import LoginPage from "../Components/Authentication/LoginPage";
 import SignUpPage from "../Components/Authentication/SignUpPage";
+import ForgotPassword from "../Components/Authentication/ForgotPassword";
 import Feed from "../Components/Feed/Feed";
 import Reels from "../Components/Feed/Reels";
 import ShareModal from "../Components/Feed/ShareModal";
@@ -70,6 +71,10 @@ const router = createBrowserRouter([
       {
         path: "/signup",
         element: <SignUpPage></SignUpPage>,
+      },
+      {
+        path: "/forgot-password",
+        element: <ForgotPassword></ForgotPassword>,
       },
       // Feed routes..........
       {

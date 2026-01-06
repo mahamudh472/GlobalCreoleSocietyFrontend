@@ -20,7 +20,7 @@ const LangdingPageHeader = () => {
             {/* Notifications Section */}
             <div>
                 <div>
-                    <h3>Notifications</h3>
+                    <h3></h3>
                     <div></div>
                 </div>
                 <div>
