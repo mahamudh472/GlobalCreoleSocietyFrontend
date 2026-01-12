@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../utils/queryKeys";
 import { toast } from "react-toastify";
+import { countryCodes } from "../../utils/countryCodes";
 
 
 const SignUpPage = ({ onSwitchToLogin }) => {
@@ -14,7 +15,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
     const { register } = useAuth();
     const queryClient = useQueryClient();
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         profileName: "",
         email: "",
@@ -38,7 +39,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
             ...prev,
             [name]: type === "checkbox" ? checked : value,
         }))
-        
+
         // Validate password on change
         if (name === "password") {
             validatePassword(value);
@@ -79,7 +80,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
 
         // Combine date of birth
         const dateOfBirth = `${formData.birthYear}-${String(formData.birthMonth).padStart(2, '0')}-${String(formData.birthDate).padStart(2, '0')}`;
-        
+
         // Prepare registration data according to API requirements
         const registrationData = {
             email: formData.email,
@@ -93,7 +94,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
         try {
             // Use AuthContext register which properly updates React state
             const result = await register(registrationData);
-            
+
             if (result.success) {
                 // Invalidate all queries to ensure fresh data
                 queryClient.resetQueries();
@@ -192,10 +193,11 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                                 onChange={handleInputChange}
                                 className="px-3 py-2 border border-gray-200 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                             >
-                                <option value="+1">🇺🇸 +1</option>
-                                <option value="+44">🇬🇧 +44</option>
-                                <option value="+91">🇮🇳 +91</option>
-                                <option value="+86">🇨🇳 +86</option>
+                                {countryCodes.map((country) => (
+                                    <option key={country.id} value={country.code}>
+                                        {country.flag} {country.code}
+                                    </option>
+                                ))}
                             </select>
                             <input
                                 type="tel"
@@ -253,7 +255,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                     </div>
 
                     {/* Promotional Code */}
-                    <div>
+                    {/* <div>
                         <label className="block text-md text-gray-600 mb-2">Promotional Code</label>
                         <input
                             type="text"
@@ -263,7 +265,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                             placeholder="Enter your Promotional Code"
                             className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
-                    </div>
+                    </div> */}
 
                     {/* Gender */}
                     <div>
@@ -380,7 +382,7 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                         .
                     </p>
 
-                  {/* Submit Button */}
+                    {/* Submit Button */}
                     <AuthButton
                         text={isLoading ? "Creating Account..." : "Sign Up"}
                         type="submit"
@@ -391,8 +393,8 @@ const SignUpPage = ({ onSwitchToLogin }) => {
                     {/* Switch to Login */}
                     <p className="text-center text-md text-gray-600">
                         Already have an account?{" "}
-                        <button 
-                        type="button" onClick={()=>navigate('/signin')} className="text-blue-500 hover:text-blue-600 font-medium cursor-pointer">
+                        <button
+                            type="button" onClick={() => navigate('/signin')} className="text-blue-500 hover:text-blue-600 font-medium cursor-pointer">
                             Log in
                         </button>
                     </p>

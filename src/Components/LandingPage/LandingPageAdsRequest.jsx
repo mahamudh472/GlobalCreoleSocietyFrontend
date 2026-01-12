@@ -1,6 +1,7 @@
 import { useState } from "react";
 import LandingPageNavbar from "./LandingPageNavbar";
 import { API_BASE_URL, ENDPOINTS } from "../../config/apiConfig";
+import { countryCodes } from "../../utils/countryCodes";
 
 
 const LandingPageAdsRequest = () => {
@@ -14,7 +15,7 @@ const LandingPageAdsRequest = () => {
         description: "",
         agreeToShare: false,
         mediaFiles: [],
-        time : "",
+        time: "",
         price: ""
 
     })
@@ -69,9 +70,9 @@ const LandingPageAdsRequest = () => {
             const data = await response.json();
 
             if (response.ok) {
-                setSubmitStatus({ 
-                    type: 'success', 
-                    message: data.message || 'Advertisement request submitted successfully!' 
+                setSubmitStatus({
+                    type: 'success',
+                    message: data.message || 'Advertisement request submitted successfully!'
                 });
                 // Reset form
                 setFormData({
@@ -92,16 +93,16 @@ const LandingPageAdsRequest = () => {
                 const errorMessages = Object.entries(data)
                     .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
                     .join('\n');
-                setSubmitStatus({ 
-                    type: 'error', 
-                    message: errorMessages || 'Failed to submit advertisement request.' 
+                setSubmitStatus({
+                    type: 'error',
+                    message: errorMessages || 'Failed to submit advertisement request.'
                 });
             }
         } catch (error) {
             console.error('Error submitting advertisement:', error);
-            setSubmitStatus({ 
-                type: 'error', 
-                message: 'An error occurred while submitting your request. Please try again.' 
+            setSubmitStatus({
+                type: 'error',
+                message: 'An error occurred while submitting your request. Please try again.'
             });
         } finally {
             setIsSubmitting(false);
@@ -153,10 +154,11 @@ const LandingPageAdsRequest = () => {
                                 onChange={handleInputChange}
                                 className="px-3 py-2 border border-gray-200 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                             >
-                                <option value="+1">🇺🇸 +1</option>
-                                <option value="+44">🇬🇧 +44</option>
-                                <option value="+91">🇮🇳 +91</option>
-                                <option value="+86">🇨🇳 +86</option>
+                                {countryCodes.map((country) => (
+                                    <option key={country.id} value={country.code}>
+                                        {country.flag} {country.code}
+                                    </option>
+                                ))}
                             </select>
                             <input
                                 type="tel"
@@ -268,11 +270,10 @@ const LandingPageAdsRequest = () => {
 
                     {/* Status Message */}
                     {submitStatus.message && (
-                        <div className={`p-4 rounded-md ${
-                            submitStatus.type === 'success' 
-                                ? 'bg-green-50 border border-green-200 text-green-700' 
-                                : 'bg-red-50 border border-red-200 text-red-700'
-                        }`}>
+                        <div className={`p-4 rounded-md ${submitStatus.type === 'success'
+                            ? 'bg-green-50 border border-green-200 text-green-700'
+                            : 'bg-red-50 border border-red-200 text-red-700'
+                            }`}>
                             <p className="whitespace-pre-line">{submitStatus.message}</p>
                         </div>
                     )}
@@ -281,11 +282,10 @@ const LandingPageAdsRequest = () => {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className={`w-full font-medium py-3 px-4 rounded-full transition duration-200 cursor-pointer ${
-                            isSubmitting 
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                                : 'bg-gray-400 hover:bg-gray-500 text-white'
-                        }`}
+                        className={`w-full font-medium py-3 px-4 rounded-full transition duration-200 cursor-pointer ${isSubmitting
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-gray-400 hover:bg-gray-500 text-white'
+                            }`}
                     >
                         {isSubmitting ? 'Submitting...' : 'Continue'}
                     </button>
