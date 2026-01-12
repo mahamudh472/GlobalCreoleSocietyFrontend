@@ -40,7 +40,7 @@ const PendingPostCard = ({ post,  onShare, onApprove,onreject}) => {
       </div>
 
       <div className="mb-3">
-        <p className="text-gray-800 mb-3">{content}</p>
+        <p className="text-gray-800 mb-3 whitespace-pre-line">{content}</p>
         {image && (
           <img
             src={image || "/placeholder.svg"}

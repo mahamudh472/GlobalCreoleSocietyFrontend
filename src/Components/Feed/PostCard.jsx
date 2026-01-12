@@ -211,7 +211,7 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
       </div>
 
       <div className="mb-3">
-        <p className="text-gray-800 mb-3 text-sm sm:text-base">{post.content}</p>
+        <p className="text-gray-800 mb-3 text-sm sm:text-base whitespace-pre-line">{post.content}</p>
         {post.media && post.media.length > 0 && (
           <div className="grid grid-cols-1 gap-2">
             {post.media.map((mediaItem, index) => (
