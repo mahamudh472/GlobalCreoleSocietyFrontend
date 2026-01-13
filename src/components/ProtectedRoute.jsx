@@ -1,20 +1,23 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useCurrentUser } from '../hooks/queries';
+import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-  const { data: user, isLoading } = useCurrentUser();
+  const { user, isAuthenticated, loading } = useAuth();
 
-  if (isLoading) {
-    // Show loading spinner while checking auth status
+  if (loading) {
+    // Show loading spinner while validating/refreshing token
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 text-lg">Validating session...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     // Redirect to login if not authenticated
     return <Navigate to="/signin" replace />;
   }

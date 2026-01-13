@@ -8,23 +8,35 @@ const AuthContext = createContext(null);
 /**
  * Helper to get initial auth state SYNCHRONOUSLY from localStorage
  * This prevents the flash of unauthenticated UI on page load
+ * IMPORTANT: Now validates token expiry to prevent unauthorized access
  */
 const getInitialAuthState = () => {
   const token = localStorage.getItem('access_token');
   const savedUser = authHelpers.getCurrentUser();
   
   if (token && savedUser) {
-    return {
-      user: savedUser,
-      isAuthenticated: true,
-      loading: false, // Already loaded from localStorage
-    };
+    // CRITICAL: Validate that the token is not expired
+    if (authHelpers.isTokenValid()) {
+      return {
+        user: savedUser,
+        isAuthenticated: true,
+        loading: false,
+      };
+    } else {
+      // Token exists but is expired - need to attempt refresh
+      // Set loading true so we can attempt refresh in useEffect
+      return {
+        user: null,
+        isAuthenticated: false,
+        loading: true, // Will attempt token refresh
+      };
+    }
   }
   
   return {
     user: null,
     isAuthenticated: false,
-    loading: false, // No need to load, we know user is not authenticated
+    loading: false,
   };
 };
 
@@ -45,6 +57,51 @@ export const AuthProvider = ({ children }) => {
   } catch (e) {
     // QueryClient not available in this context
   }
+
+  // CRITICAL: Validate token on mount and attempt refresh if expired
+  useEffect(() => {
+    const validateAndRefreshToken = async () => {
+      // Only run if we're in loading state (expired access token detected)
+      if (!loading) return;
+
+      console.log('Validating token on app initialization...');
+      
+      const hasAccessToken = !!localStorage.getItem('access_token');
+      const hasRefreshToken = !!localStorage.getItem('refresh_token');
+      const savedUser = authHelpers.getCurrentUser();
+
+      if (hasAccessToken && hasRefreshToken && savedUser) {
+        // Access token exists but might be expired, attempt refresh
+        const refreshed = await authHelpers.attemptTokenRefresh();
+        
+        if (refreshed) {
+          console.log('Token refreshed successfully on app init');
+          setUser(savedUser);
+          setIsAuthenticated(true);
+          setLoading(false);
+        } else {
+          console.log('Token refresh failed - clearing auth state');
+          setUser(null);
+          setIsAuthenticated(false);
+          setLoading(false);
+          
+          // Clear query cache
+          if (queryClient) {
+            queryClient.resetQueries();
+            queryClient.removeQueries();
+          }
+        }
+      } else {
+        // No tokens or user data, not authenticated
+        console.log('No valid tokens found on app init');
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    };
+
+    validateAndRefreshToken();
+  }, []); // Only run once on mount
 
   // Listen for authentication failures (expired tokens that can't be refreshed)
   useEffect(() => {

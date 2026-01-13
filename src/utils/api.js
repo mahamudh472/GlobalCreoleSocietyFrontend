@@ -1,6 +1,36 @@
 import axios from "axios";
 import { API_BASE_URL } from "../config/apiConfig";
 
+/**
+ * Decode JWT token and check if it's expired
+ * @param {string} token - JWT token
+ * @returns {boolean} - true if token is valid and not expired
+ */
+const isTokenValid = (token) => {
+  if (!token) return false;
+  
+  try {
+    // JWT tokens have 3 parts separated by dots
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    // Decode the payload (second part)
+    const payload = JSON.parse(atob(parts[1]));
+    
+    // Check if token has expiry and if it's still valid
+    // Add 10 second buffer to account for clock skew
+    if (payload.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      return payload.exp > (now + 10);
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error validating token:', error);
+    return false;
+  }
+};
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -43,34 +73,47 @@ api.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem("refresh_token");
-        if (refreshToken) {
-          const response = await axios.post(
-            `${API_BASE_URL}/accounts/token/refresh/`,
-            {
-              refresh: refreshToken,
-            }
-          );
-
-          const { access } = response.data;
-          localStorage.setItem("access_token", access);
-
-          // Dispatch custom event to notify AuthContext of successful refresh
-          window.dispatchEvent(new Event('token-refreshed'));
-
-          // Retry the original request with new token
-          originalRequest.headers.Authorization = `Bearer ${access}`;
-          return api(originalRequest);
-        } else {
+        if (!refreshToken) {
           // No refresh token - clear everything and notify
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
           localStorage.removeItem("user");
-          // Dispatch event to notify AuthContext
           window.dispatchEvent(new Event('auth-failed'));
           return Promise.reject(error);
         }
+
+        // Check if refresh token is valid before attempting refresh
+        if (!isTokenValid(refreshToken)) {
+          console.log('Refresh token is expired - logging out');
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("user");
+          window.dispatchEvent(new Event('auth-failed'));
+          return Promise.reject(error);
+        }
+
+        const response = await axios.post(
+          `${API_BASE_URL}/accounts/token/refresh/`,
+          { refresh: refreshToken }
+        );
+
+        const { access } = response.data;
+        localStorage.setItem("access_token", access);
+
+        // Update refresh token if provided (token rotation)
+        if (response.data.refresh) {
+          localStorage.setItem("refresh_token", response.data.refresh);
+        }
+
+        // Dispatch custom event to notify AuthContext of successful refresh
+        window.dispatchEvent(new Event('token-refreshed'));
+
+        // Retry the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+        return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed, clear tokens and notify AuthContext
+        console.error('Token refresh failed:', refreshError);
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
@@ -207,7 +250,52 @@ export const authHelpers = {
     return !!localStorage.getItem("access_token");
   },
 
-  
+  // Validate if token is not expired
+  isTokenValid: () => {
+    const token = localStorage.getItem("access_token");
+    return isTokenValid(token);
+  },
+
+  // Attempt to refresh token
+  attemptTokenRefresh: async () => {
+    try {
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (!refreshToken) {
+        return false;
+      }
+
+      // Check if refresh token is valid
+      if (!isTokenValid(refreshToken)) {
+        // Refresh token is also expired, clear everything
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+        return false;
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/accounts/token/refresh/`,
+        { refresh: refreshToken }
+      );
+
+      const { access } = response.data;
+      localStorage.setItem("access_token", access);
+      
+      // Update refresh token if provided (token rotation)
+      if (response.data.refresh) {
+        localStorage.setItem("refresh_token", response.data.refresh);
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      // Clear tokens on refresh failure
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      return false;
+    }
+  },
 };
 
 export default api;

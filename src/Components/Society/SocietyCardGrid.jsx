@@ -70,11 +70,9 @@ const SocietyCardGrid = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen">
-      <section className="py-7">
-        <Navbar />
-      </section>
+      <Navbar />
 
-      <section className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-2">
+      <section className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 pt-7">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Society</h1>

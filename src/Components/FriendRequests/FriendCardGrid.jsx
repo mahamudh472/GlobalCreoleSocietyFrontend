@@ -83,11 +83,9 @@ const FriendCardGrid = () => {
 
     return (
         <div className="bg-gray-100 min-h-screen">
-             <div className='py-7'>
-                <Navbar></Navbar>
-            </div>
+            <Navbar></Navbar>
 
-            <section className=" 2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-4">
+            <section className=" 2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-4 pt-7">
                 {loading ? (
                     <div className="flex justify-center items-center h-40 sm:h-64">
                         <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-500"></div>

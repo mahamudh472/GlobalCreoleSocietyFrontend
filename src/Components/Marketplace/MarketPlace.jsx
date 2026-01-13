@@ -84,11 +84,8 @@ const MarketPlace = () => {
 
     return (
         <div className='bg-gray-100 min-h-screen'>
-
-            <section className='py-7'>
-                <Navbar />
-            </section>
-            <div className='2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8'>
+            <Navbar />
+            <div className='2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 pt-7'>
                 <section>
                     <SearchBar onSearch={handleSearch} />
                 </section>

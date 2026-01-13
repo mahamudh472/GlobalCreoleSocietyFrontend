@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { BiStore } from "react-icons/bi";
 import { FaHome, FaUsers, FaComment, FaBell, FaUserFriends } from "react-icons/fa";
 import { IoMdSearch, IoMdSettings } from "react-icons/io";
@@ -15,6 +16,8 @@ import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 const Navbar = () => {
   // Use AuthContext for user data to stay in sync with auth state
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -120,7 +123,7 @@ const Navbar = () => {
   const profileItems = ["profile", "settings", "logout"];
 
   return (
-    <nav className="bg-red-500 px-4 py-2 md:py- flex items-center justify-between relative lg:px-20">
+    <nav className="sticky top-0 z-50 bg-red-500 px-4 py-2 md:py- flex items-center justify-between relative lg:px-20">
       {/* Logo/Brand */}
       <div
       
@@ -142,6 +145,13 @@ const Navbar = () => {
             <NavLink
               key={item.name}
               to={`/${item.name}`}
+              onClick={(e) => {
+                if (item.name === "feed" && location.pathname === "/feed") {
+                  e.preventDefault();
+                  queryClient.invalidateQueries({ queryKey: ["posts"] });
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
               className={({ isActive }) =>
                 `p-2 rounded-lg transition-colors ${isActive ? "bg-yellow-400" : "hover:bg-yellow-400"
                 }`
@@ -150,7 +160,7 @@ const Navbar = () => {
             >
               {item.icon}
             </NavLink>
-          ))}
+          ))}}
         </div>
 
         {/* Search */}

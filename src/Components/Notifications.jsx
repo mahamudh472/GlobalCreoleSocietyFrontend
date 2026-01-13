@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaUserPlus,
   FaComment,
@@ -22,6 +23,7 @@ import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
 
 function Notifications() {
   const [showMenu, setShowMenu] = useState(null);
+  const navigate = useNavigate();
 
   // Use TanStack Query for notifications
   const { data: notifications = [], isLoading: loading } = useNotifications();
@@ -87,22 +89,24 @@ function Notifications() {
 
   // Handle notification click
   const handleNotificationClick = (notification) => {
-    console.log("Notification clicked:", notification);
+    
     // Navigate to the relevant page based on notification type
-    // For example:
+    if (notification.notification_type === "friend_request" && notification.sender?.id) {
+      navigate(`/profile/${notification.sender.id}`);
+    } else if ((notification.notification_type === "society_invite" || notification.notification_type === "society_join") && notification.society) {
+      navigate(`/society/${notification.society}`);
+    }
+    // Add more navigation logic for other notification types as needed
     // if (notification.post) navigate(`/feed/${notification.post}`)
-    // if (notification.society) navigate(`/society/${notification.society}`)
   };
 
   return (
     <div className="bg-gray-100 ">
-      <div className="my-7">
-        <Navbar></Navbar>
-      </div>
+      <Navbar></Navbar>
 
       {/* Main part...................... */}
 
-      <div className="min-h-[calc(100vh-100px)] pb-6 px-2 sm:px-4 md:px-6 lg:px-8">
+      <div className="min-h-[calc(100vh-100px)] pb-6 px-2 sm:px-4 md:px-6 lg:px-8 pt-7">
         <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-2">
           {/* Header */}
           <div className="flex justify-between items-center mb-4 sm:mb-6">

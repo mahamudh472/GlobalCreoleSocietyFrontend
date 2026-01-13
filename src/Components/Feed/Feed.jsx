@@ -9,10 +9,8 @@ const Feed = () => {
 
     return (
         <div className='relative bg-gray-100'>
-            <div className='py-7'>
-                <Navbar></Navbar>
-            </div>
-            <div className='2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8'>
+            <Navbar></Navbar>
+            <div className='2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 pt-7'>
                 <SocialFeed></SocialFeed>
             </div>
             <div className='fixed bottom-5 right-5 z-[9999]'>

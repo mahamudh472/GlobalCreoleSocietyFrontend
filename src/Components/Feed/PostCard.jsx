@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Heart, MessageCircle, MoreVertical, Trash2, Edit, Globe, Lock, Users } from "lucide-react";
+import { Heart, MessageCircle, MoreVertical, Trash2, Edit, Globe, Lock, Users, X } from "lucide-react";
 import { FaShareFromSquare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -17,6 +17,8 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
   const [isLiked, setIsLiked] = useState(post.is_liked || false);
   const [likesCount, setLikesCount] = useState(post.like_count || 0);
   const [showMenu, setShowMenu] = useState(false);
+  const [fullScreenImage, setFullScreenImage] = useState(null);
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
 
   const likeMutation = useLikePostMutation();
   const deleteMutation = useDeletePostMutation();
@@ -211,7 +213,19 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
       </div>
 
       <div className="mb-3">
-        <p className="text-gray-800 mb-3 text-sm sm:text-base whitespace-pre-line">{post.content}</p>
+        <div className="mb-3">
+          <p className={`text-gray-800 text-sm sm:text-base whitespace-pre-line ${!isTextExpanded ? 'line-clamp-4' : ''}`}>
+            {post.content}
+          </p>
+          {post.content && post.content.split('\n').length > 4 && (
+            <button
+              onClick={() => setIsTextExpanded(!isTextExpanded)}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-1"
+            >
+              {isTextExpanded ? 'See less' : 'See more'}
+            </button>
+          )}
+        </div>
         {post.media && post.media.length > 0 && (
           <div className="grid grid-cols-1 gap-2">
             {post.media.map((mediaItem, index) => (
@@ -220,7 +234,11 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
                   <img
                     src={mediaItem.file || "/placeholder.svg"}
                     alt={mediaItem.caption || "Post content"}
-                    className="w-full rounded-lg object-cover max-h-[400px] sm:max-h-[700px]"
+                    className="w-full rounded-lg object-cover max-h-[400px] sm:max-h-[700px] cursor-pointer hover:opacity-95 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFullScreenImage(mediaItem.file);
+                    }}
                   />
                 )}
                 {mediaItem.media_type === "video" && (
@@ -244,7 +262,11 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
           <img
             src={post.image || "/placeholder.svg"}
             alt="Post content"
-            className="w-full rounded-lg object-cover max-h-72 sm:max-h-96"
+            className="w-full rounded-lg object-cover max-h-72 sm:max-h-96 cursor-pointer hover:opacity-95 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              setFullScreenImage(post.image);
+            }}
           />
         )}
       </div>
@@ -277,6 +299,27 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
           <FaShareFromSquare className="w-4 h-4 text-gray-500" />
         </button>
       </div>
+
+      {/* Full Screen Image Viewer */}
+      {fullScreenImage && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black bg-opacity-95 flex items-center justify-center p-4"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors p-2 bg-black bg-opacity-50 rounded-full"
+            onClick={() => setFullScreenImage(null)}
+          >
+            <X className="w-6 h-6 sm:w-8 sm:h-8" />
+          </button>
+          <img
+            src={fullScreenImage}
+            alt="Full screen view"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };

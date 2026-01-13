@@ -316,15 +316,13 @@ function ChatApp() {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            <div className="py-7">
-                <Navbar></Navbar>
-            </div>
+            <Navbar></Navbar>
             {loading && conversationsData.length === 0 ? (
-                <div className="flex h-[calc(100vh-160px)] items-center justify-center text-gray-500">Loading conversations...</div>
+                <div className="flex h-[calc(100vh-160px)] items-center justify-center text-gray-500 pt-7">Loading conversations...</div>
             ) : error && conversationsData.length === 0 ? (
-                <div className="flex h-[calc(100vh-160px)] items-center justify-center text-red-500">{error}</div>
+                <div className="flex h-[calc(100vh-160px)] items-center justify-center text-red-500 pt-7">{error}</div>
             ) : (
-                <div className="flex h-[calc(100vh-120px)] sm:h-[calc(100vh-160px)] relative">
+                <div className="flex h-[calc(100vh-120px)] sm:h-[calc(100vh-160px)] relative pt-7">
                     {/* Mobile Sidebar Overlay */}
                     {showMobileSidebar && (
                         <div 
