@@ -160,7 +160,7 @@ const Navbar = () => {
             >
               {item.icon}
             </NavLink>
-          ))}}
+          ))}
         </div>
 
         {/* Search */}
