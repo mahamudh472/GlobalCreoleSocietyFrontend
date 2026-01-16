@@ -1,11 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiMethods } from "../../utils/api";
-import { ENDPOINTS } from "../../config/apiConfig";
+import { markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from "../../services/notificationService";
 import { queryKeys } from "../../utils/queryKeys";
 import { toast } from "react-toastify";
 
 /**
- * Mark notification(s) as read
+ * Mark a single notification as read
  * Optimistically updates cache
  * @returns {UseMutationResult}
  */
@@ -13,25 +12,8 @@ export const useMarkAsReadMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (notificationIds) => {
-      // notificationIds can be a single ID or array of IDs
-      const ids = Array.isArray(notificationIds)
-        ? notificationIds
-        : [notificationIds];
-
-      const response = await apiMethods.post(
-        ENDPOINTS.NOTIFICATIONS.MARK_READ,
-        {
-          notification_ids: ids,
-        }
-      );
-      return { ids, data: response.data };
-    },
-    onMutate: async (notificationIds) => {
-      const ids = Array.isArray(notificationIds)
-        ? notificationIds
-        : [notificationIds];
-
+    mutationFn: markNotificationAsRead,
+    onMutate: async (notificationId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({
         queryKey: queryKeys.notifications.list(),
@@ -43,12 +25,15 @@ export const useMarkAsReadMutation = () => {
       );
 
       // Optimistically update
-      if (previousNotifications) {
+      if (previousNotifications?.results) {
         queryClient.setQueryData(
           queryKeys.notifications.list(),
-          previousNotifications.map((n) =>
-            ids.includes(n.id) ? { ...n, is_read: true } : n
-          )
+          {
+            ...previousNotifications,
+            results: previousNotifications.results.map((n) =>
+              n.id === notificationId ? { ...n, is_read: true } : n
+            )
+          }
         );
       }
 
@@ -59,7 +44,6 @@ export const useMarkAsReadMutation = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.count(),
       });
-      toast.success("Marked as read");
     },
     onError: (error, _, context) => {
       // Rollback on error
@@ -84,18 +68,15 @@ export const useMarkAllAsReadMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const response = await apiMethods.post(
-        ENDPOINTS.NOTIFICATIONS.MARK_READ,
-        {}
-      );
-      return response.data;
-    },
+    mutationFn: markAllNotificationsAsRead,
     onSuccess: () => {
       // Update all notifications in cache
       queryClient.setQueryData(queryKeys.notifications.list(), (old) => {
         if (!old) return old;
-        return old.map((n) => ({ ...n, is_read: true }));
+        return {
+          ...old,
+          results: old.results?.map((n) => ({ ...n, is_read: true })) || []
+        };
       });
 
       // Invalidate unread count
@@ -120,13 +101,7 @@ export const useDeleteNotificationMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (notificationId) => {
-      const response = await apiMethods.delete(
-        ENDPOINTS.NOTIFICATIONS.DELETE(notificationId)
-      );
-      // return notificationId
-      return { data: response.data, notificationId };
-    },
+    mutationFn: deleteNotification,
     onMutate: async (notificationId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({
@@ -139,10 +114,13 @@ export const useDeleteNotificationMutation = () => {
       );
 
       // Optimistically remove notification
-      if (previousNotifications) {
+      if (previousNotifications?.results) {
         queryClient.setQueryData(
           queryKeys.notifications.list(),
-          previousNotifications.filter((n) => n.id !== notificationId)
+          {
+            ...previousNotifications,
+            results: previousNotifications.results.filter((n) => n.id !== notificationId)
+          }
         );
       }
 

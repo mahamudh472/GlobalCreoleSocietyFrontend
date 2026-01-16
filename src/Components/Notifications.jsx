@@ -26,7 +26,8 @@ function Notifications() {
   const navigate = useNavigate();
 
   // Use TanStack Query for notifications
-  const { data: notifications = [], isLoading: loading } = useNotifications();
+  const { data: notificationsData, isLoading: loading } = useNotifications();
+  const notifications = notificationsData?.results || [];
 
   // Use mutations
   const markAsReadMutation = useMarkAsReadMutation();
@@ -54,18 +55,21 @@ function Notifications() {
   };
 
   // Handle notification action click
-  const handleActionClick = (notificationId, type) => {
-    console.log("Notification action clicked:", { notificationId, type });
-    // You can add navigation logic here based on notification type
+  const handleActionClick = (notification, e) => {
+    e.stopPropagation();
+    // Navigate directly to relevant page
+    handleNotificationClick(notification);
   };
 
   // Handle menu toggle
-  const handleMenuToggle = (notificationId) => {
+  const handleMenuToggle = (notificationId, e) => {
+    e.stopPropagation();
     setShowMenu(showMenu === notificationId ? null : notificationId);
   };
 
   // Handle mark as read
-  const handleMarkAsRead = (notificationId) => {
+  const handleMarkAsRead = (notificationId, e) => {
+    if (e) e.stopPropagation();
     markAsReadMutation.mutate(notificationId, {
       onSuccess: () => {
         setShowMenu(null);
@@ -74,7 +78,8 @@ function Notifications() {
   };
 
   // Handle delete notification
-  const handleDelete = (notificationId) => {
+  const handleDelete = (notificationId, e) => {
+    if (e) e.stopPropagation();
     deleteNotificationMutation.mutate(notificationId, {
       onSuccess: () => {
         setShowMenu(null);
@@ -89,15 +94,80 @@ function Notifications() {
 
   // Handle notification click
   const handleNotificationClick = (notification) => {
+    // Mark as read if unread
+    if (!notification.is_read) {
+      markAsReadMutation.mutate(notification.id);
+    }
+    
+    // Extract post ID - try multiple possible locations
+    let postId = null;
+    
+    // Try direct post field (could be UUID string or object)
+    if (notification.post) {
+      if (typeof notification.post === 'string') {
+        postId = notification.post;
+      } else if (typeof notification.post === 'object' && notification.post.id) {
+        postId = notification.post.id;
+      }
+    }
+    
+    // If still no postId, try to extract from comment object
+    if (!postId && notification.comment) {
+      if (typeof notification.comment === 'object' && notification.comment.post) {
+        postId = typeof notification.comment.post === 'string' 
+          ? notification.comment.post 
+          : notification.comment.post?.id;
+      }
+    }
     
     // Navigate to the relevant page based on notification type
-    if (notification.notification_type === "friend_request" && notification.sender?.id) {
-      navigate(`/profile/${notification.sender.id}`);
-    } else if ((notification.notification_type === "society_invite" || notification.notification_type === "society_join") && notification.society) {
-      navigate(`/society/${notification.society}`);
+    switch (notification.notification_type) {
+      case "friend_request":
+      case "friend_accept":
+        // Navigate to sender's profile
+        if (notification.sender?.id) {
+          navigate(`/profile/${notification.sender.id}`);
+        }
+        break;
+        
+      case "society_invite":
+      case "society_join":
+        // Navigate to society page
+        if (notification.society) {
+          navigate(`/society/${notification.society}`);
+        }
+        break;
+        
+      case "post_like":
+      case "post_comment":
+      case "post_share":
+        // Navigate to the specific post using 'post' query parameter for notifications
+        if (postId) {
+          navigate(`/feed?post=${postId}`);
+        } else {
+          navigate('/feed');
+        }
+        break;
+        
+      case "comment_like":
+        // Navigate to the post containing the comment
+        if (postId) {
+          navigate(`/feed?post=${postId}`);
+        } else {
+          navigate('/feed');
+        }
+        break;
+        
+      default:
+        // Default: if post exists, go to post; if sender exists, go to their profile; else go to feed
+        if (postId) {
+          navigate(`/feed?post=${postId}`);
+        } else if (notification.sender?.id) {
+          navigate(`/profile/${notification.sender.id}`);
+        } else {
+          navigate('/feed');
+        }
     }
-    // Add more navigation logic for other notification types as needed
-    // if (notification.post) navigate(`/feed/${notification.post}`)
   };
 
   return (
@@ -179,12 +249,7 @@ function Notifications() {
                   <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
                     {/* Type-specific icon */}
                     <button
-                      onClick={() =>
-                        handleActionClick(
-                          notification.id,
-                          notification.notification_type
-                        )
-                      }
+                      onClick={(e) => handleActionClick(notification, e)}
                       className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
                       aria-label={`${notification.notification_type} action`}
                     >
@@ -194,7 +259,7 @@ function Notifications() {
                     {/* Menu button */}
                     <div className="relative">
                       <button
-                        onClick={() => handleMenuToggle(notification.id)}
+                        onClick={(e) => handleMenuToggle(notification.id, e)}
                         className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
                         aria-label="More options"
                       >
@@ -206,7 +271,7 @@ function Notifications() {
                         <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
                           {!notification.is_read && (
                             <button
-                              onClick={() => handleMarkAsRead(notification.id)}
+                              onClick={(e) => handleMarkAsRead(notification.id, e)}
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                             >
                               <FaEye className="text-gray-500" />
@@ -221,7 +286,7 @@ function Notifications() {
                             Mark all as read
                           </button>
                           <button
-                            onClick={() => handleDelete(notification.id)}
+                            onClick={(e) => handleDelete(notification.id, e)}
                             className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
                           >
                             <FaTrash className="text-red-500" />

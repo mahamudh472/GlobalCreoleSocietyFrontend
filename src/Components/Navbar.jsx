@@ -8,7 +8,7 @@ import { MdExpandLess, MdLogout } from "react-icons/md";
 import SettingPopup from "./Settings/SettingPopup";
 import SearchResults from "./SearchResults";
 import websitelogo from "../assets/websitelogo.png"
-import { useUserSearch } from "../hooks/queries";
+import { useUserSearch, useUnreadNotificationCount } from "../hooks/queries";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import { DEFAULT_AVATAR } from "../utils/defaultAvatar";
@@ -37,6 +37,9 @@ const Navbar = () => {
     debouncedSearchQuery,
     { enabled: debouncedSearchQuery.length >= 2 }
   );
+
+  // Fetch unread notification count
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
 
   // Close search results when clicking outside
   useEffect(() => {
@@ -153,12 +156,18 @@ const Navbar = () => {
                 }
               }}
               className={({ isActive }) =>
-                `p-2 rounded-lg transition-colors ${isActive ? "bg-yellow-400" : "hover:bg-yellow-400"
+                `p-2 rounded-lg transition-colors relative ${isActive ? "bg-yellow-400" : "hover:bg-yellow-400"
                 }`
               }
               title={item.name.charAt(0).toUpperCase() + item.name.slice(1)}
             >
               {item.icon}
+              {/* Show badge for notifications */}
+              {item.name === "notifications" && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </div>
@@ -294,12 +303,18 @@ const Navbar = () => {
               key={item.name}
               to={`/${item.name}`}
               className={({ isActive }) =>
-                `cursor-pointer text-left px-4 py-2 rounded-lg hover:bg-yellow-400 text-gray-800 flex items-center gap-2 ${isActive ? "font-semibold" : ""}`
+                `cursor-pointer text-left px-4 py-2 rounded-lg hover:bg-yellow-400 text-gray-800 flex items-center gap-2 relative ${isActive ? "font-semibold" : ""}`
               }
               onClick={() => setIsMenuOpen(false)}
             >
               {item.icon}
               <span>{item.name.charAt(0).toUpperCase() + item.name.slice(1).replace('_', ' ')}</span>
+              {/* Show badge for notifications */}
+              {item.name === "notifications" && unreadCount > 0 && (
+                <span className="ml-auto bg-yellow-400 text-gray-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
           

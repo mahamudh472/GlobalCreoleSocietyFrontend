@@ -16,6 +16,7 @@ const SocialFeed = () => {
   const { data: user } = useCurrentUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const sharedPostId = searchParams.get("sharedPost");
+  const notificationPostId = searchParams.get("post");
   
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
@@ -28,6 +29,11 @@ const SocialFeed = () => {
     enabled: !!sharedPostId,
   });
 
+  // Fetch notification post if notificationPostId is present
+  const { data: notificationPost, isLoading: notificationPostLoading } = usePost(notificationPostId, {
+    enabled: !!notificationPostId,
+  });
+
   // Use infinite query for posts
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } =
     usePostsInfinite({});
@@ -35,10 +41,12 @@ const SocialFeed = () => {
   // Flatten pages into single posts array
   const allPosts = data?.pages.flatMap((page) => page.results) ?? [];
   
-  // Filter out the shared post from regular posts to avoid duplicates
-  const posts = sharedPostId 
-    ? allPosts.filter(post => post.id !== sharedPostId)
-    : allPosts;
+  // Filter out the shared post and notification post from regular posts to avoid duplicates
+  const posts = allPosts.filter(post => {
+    if (sharedPostId && post.id === sharedPostId) return false;
+    if (notificationPostId && post.id === notificationPostId) return false;
+    return true;
+  });
 
   // Clear the sharedPost param after initial load (optional - keeps URL clean)
   useEffect(() => {
@@ -132,11 +140,11 @@ const SocialFeed = () => {
         </div>
       )}
 
-      {isLoading && posts.length === 0 && !sharedPostLoading ? (
+      {isLoading && posts.length === 0 && !sharedPostLoading && !notificationPostLoading ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
-      ) : posts.length === 0 && liveStreams.length === 0 && !sharedPost ? (
+      ) : posts.length === 0 && liveStreams.length === 0 && !sharedPost && !notificationPost ? (
         <div className="bg-white rounded-xl p-8 text-center">
           <p className="text-gray-500">
             No posts yet. Be the first to share something!
@@ -145,7 +153,31 @@ const SocialFeed = () => {
       ) : (
         <>
           <div className="space-y-4">
-            {/* Show shared post first if present */}
+            {/* Show notification post first if present */}
+            {notificationPostLoading && notificationPostId && (
+              <div className="bg-white rounded-xl p-8">
+                <div className="flex justify-center items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                </div>
+              </div>
+            )}
+            {notificationPost && (
+              <div className="relative">
+                <div className="absolute -top-2 left-4 bg-yellow-400 text-gray-900 text-xs px-3 py-1 rounded-full z-10 font-semibold shadow-md">
+                  From Notification
+                </div>
+                <div className="ring-2 ring-yellow-400 rounded-xl">
+                  <PostCard
+                    key={`notification-${notificationPost.id}`}
+                    post={notificationPost}
+                    onComment={() => handleOpenCommentModal(notificationPost.id)}
+                    onShare={() => handleOpenShareModal(notificationPost.id)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Show shared post if present */}
             {sharedPostLoading && sharedPostId && (
               <div className="bg-white rounded-xl p-8">
                 <div className="flex justify-center items-center">
