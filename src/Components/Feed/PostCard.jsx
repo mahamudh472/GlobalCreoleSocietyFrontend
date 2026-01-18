@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Heart, MessageCircle, MoreVertical, Trash2, Edit, Globe, Lock, Users, X } from "lucide-react";
 import { FaShareFromSquare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
@@ -19,9 +19,21 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [fullScreenImage, setFullScreenImage] = useState(null);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
+  const [showSeeMore, setShowSeeMore] = useState(false);
+  const contentRef = useRef(null);
 
   const likeMutation = useLikePostMutation();
   const deleteMutation = useDeletePostMutation();
+
+  // Check if content needs "See more" button
+  useEffect(() => {
+    if (contentRef.current && post.content) {
+      // Check if the content is truncated
+      const element = contentRef.current;
+      const isTruncated = element.scrollHeight > element.clientHeight;
+      setShowSeeMore(isTruncated);
+    }
+  }, [post.content]);
 
   // Update counts when post prop changes (but not for likes - we handle those locally)
   React.useEffect(() => {
@@ -214,10 +226,13 @@ const PostCard = ({ post, onComment, onShare, onDelete, onUpdate }) => {
 
       <div className="mb-3">
         <div className="mb-3">
-          <p className={`text-gray-800 text-sm sm:text-base whitespace-pre-line ${!isTextExpanded ? 'line-clamp-4' : ''}`}>
+          <p 
+            ref={contentRef}
+            className={`text-gray-800 text-sm sm:text-base whitespace-pre-line ${!isTextExpanded ? 'line-clamp-4' : ''}`}
+          >
             {post.content}
           </p>
-          {post.content && post.content.split('\n').length > 4 && (
+          {showSeeMore && (
             <button
               onClick={() => setIsTextExpanded(!isTextExpanded)}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-1"
