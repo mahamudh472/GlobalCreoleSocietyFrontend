@@ -134,6 +134,14 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "/profile/:userId/friendslist",
+        element: (
+          <ProtectedRoute>
+            <FriendsList />
+          </ProtectedRoute>
+        ),
+      },
 
       // Markets places routing.................
       // Public marketplace routes (accessible without authentication)

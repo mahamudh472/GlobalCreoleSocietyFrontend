@@ -8,10 +8,11 @@ import { toast } from 'react-toastify';
 import { useCurrentUser } from '../hooks/queries/useUser';
 import { useFriendsPaginated } from '../hooks/queries/useFriends';
 import { useUnfriendMutation } from '../hooks/mutations/useFriends';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { DEFAULT_AVATAR } from '../utils/defaultAvatar';
 
 function FriendsList() {
+  const { userId } = useParams(); // Get userId from URL
   const { data: currentUser } = useCurrentUser();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("")
@@ -19,14 +20,19 @@ function FriendsList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize] = useState(10)
   
+  // Determine which user's friends to fetch
+  const targetUserId = userId || currentUser?.id;
+  const isOwnProfile = !userId || userId === currentUser?.id;
+  
   // Fetch friends using TanStack Query with server-side pagination
-  const { data: pagedData = { results: [], count: 0 }, isLoading: loading } = useFriendsPaginated(currentPage, pageSize <= 0 ? 1000 : pageSize);
+  const { data: pagedData = { results: [], count: 0 }, isLoading: loading } = useFriendsPaginated(currentPage, pageSize <= 0 ? 1000 : pageSize, targetUserId);
   const unfriendMutation = useUnfriendMutation();
   
   // Transform the friendship data to get friend details
   const friends = (pagedData.results || []).map(friendship => {
-    // Determine which user is the friend (not the current user)
-    const friend = friendship.requester?.id === currentUser?.id 
+    // Determine which user is the friend (not the profile owner we're viewing)
+    // Use String() for comparison to handle UUID type consistency
+    const friend = String(friendship.requester?.id) === String(targetUserId) 
       ? friendship.receiver 
       : friendship.requester;
     return {
@@ -57,34 +63,25 @@ function FriendsList() {
     });
   };
 
-  // Filter friends based on search
-  const filteredFriends = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    return friends.filter((friend) => {
-      const profileName = (friend.profile_name || '').toLowerCase();
-      const email = (friend.email || '').toLowerCase();
-      return profileName.includes(query) || email.includes(query);
-    });
-  }, [friends, searchQuery]);
+  // For server-side pagination, we don't filter on client side
+  // Just use the friends array directly from the server
+  const displayFriends = friends;
 
   const totalPages = useMemo(() => {
-    // Prefer server-reported count when available
-    const total = typeof pagedData.count === 'number' ? pagedData.count : filteredFriends.length;
+    // Use server-reported count for pagination
+    const total = typeof pagedData.count === 'number' ? pagedData.count : 0;
     return pageSize > 0 ? Math.ceil(total / pageSize) : 1;
-  }, [pagedData.count, filteredFriends.length, pageSize]);
-
-  // Use server-paginated results directly; avoid double client-side slicing
-  const paginatedFriends = filteredFriends;
+  }, [pagedData.count, pageSize]);
 
   useEffect(() => {
-    // Reset to first page when filters or page size change
+    // Reset to first page when user changes
     setCurrentPage(1);
-  }, [searchQuery, pageSize]);
+  }, [targetUserId]);
 
   useEffect(() => {
     // Clamp current page to valid range if data changes
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages || 1);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
 
@@ -122,7 +119,7 @@ function FriendsList() {
             <>
               {/* Friends Grid - Two Columns */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paginatedFriends.map((friend) => (
+                {displayFriends.map((friend) => (
                   <div
                     key={friend.id}
                     className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between"
@@ -144,25 +141,27 @@ function FriendsList() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleUnfriend(friend.id, friend.profile_name || friend.email)}
-                      className="ml-3 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                    >
-                      Unfriend
-                    </button>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => handleUnfriend(friend.id, friend.profile_name || friend.email)}
+                        className="ml-3 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                      >
+                        Unfriend
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
 
               {/* No Results Message */}
-              {filteredFriends.length === 0 && (
+              {displayFriends.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-gray-500 text-sm">No friends found</p>
                 </div>
               )}
 
               {/* Pagination Controls */}
-              {filteredFriends.length > 0 && (
+              {totalPages > 1 && (
                 <div className="mt-6 flex items-center justify-center">
                   {/* Pager */}
                   <div className="flex items-center gap-3">

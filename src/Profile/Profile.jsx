@@ -21,16 +21,25 @@ const Profile = () => {
 
   // Determine which friends list to fetch
   const shouldFetchUserFriends = userId && userId !== currentUser?.id;
-  const { data: ownFriends = [] } = useFriends({
+  const { data: ownFriendsData } = useFriends({
     enabled: !shouldFetchUserFriends,
   });
-  const { data: otherUserFriends = [] } = useUserFriendsQuery(userId, {
+  const { data: otherUserFriendsData } = useUserFriendsQuery(userId, {
     enabled: shouldFetchUserFriends,
   });
 
+  // Extract count from response - handle both paginated {count, results} and array [] formats
+  const getFriendsCount = (data) => {
+    if (!data) return 0;
+    if (typeof data.count === 'number') return data.count;
+    if (Array.isArray(data)) return data.length;
+    if (Array.isArray(data.results)) return data.results.length;
+    return 0;
+  };
+
   const friendsCount = shouldFetchUserFriends
-    ? otherUserFriends.length
-    : ownFriends.length;
+    ? getFriendsCount(otherUserFriendsData)
+    : getFriendsCount(ownFriendsData);
 
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);

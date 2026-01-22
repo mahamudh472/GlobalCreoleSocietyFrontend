@@ -13,7 +13,8 @@ export const useFriends = (options = {}) => {
     queryKey: queryKeys.friends.list(),
     queryFn: async () => {
       const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST);
-      return response.data.results || response.data;
+      // Return full response data to preserve count for paginated responses
+      return response.data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     ...options,
@@ -24,15 +25,17 @@ export const useFriends = (options = {}) => {
  * Fetch user's friends list with server-side pagination
  * @param {number} page - Page number (1-based)
  * @param {number} limit - Items per page
+ * @param {string|number} userId - Optional user ID to fetch friends for (if not provided, fetches current user's friends)
  * @param {Object} options - Query options
  * @returns {UseQueryResult}
  */
-export const useFriendsPaginated = (page = 1, limit = 10, options = {}) => {
+export const useFriendsPaginated = (page = 1, limit = 10, userId = null, options = {}) => {
   return useQuery({
-    queryKey: [...queryKeys.friends.list(), { page, limit }],
+    queryKey: [...queryKeys.friends.list(), { page, limit, userId }],
     queryFn: async () => {
+      const userParam = userId ? `&user=${userId}` : '';
       const response = await apiMethods.get(
-        `${ENDPOINTS.FRIENDS.LIST}?page=${page}&limit=${limit}`,
+        `${ENDPOINTS.FRIENDS.LIST}?page=${page}&page_size=${limit}${userParam}`,
       );
       // Expect standard paginated response: { count, next, previous, results }
       const data = response.data;
@@ -99,7 +102,8 @@ export const useUserFriendsQuery = (userId, options = {}) => {
     queryKey: queryKeys.friends.list(userId),
     queryFn: async () => {
       const response = await apiMethods.get(ENDPOINTS.ACCOUNTS.FRIENDS(userId));
-      return response.data.results || response.data;
+      // Return full response data to preserve count for paginated responses
+      return response.data;
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes

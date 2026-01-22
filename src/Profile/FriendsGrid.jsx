@@ -1,12 +1,34 @@
 import { useNavigate } from "react-router-dom"
-import { useFriends } from "../hooks/queries/useFriends"
+import { useFriends, useUserFriendsQuery } from "../hooks/queries/useFriends"
 import { useCurrentUser } from "../hooks/queries/useUser"
 import { DEFAULT_AVATAR } from "../utils/defaultAvatar"
 
 const FriendsGrid = ({ userId }) => {
   const navigate = useNavigate()
   const { data: currentUser } = useCurrentUser()
-  const { data: friendsData = [], isLoading: loading } = useFriends()
+  
+  // Determine if viewing another user's profile or own profile
+  const isViewingOtherUser = userId && userId !== currentUser?.id
+  
+  // Fetch own friends or other user's friends based on userId
+  const { data: ownFriendsData, isLoading: loadingOwnFriends } = useFriends({
+    enabled: !isViewingOtherUser,
+  })
+  const { data: otherUserFriendsData, isLoading: loadingOtherFriends } = useUserFriendsQuery(userId, {
+    enabled: isViewingOtherUser,
+  })
+  
+  // Extract results array from response data (handle both paginated and array formats)
+  const getResultsArray = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.results)) return data.results;
+    return [];
+  };
+  
+  // Use the appropriate friends list
+  const friendsData = isViewingOtherUser ? getResultsArray(otherUserFriendsData) : getResultsArray(ownFriendsData);
+  const loading = isViewingOtherUser ? loadingOtherFriends : loadingOwnFriends
   
   // Take only first 6 friends for grid display
   const friends = friendsData.slice(0, 6)
@@ -29,7 +51,7 @@ const FriendsGrid = ({ userId }) => {
         {friends.length > 0 && (
           <button
             onClick={() => {
-              navigate("/profile/friendslist")
+              navigate(`/profile/${userId}/friendslist`)
             }}
             className="text-sm cursor-pointer text-blue-500 hover:underline"
           >
@@ -43,7 +65,8 @@ const FriendsGrid = ({ userId }) => {
       ) : (
         <div className="grid grid-cols-4 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {friends.map(friend => {
-            const friendData = friend.requester?.id === currentUser?.id ? friend.receiver : friend.requester
+            // Show the user who is NOT the profile owner (userId)
+            const friendData = String(friend.requester?.id) === String(userId) ? friend.receiver : friend.requester
             return (
               <div key={friend.id} className="flex flex-col items-center">
                 <div 
