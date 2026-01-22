@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiMethods } from '../../utils/api'
-import { ENDPOINTS } from '../../config/apiConfig'
-import { queryKeys } from '../../utils/queryKeys'
+import { useQuery } from "@tanstack/react-query";
+import { apiMethods } from "../../utils/api";
+import { ENDPOINTS } from "../../config/apiConfig";
+import { queryKeys } from "../../utils/queryKeys";
 
 /**
  * Fetch user's friends list
@@ -12,13 +12,47 @@ export const useFriends = (options = {}) => {
   return useQuery({
     queryKey: queryKeys.friends.list(),
     queryFn: async () => {
-      const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST)
-      return response.data.results || response.data
+      const response = await apiMethods.get(ENDPOINTS.FRIENDS.LIST);
+      return response.data.results || response.data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     ...options,
-  })
-}
+  });
+};
+
+/**
+ * Fetch user's friends list with server-side pagination
+ * @param {number} page - Page number (1-based)
+ * @param {number} limit - Items per page
+ * @param {Object} options - Query options
+ * @returns {UseQueryResult}
+ */
+export const useFriendsPaginated = (page = 1, limit = 10, options = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.friends.list(), { page, limit }],
+    queryFn: async () => {
+      const response = await apiMethods.get(
+        `${ENDPOINTS.FRIENDS.LIST}?page=${page}&limit=${limit}`,
+      );
+      // Expect standard paginated response: { count, next, previous, results }
+      const data = response.data;
+      if (Array.isArray(data)) {
+        // Non-paginated fallback
+        return { count: data.length, results: data };
+      }
+      // Ensure shape includes results
+      return {
+        count: data.count ?? (data.results ? data.results.length : 0),
+        next: data.next ?? null,
+        previous: data.previous ?? null,
+        results: data.results ?? [],
+      };
+    },
+    keepPreviousData: true,
+    staleTime: 1000 * 30, // 30 seconds
+    ...options,
+  });
+};
 
 /**
  * Fetch pending friend requests (received)
@@ -29,13 +63,13 @@ export const useFriendRequests = (options = {}) => {
   return useQuery({
     queryKey: queryKeys.friends.requests(),
     queryFn: async () => {
-      const response = await apiMethods.get(ENDPOINTS.FRIENDS.REQUESTS)
-      return response.data.results || response.data
+      const response = await apiMethods.get(ENDPOINTS.FRIENDS.REQUESTS);
+      return response.data.results || response.data;
     },
     staleTime: 1000 * 60 * 2, // 2 minutes (more frequent for requests)
     ...options,
-  })
-}
+  });
+};
 
 /**
  * Fetch friend suggestions
@@ -46,13 +80,13 @@ export const useFriendSuggestions = (options = {}) => {
   return useQuery({
     queryKey: queryKeys.friends.suggestions(),
     queryFn: async () => {
-      const response = await apiMethods.get(ENDPOINTS.FRIENDS.SUGGESTIONS)
-      return response.data.results || response.data
+      const response = await apiMethods.get(ENDPOINTS.FRIENDS.SUGGESTIONS);
+      return response.data.results || response.data;
     },
     staleTime: 1000 * 60 * 10, // 10 minutes (changes less frequently)
     ...options,
-  })
-}
+  });
+};
 
 /**
  * Fetch friends for a specific user
@@ -64,14 +98,14 @@ export const useUserFriendsQuery = (userId, options = {}) => {
   return useQuery({
     queryKey: queryKeys.friends.list(userId),
     queryFn: async () => {
-      const response = await apiMethods.get(ENDPOINTS.ACCOUNTS.FRIENDS(userId))
-      return response.data.results || response.data
+      const response = await apiMethods.get(ENDPOINTS.ACCOUNTS.FRIENDS(userId));
+      return response.data.results || response.data;
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes
     ...options,
-  })
-}
+  });
+};
 
 /**
  * Search friends by name or username
@@ -83,11 +117,13 @@ export const useSearchFriends = (searchQuery, options = {}) => {
   return useQuery({
     queryKey: queryKeys.friends.search(searchQuery),
     queryFn: async () => {
-      const response = await apiMethods.get(`${ENDPOINTS.FRIENDS.LIST}?search=${encodeURIComponent(searchQuery)}`)
-      return response.data.results || response.data
+      const response = await apiMethods.get(
+        `${ENDPOINTS.FRIENDS.LIST}?search=${encodeURIComponent(searchQuery)}`,
+      );
+      return response.data.results || response.data;
     },
     enabled: !!searchQuery && searchQuery.length > 0,
     staleTime: 1000 * 60 * 2, // 2 minutes for search results
     ...options,
-  })
-}
+  });
+};
